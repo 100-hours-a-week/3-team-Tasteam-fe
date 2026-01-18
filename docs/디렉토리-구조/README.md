@@ -28,8 +28,9 @@ src/
     ui/             # 재사용 UI 컴포넌트
     api/            # API 클라이언트, 요청 모듈
     lib/            # 유틸/헬퍼/공통 함수
+    constants/      # 전역 상수 모음
     assets/         # 이미지/폰트 등 정적 자산
-    config/         # 상수, 환경 설정
+    config/         # 환경/런타임 설정
     types/          # 공통 타입
     styles/         # 전역 스타일, 테마
 ```
