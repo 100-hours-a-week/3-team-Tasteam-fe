@@ -1,73 +1,21 @@
-# React + TypeScript + Vite
+# Tasteam 프론트엔드
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Tasteam 프론트엔드는 `Vite + React + TypeScript` 템플릿을 기반으로 설정되었습니다.  
+설정/정책/백오피스 문서는 `docs/` 폴더에 정리되어 있으니 참고하세요.
 
-Currently, two official plugins are available:
+## 주요 스크립트
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Script            | 설명               |
+| ----------------- | ------------------ |
+| `npm run dev`     | 개발 서버 실행     |
+| `npm run build`   | 프로덕션 빌드      |
+| `npm run preview` | 빌드 결과 미리보기 |
 
-## React Compiler
+## 참조 문서
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `docs/기술-선정/README.md`: 사용 기술 스택과 선택 이유
+- `docs/환경-변수/README.md`: 환경 변수/도메인 기준 및 예시
+- `docs/PWA/README.md`: PWA(Service Worker) 설정 가이드
+- `docs/상태-관리/README.md`: Zustand + TanStack Query 도입 제안
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+필요한 추가 문서나 정책이 있으면 docs에 기록하거나 알려주세요.
