@@ -22,9 +22,14 @@
 - Tailwind CSS: 4.1.x
 - Emotion: 11.14.x
 
+## PWA
+
+- Vite PWA: 1.2.x
+
 ## Rationale
 
 - Node.js LTS: stable and widely supported
 - React + TypeScript: modern component model with type safety
 - Vite: fast dev server and optimized build pipeline
 - Tailwind CSS + Emotion: utility-first styling with component-scoped styles
+- Vite PWA: minimal PWA setup with static asset caching
