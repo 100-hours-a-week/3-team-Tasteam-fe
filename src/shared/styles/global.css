@@ -10,6 +10,9 @@
     sans-serif;
   color: #111827;
   background-color: #ffffff;
+  --color-brand: #f97316;
+  --color-brand-strong: #ea580c;
+  --color-brand-soft: #fff1e6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
