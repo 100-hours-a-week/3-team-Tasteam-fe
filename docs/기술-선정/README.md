@@ -17,8 +17,14 @@
 
 - ESLint: 9.39.x
 
+## Styling
+
+- Tailwind CSS: 4.1.x
+- Emotion: 11.14.x
+
 ## Rationale
 
 - Node.js LTS: stable and widely supported
 - React + TypeScript: modern component model with type safety
 - Vite: fast dev server and optimized build pipeline
+- Tailwind CSS + Emotion: utility-first styling with component-scoped styles
