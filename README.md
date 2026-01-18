@@ -1,6 +1,7 @@
 # Tasteam 프론트엔드
 
-Tasteam 프론트엔드는 `Vite + React + TypeScript` 템플릿을 기반으로 설정되었습니다.  
+Tasteam은 **PWA 기반 앱**으로 제공되는 프론트엔드 프로젝트입니다.  
+`Vite + React + TypeScript` 템플릿을 기반으로 설정되었습니다.  
 설정/정책/백오피스 문서는 `docs/` 폴더에 정리되어 있으니 참고하세요.
 
 ## 주요 스크립트
