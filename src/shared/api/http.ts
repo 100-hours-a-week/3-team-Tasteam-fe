@@ -13,18 +13,18 @@ type RefreshResponse = {
  * withCredentials: true를 통해 httpOnly 쿠키(`refreshToken`)가 자동 포함되고,
  * baseURL/timeout/헤더를 한 곳에서 통제합니다.
  */
-const createHttpClient = () =>
+const createHttpClient = (withCredentials = true) =>
   axios.create({
     baseURL: API_BASE_URL,
     timeout: 10000,
-    withCredentials: true,
+    withCredentials,
     headers: {
       'Content-Type': 'application/json',
     },
   })
 
-export const http = createHttpClient()
-const refreshClient = createHttpClient()
+export const http = createHttpClient(true)
+const refreshClient = createHttpClient(true)
 
 let refreshPromise: Promise<string | null> | null = null
 
