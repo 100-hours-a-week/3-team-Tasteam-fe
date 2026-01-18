@@ -1,12 +1,13 @@
 import { BottomTabBar } from '@/widgets/bottom-tab-bar/BottomTabBar'
+import styles from './HomePage.module.css'
 
 export const HomePage = () => {
   return (
-    <div className="page">
-      <header className="page-header">
-        <h1 className="page-title">Tasteam</h1>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Tasteam</h1>
       </header>
-      <main className="page-content" />
+      <main className={styles.content} />
       <BottomTabBar />
     </div>
   )

@@ -1,0 +1,24 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 64px;
+}
+
+.header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.content {
+  flex: 1;
+}

@@ -1,0 +1,18 @@
+.bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.tab {
+  height: 100%;
+  font-size: 12px;
+  font-weight: 600;
+}

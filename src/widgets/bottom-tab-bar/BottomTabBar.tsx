@@ -1,3 +1,5 @@
+import styles from './BottomTabBar.module.css'
+
 const TABS = [
   { label: '홈', key: 'home' },
   { label: '탐색', key: 'explore' },
@@ -7,9 +9,9 @@ const TABS = [
 
 export const BottomTabBar = () => {
   return (
-    <nav className="bottom-tab-bar" aria-label="하단 탭">
+    <nav className={styles.bar} aria-label="하단 탭">
       {TABS.map((tab) => (
-        <button key={tab.key} className="bottom-tab" type="button">
+        <button key={tab.key} className={styles.tab} type="button">
           {tab.label}
         </button>
       ))}
