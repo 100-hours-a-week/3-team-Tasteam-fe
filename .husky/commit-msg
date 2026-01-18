@@ -2,6 +2,13 @@ COMMIT_MESSAGE_FILE_PATH=$1
 first_line=$(head -n1 "$COMMIT_MESSAGE_FILE_PATH")
 remaining_lines=$(tail -n +2 "$COMMIT_MESSAGE_FILE_PATH")
 
+# 공동 커밋자(예: Co-authored-by) 트레일러는 원천 차단합니다.
+if grep -Eiq '^[[:space:]]*co-authored-by:[[:space:]]*' "$COMMIT_MESSAGE_FILE_PATH"; then
+  echo "⛔ 공동 커밋자(Co-authored-by) 트레일러가 포함되어 있어 커밋을 막았습니다."
+  echo "   공동 커밋자가 필요한 경우 팀 정책에 따라 수동으로 처리하세요."
+  exit 1
+fi
+
 # 이미 이모지+타입 형식으로 저장된 커밋(예: amend)이면 건너뜁니다.
 case "$first_line" in
   "✨ feat"*"")   exit 0 ;;
