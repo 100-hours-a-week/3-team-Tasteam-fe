@@ -8,7 +8,6 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['vite.svg'],
       manifest: {
         name: 'Tasteam',
         short_name: 'Tasteam',
@@ -17,13 +16,6 @@ export default defineConfig({
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
-        icons: [
-          {
-            src: '/vite.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-          },
-        ],
       },
     }),
   ],
