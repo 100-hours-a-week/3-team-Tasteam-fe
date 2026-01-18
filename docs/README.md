@@ -9,3 +9,5 @@
 - `docs/환경-변수/README.md`: 환경 변수/도메인 기준 안내
 - `docs/PWA/README.md`: PWA 설정 가이드
 - `docs/상태-관리/README.md`: 상태 관리 도구 도입 가이드
+- `docs/디렉토리-구조/README.md`: 디렉토리 구조 가이드
+- `docs/디렉토리-구조/초기-단순-구조.md`: 초기 단순 구조 제안
