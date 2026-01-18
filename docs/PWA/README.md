@@ -11,8 +11,8 @@ API 응답은 캐시하지 않고 네트워크에서만 가져옵니다.
 
 ## 캐시 전략
 
-- Static assets: precache (CacheFirst)
-- API requests: NetworkOnly
+- 정적 자산: Precache (Cache First)
+- API 요청: 항상 네트워크에서만 가져옴 (Network Only)
 
 ## 체크리스트
 
