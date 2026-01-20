@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { HomePage } from '@/pages/home/HomePage'
+import { LoginPage } from '@/pages/login/LoginPage'
 import { SplashPage } from '@/pages/splash/SplashPage'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 
@@ -20,7 +20,7 @@ function App() {
     return <SplashPage isFadingOut={isReady} />
   }
 
-  return <HomePage />
+  return <LoginPage />
 }
 
 export default App
