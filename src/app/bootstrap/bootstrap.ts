@@ -1,10 +1,43 @@
+import { request } from '@/shared/api/request'
+import { API_ENDPOINTS } from '@/shared/config/routes'
+import { setAccessToken } from '@/shared/lib/authToken'
+
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-const runBootstrapTasks = async () => {
-  // TODO: 자동 로그인/초기 데이터 로딩 등 실제 부트스트랩 작업으로 대체
-  await delay(3000)
+type RefreshResponse = {
+  accessToken?: string
+  data?: {
+    accessToken?: string
+  }
 }
 
+const runBootstrapTasks = async () => {
+  try {
+    const data = await request<RefreshResponse>({
+      method: 'POST',
+      url: API_ENDPOINTS.tokenRefresh,
+      data: { accessToken: null },
+      withCredentials: true,
+    })
+    const token = data.accessToken ?? data.data?.accessToken
+    if (token) {
+      setAccessToken(token)
+    }
+  } catch {
+    // refresh 실패는 무시하고 비로그인 상태로 진행
+  }
+}
+
+let bootstrapPromise: Promise<void> | null = null
+
 export const bootstrapApp = async () => {
-  await Promise.race([delay(3000), runBootstrapTasks()])
+  if (!bootstrapPromise) {
+    bootstrapPromise = (async () => {
+      const startedAt = Date.now()
+      await runBootstrapTasks()
+      const elapsed = Date.now() - startedAt
+      await delay(Math.max(0, 3000 - elapsed))
+    })()
+  }
+  await bootstrapPromise
 }

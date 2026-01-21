@@ -1,26 +1,26 @@
-import { useEffect, useState } from 'react'
+import { HomePage } from '@/pages/home/HomePage'
 import { LoginPage } from '@/pages/login/LoginPage'
+import { OAuthCallbackPage } from '@/pages/oauth/OAuthCallbackPage'
 import { SplashPage } from '@/pages/splash/SplashPage'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
+import { useAuth } from '@/entities/user/model/useAuth'
+import { Route, Routes } from 'react-router-dom'
 
 function App() {
   const isReady = useBootstrap()
-  const [showSplash, setShowSplash] = useState(true)
+  const { showLogin } = useAuth()
 
-  useEffect(() => {
-    if (!isReady) {
-      return
-    }
-
-    const timer = setTimeout(() => setShowSplash(false), 240)
-    return () => clearTimeout(timer)
-  }, [isReady])
-
-  if (showSplash) {
-    return <SplashPage isFadingOut={isReady} />
+  if (!isReady) {
+    return <SplashPage />
   }
 
-  return <LoginPage />
+  return (
+    <Routes>
+      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={showLogin ? <LoginPage /> : <HomePage />} />
+    </Routes>
+  )
 }
 
 export default App
