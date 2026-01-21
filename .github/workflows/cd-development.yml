@@ -87,8 +87,8 @@ jobs:
             WEB_ROOT="/var/www/html"
 
             # 기존 파일 삭제 및 새 파일 배포
-            sudo rm -rf $WEB_ROOT/*
-            sudo cp -r $TEMP_DIR/* $WEB_ROOT/
+            rm -rf $WEB_ROOT/*
+            cp -r $TEMP_DIR/* $WEB_ROOT/
 
             # 임시 파일 정리
             rm -rf $TEMP_DIR/*
