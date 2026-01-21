@@ -4,6 +4,7 @@ import { getOAuthStartUrl, storeReturnPath } from './api'
 const PROVIDERS = [
   { label: 'Kakao', key: 'kakao' },
   { label: 'Google', key: 'google' },
+  { label: 'Apple', key: 'apple' },
 ] as const
 
 export const SocialLoginButtons = () => {
