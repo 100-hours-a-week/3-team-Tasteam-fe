@@ -27,6 +27,10 @@ jobs:
 
       # 4. 빌드
       - name: Build
+        env:
+          VITE_APP_ENV: ${{ secrets.DEVELOP_VITE_APP_ENV }}
+          VITE_APP_URL: ${{ secrets.DEVELOP_VITE_APP_URL }}
+          VITE_API_BASE_URL: ${{ secrets.DEVELOP_VITE_API_BASE_URL }}
         run: npm run build
 
       # 5. 빌드 산출물 업로드 (deploy job에서 사용)
