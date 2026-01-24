@@ -1,29 +1,47 @@
-COMMIT_MESSAGE_FILE_PATH=$1
-first_line=$(head -n1 "$COMMIT_MESSAGE_FILE_PATH")
-remaining_lines=$(tail -n +2 "$COMMIT_MESSAGE_FILE_PATH")
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 
-# 공동 커밋자(예: Co-authored-by) 트레일러는 원천 차단합니다.
-if grep -Eiq '^[[:space:]]*co-authored-by:[[:space:]]*' "$COMMIT_MESSAGE_FILE_PATH"; then
-  echo "⛔ 공동 커밋자(Co-authored-by) 트레일러가 포함되어 있어 커밋을 막았습니다."
-  echo "   공동 커밋자가 필요한 경우 팀 정책에 따라 수동으로 처리하세요."
+COMMIT_MESSAGE_FILE="$1"
+
+if [ ! -s "$COMMIT_MESSAGE_FILE" ]; then
+  exit 0
+fi
+
+first_line=$(sed -n '1p' "$COMMIT_MESSAGE_FILE")
+remaining_lines=$(tail -n +2 "$COMMIT_MESSAGE_FILE")
+
+# 커밋 기여자(Co-authored-by) 트레일러 엄격 차단
+if grep -Eiq '(co-authored-by|co-committed-by):[[:space:]]*' "$COMMIT_MESSAGE_FILE"; then
+  echo "⛔ 커밋 기여자(Co-authored-by) 트레일러가 포함되어 있어 커밋을 차단했습니다."
+  echo "   모든 커밋은 단독 작성자만 허용됩니다."
+  echo "   AI 도구의 도움을 받아 커밋 메시지를 작성하지 마세요."
   exit 1
 fi
 
-# 이미 이모지+타입 형식으로 저장된 커밋(예: amend)이면 건너뜁니다.
+# AI 생성 콘텐츠 표시 차단
+if grep -Eiq '(claude|sonnet|anthropic|generated with|🤖 generated)' "$COMMIT_MESSAGE_FILE"; then
+  echo "⛔ AI 도구 관련 문구가 커밋 메시지에 포함되어 있어 차단했습니다."
+  echo "   커밋 메시지는 개발자가 직접 작성해야 합니다."
+  echo "   Claude, ChatGPT 등 AI의 도움을 받지 마세요."
+  exit 1
+fi
+
+# 미리 이모지+타입이 포함된 메시지이면 생략
 case "$first_line" in
-  "✨ feat"*"")   exit 0 ;;
-  "🐛 fix"*"")    exit 0 ;;
-  "⚡ perf"*"")   exit 0 ;;
-  "♻️ refactor"*"") exit 0 ;;
-  "🧪 test"*"")   exit 0 ;;
-  "📝 docs"*"")   exit 0 ;;
-  "🎨 style"*"")  exit 0 ;;
-  "🔧 chore"*"")  exit 0 ;;
-  "🚀 delopy"*"") exit 0 ;;
-  "⏪ revert"*"") exit 0 ;;
+  "✨ feat"*)      exit 0 ;;
+  "🐛 fix"*)       exit 0 ;;
+  "⚡️ perf"*)      exit 0 ;;
+  "♻️ refactor"*)  exit 0 ;;
+  "✅ test"*)      exit 0 ;;
+  "📝 docs"*)      exit 0 ;;
+  "💄 style"*)     exit 0 ;;
+  "🔧 chore"*)     exit 0 ;;
+  "🔁 ci"*)        exit 0 ;;
+  "📦 build"*)     exit 0 ;;
+  "⏪ revert"*)    exit 0 ;;
 esac
 
-# Git이 자동 생성하는 메시지는 예외 처리
+# Merge/Amend/Reset/Tag 메시지는 자연스럽게 통과
 case "$first_line" in
   Merge*|Revert*|Amend*|Reset*|Rebase*|Tag*)
     exit 0
@@ -35,29 +53,29 @@ normalized_type=$(echo "$type" | tr 'A-Z' 'a-z')
 
 emoji=""
 case "$normalized_type" in
-  feat)    emoji="✨" ;;
-  fix)     emoji="🐛" ;;
-  perf)    emoji="⚡" ;;
+  feat)     emoji="✨" ;;
+  fix)      emoji="🐛" ;;
+  perf)     emoji="⚡️" ;;
   refactor) emoji="♻️" ;;
-  test)    emoji="🧪" ;;
-  docs)    emoji="📝" ;;
-  style)   emoji="🎨" ;;
-  chore)   emoji="🔧" ;;
-  delopy)  emoji="🚀" ;;
-  revert)  emoji="⏪" ;;
+  test)     emoji="✅" ;;
+  docs)     emoji="📝" ;;
+  style)    emoji="💄" ;;
+  chore)    emoji="🔧" ;;
+  ci)       emoji="🔁" ;;
+  build)    emoji="📦" ;;
+  revert)   emoji="⏪" ;;
 esac
 
-# 유효하지 않은 타입이면 커밋을 막고 가이드를 출력
 if [ -z "$emoji" ] || [ -z "$normalized_type" ]; then
-  echo "⛔ 올바르지 않은 커밋 타입입니다."
-  echo "   사용 가능한 타입:"
-  echo "     feat, fix, perf, refactor, test, docs, style, chore, delopy, revert"
-  echo "   예) feat: 기능 추가 설명"
+  echo "⛔ 커밋 메시지 타입이 올바르지 않습니다."
+  echo "   https://github.com/team3/tasteam/tree/main/docs/convention/커밋%20브랜치%20전략/브랜치_커밋_전략.md 를 참고하세요."
+  echo "   사용 가능한 타입: feat, fix, perf, refactor, test, docs, style, chore, ci, build, revert"
   exit 1
 fi
 
-# 첫 번째 단어를 '이모지 + 타입(소문자)' 로 변환
-first_line=$(echo "$first_line" | sed "s/^$type/$emoji $normalized_type/")
+formatted_first_line=$(echo "$first_line" | sed "s/^$type/$emoji $normalized_type/")
 
-echo "$first_line" > "$COMMIT_MESSAGE_FILE_PATH"
-echo "$remaining_lines" >> "$COMMIT_MESSAGE_FILE_PATH"
+{
+  echo "$formatted_first_line"
+  echo "$remaining_lines"
+} > "$COMMIT_MESSAGE_FILE"
