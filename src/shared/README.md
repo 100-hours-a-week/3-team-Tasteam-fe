@@ -15,6 +15,7 @@
   예: `constants/date.ts`, `constants/regex.ts`
 - `lib/`: 유틸/헬퍼/공통 함수  
   예: `lib/formatCurrency.ts`, `lib/time.ts`
+  - `formatDisplayNumber.ts`: 숫자 표시 정책(`K`/`M` 축약, 0 표시 등)을 적용하는 헬퍼
 - `styles/`: 전역 스타일, 테마, CSS 토큰  
   예: `styles/global.css`, `styles/theme.ts`
 - `types/`: 공통 타입 정의  
