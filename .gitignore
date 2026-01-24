@@ -1,3 +1,41 @@
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# CLAUDE
+.claude
+.claude_config.json
+.claude_history/
+.claude_cache/
+CLAUDE.md
+*CLAUDE*
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.nfs*
+
+# Env files
+.env
+.env.*
+!.env.example
+!.env.production.example
+
 # Logs
 logs
 *.log
@@ -11,20 +49,3 @@ node_modules
 dist
 dist-ssr
 *.local
-
-# Env files
-.env
-.env.*
-!.env.example
-!.env.production.example
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
