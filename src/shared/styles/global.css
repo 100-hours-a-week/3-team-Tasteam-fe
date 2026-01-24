@@ -13,7 +13,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 220.9 39.3% 11%;
 
-  --primary: 24.6 95% 53.1%;
+  /* Brand color: #FFAE42 */
+  --primary: 34.3 100% 62.9%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 210 40% 96.1%;
@@ -35,6 +36,7 @@
   --radius: 0.5rem;
 
   font-family:
+    'Pretendard',
     'Noto Sans KR',
     system-ui,
     -apple-system,
@@ -42,8 +44,8 @@
 
   /* Legacy brand tokens (kept for existing CSS usage). */
   --color-brand: hsl(var(--primary));
-  --color-brand-strong: hsl(20.5 90.2% 48.2%);
-  --color-brand-soft: hsl(26.4 100% 95.1%);
+  --color-brand-strong: hsl(34.3 100% 52%);
+  --color-brand-soft: hsl(34.3 100% 95%);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -61,7 +63,7 @@
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 24.6 95% 53.1%;
+  --primary: 34.3 100% 62.9%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 217.2 32.6% 17.5%;
