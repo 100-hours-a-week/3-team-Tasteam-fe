@@ -35,6 +35,32 @@ export type MemberGroupListResponseDto = CursorPageResponse<{
   groupAddress: string
 }>
 
+export type MemberGroupOverviewListResponseDto = CursorPageResponse<{
+  groupId: number
+  name: string
+  logoImage: {
+    id: string
+    url: string
+  }
+  address: string
+  detailAddress: string
+  emailDomain: string | null
+  status: string
+  createdAt: IsoDateTimeString
+  updatedAt: IsoDateTimeString
+  subgroups: Array<{
+    subgroupId: number
+    name: string
+    description: string
+    memberCount: number
+    thumbnailImage: {
+      id: string
+      url: string
+    }
+    createdAt: IsoDateTimeString
+  }>
+}>
+
 export type MemberGroupRequestListResponseDto = CursorPageResponse<{
   id: number
   groupName: string
@@ -53,6 +79,12 @@ export type MemberProfileUpdateRequestDto = {
   profileImageUrl?: string
   email?: string
 }
+
+export type GroupEmailVerificationResponseDto = SuccessResponse<{
+  id: number
+  createdAt: IsoDateTimeString
+  expiresAt: IsoDateTimeString
+}>
 
 export type GroupJoinVerificationResponseDto = SuccessResponse<{
   verified: boolean
