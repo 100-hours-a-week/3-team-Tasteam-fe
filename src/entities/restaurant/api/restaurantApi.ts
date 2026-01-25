@@ -1,4 +1,4 @@
-import { request } from '@/shared/api/request'
+import { mockRequest } from '@/shared/api/mockRequest'
 import { buildQuery } from '@/shared/api/query'
 import type {
   RestaurantDetailResponseDto,
@@ -10,7 +10,7 @@ import type {
 } from '../model/dto'
 
 export const getRestaurant = (restaurantId: number) =>
-  request<RestaurantDetailResponseDto>({
+  mockRequest<RestaurantDetailResponseDto>({
     method: 'GET',
     url: `/api/v1/restaurants/${restaurantId}`,
   })
@@ -22,27 +22,27 @@ export const getRestaurants = (params: {
   size?: number
   category?: string
 }) =>
-  request<RestaurantListResponseDto>({
+  mockRequest<RestaurantListResponseDto>({
     method: 'GET',
     url: `/api/v1/restaurants${buildQuery(params)}`,
   })
 
 export const createRestaurant = (payload: RestaurantCreateRequestDto) =>
-  request<RestaurantCreateResponseDto>({
+  mockRequest<RestaurantCreateResponseDto>({
     method: 'POST',
     url: '/api/v1/restaurants',
     data: payload,
   })
 
 export const updateRestaurant = (restaurantId: number, payload: RestaurantUpdateRequestDto) =>
-  request<RestaurantUpdateResponseDto>({
+  mockRequest<RestaurantUpdateResponseDto>({
     method: 'PATCH',
     url: `/api/v1/restaurants/${restaurantId}`,
     data: payload,
   })
 
 export const deleteRestaurant = (restaurantId: number) =>
-  request<void>({
+  mockRequest<void>({
     method: 'DELETE',
     url: `/api/v1/restaurants/${restaurantId}`,
   })

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { ChevronDown, Users } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
@@ -9,23 +10,13 @@ import { Button } from '@/shared/ui/button'
 import { ChatMessageBubble, ChatDateDivider } from '@/entities/chat/ui'
 import type { ChatMessageDto } from '@/entities/chat/model/dto'
 
-type ChatRoomPageProps = {
-  roomId: string
-  roomTitle: string
-  memberCount?: number
-  currentUserId: string
-  onBack: () => void
-  onMembersClick?: () => void
-}
+export function ChatRoomPage() {
+  const { roomId } = useParams<{ roomId: string }>()
+  const navigate = useNavigate()
+  const currentUserId = '1'
+  const roomTitle = '채팅방'
+  const memberCount = 8
 
-export function ChatRoomPage({
-  roomId,
-  roomTitle,
-  memberCount,
-  currentUserId,
-  onBack,
-  onMembersClick,
-}: ChatRoomPageProps) {
   const [messages, setMessages] = useState<ChatMessageDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
@@ -88,7 +79,7 @@ export function ChatRoomPage({
     }
 
     loadInitialMessages()
-  }, [roomId, currentUserId])
+  }, [roomId])
 
   const handleScroll = useCallback(() => {
     const container = scrollAreaRef.current
@@ -157,20 +148,20 @@ export function ChatRoomPage({
     {} as Record<string, ChatMessageDto[]>,
   )
 
+  const handleMembersClick = () => {}
+
   if (isLoading) {
     return (
       <div className="flex flex-col h-full bg-background min-h-screen">
         <TopAppBar
           title={roomTitle}
           showBackButton
-          onBack={onBack}
+          onBack={() => navigate(-1)}
           actions={
-            memberCount && onMembersClick ? (
-              <Button variant="ghost" size="sm" onClick={onMembersClick}>
-                <Users className="h-4 w-4 mr-1" />
-                {memberCount}
-              </Button>
-            ) : undefined
+            <Button variant="ghost" size="sm" onClick={handleMembersClick}>
+              <Users className="h-4 w-4 mr-1" />
+              {memberCount}
+            </Button>
           }
         />
         <div className="flex-1 flex items-center justify-center">
@@ -185,14 +176,12 @@ export function ChatRoomPage({
       <TopAppBar
         title={roomTitle}
         showBackButton
-        onBack={onBack}
+        onBack={() => navigate(-1)}
         actions={
-          memberCount && onMembersClick ? (
-            <Button variant="ghost" size="sm" onClick={onMembersClick}>
-              <Users className="h-4 w-4 mr-1" />
-              {memberCount}
-            </Button>
-          ) : undefined
+          <Button variant="ghost" size="sm" onClick={handleMembersClick}>
+            <Users className="h-4 w-4 mr-1" />
+            {memberCount}
+          </Button>
         }
       />
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Star, AlertCircle } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
@@ -7,12 +8,6 @@ import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
-
-type WriteReviewPageProps = {
-  restaurantId: string
-  onSubmit: () => void
-  onBack: () => void
-}
 
 const TAGS = [
   '분위기 좋아요',
@@ -25,7 +20,10 @@ const TAGS = [
   '혼밥 가능',
 ]
 
-export function WriteReviewPage({ onSubmit, onBack }: WriteReviewPageProps) {
+export function WriteReviewPage() {
+  const { id: _restaurantId } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+
   const [rating, setRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -53,13 +51,13 @@ export function WriteReviewPage({ onSubmit, onBack }: WriteReviewPageProps) {
 
     setTimeout(() => {
       setIsLoading(false)
-      onSubmit()
+      navigate(-1)
     }, 1000)
   }
 
   return (
     <div className="flex flex-col h-full bg-background min-h-screen">
-      <TopAppBar title="리뷰 작성" showBackButton onBack={onBack} />
+      <TopAppBar title="리뷰 작성" showBackButton onBack={() => navigate(-1)} />
 
       <Container className="flex-1 py-6 overflow-auto">
         <div className="space-y-6">
@@ -128,7 +126,12 @@ export function WriteReviewPage({ onSubmit, onBack }: WriteReviewPageProps) {
           )}
 
           <div className="flex gap-3 pt-4">
-            <Button variant="outline" className="flex-1" onClick={onBack} disabled={isLoading}>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => navigate(-1)}
+              disabled={isLoading}
+            >
               취소
             </Button>
             <Button className="flex-1" onClick={handleSubmit} disabled={isLoading}>

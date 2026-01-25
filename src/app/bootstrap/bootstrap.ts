@@ -1,6 +1,8 @@
 import { request } from '@/shared/api/request'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import { setAccessToken } from '@/shared/lib/authToken'
+import { registerAllMocks } from '@/shared/mock/registerMocks'
+import { DUMMY_DATA } from '@/shared/config/env'
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
@@ -12,6 +14,9 @@ type RefreshResponse = {
 }
 
 const runBootstrapTasks = async () => {
+  if (DUMMY_DATA) {
+    registerAllMocks()
+  }
   try {
     const data = await request<RefreshResponse>({
       method: 'POST',

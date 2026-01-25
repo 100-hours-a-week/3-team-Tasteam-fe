@@ -94,12 +94,7 @@ function App() {
             />
           }
         />
-        <Route
-          path="/groups/:id"
-          element={
-            <GroupDetailPage groupId="" onBack={() => navigate(-1)} onChatClick={() => {}} />
-          }
-        />
+        <Route path="/groups/:id" element={<GroupDetailPage />} />
 
         <Route
           path="/profile"
@@ -153,38 +148,10 @@ function App() {
         />
         <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
 
-        <Route
-          path="/restaurants/:id"
-          element={
-            <RestaurantDetailPage
-              restaurantId=""
-              onBack={() => navigate(-1)}
-              onWriteReview={() => {}}
-            />
-          }
-        />
-        <Route
-          path="/restaurants/:id/review"
-          element={
-            <WriteReviewPage
-              restaurantId=""
-              onBack={() => navigate(-1)}
-              onSubmit={() => navigate(-1)}
-            />
-          }
-        />
+        <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
+        <Route path="/restaurants/:id/review" element={<WriteReviewPage />} />
 
-        <Route
-          path="/chat/:roomId"
-          element={
-            <ChatRoomPage
-              roomId=""
-              roomTitle="채팅방"
-              currentUserId="1"
-              onBack={() => navigate(-1)}
-            />
-          }
-        />
+        <Route path="/chat/:roomId" element={<ChatRoomPage />} />
 
         <Route
           path="/error"

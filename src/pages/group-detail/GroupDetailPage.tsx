@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, MoreVertical, Calendar, MapPin } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
@@ -29,13 +30,9 @@ import {
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { MemberRow } from '@/entities/group/ui'
 
-type GroupDetailPageProps = {
-  groupId: string
-  onBack?: () => void
-  onChatClick?: () => void
-}
-
-export function GroupDetailPage({ groupId, onBack, onChatClick }: GroupDetailPageProps) {
+export function GroupDetailPage() {
+  const { id: groupId } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const group = {
@@ -122,9 +119,13 @@ export function GroupDetailPage({ groupId, onBack, onChatClick }: GroupDetailPag
     setSavedRestaurants((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
+  const handleChatClick = () => {
+    navigate(`/chat/${groupId}`)
+  }
+
   return (
     <div className="pb-6">
-      <TopAppBar title={group.name} showBackButton onBack={onBack} />
+      <TopAppBar title={group.name} showBackButton onBack={() => navigate(-1)} />
 
       <Container className="pt-4 pb-6">
         <Card className="p-6 space-y-4">
@@ -248,6 +249,7 @@ export function GroupDetailPage({ groupId, onBack, onChatClick }: GroupDetailPag
                 {...restaurant}
                 isSaved={savedRestaurants[restaurant.id]}
                 onSave={() => handleSaveToggle(restaurant.id)}
+                onClick={() => navigate(`/restaurants/${restaurant.id}`)}
               />
             ))}
           </Container>
@@ -280,7 +282,7 @@ export function GroupDetailPage({ groupId, onBack, onChatClick }: GroupDetailPag
         </TabsContent>
       </Tabs>
 
-      {onChatClick && <FloatingChatButton onClick={onChatClick} />}
+      <FloatingChatButton onClick={handleChatClick} />
     </div>
   )
 }

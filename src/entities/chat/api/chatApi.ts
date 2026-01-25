@@ -1,4 +1,4 @@
-import { request } from '@/shared/api/request'
+import { mockRequest } from '@/shared/api/mockRequest'
 import { buildQuery } from '@/shared/api/query'
 import type {
   ChatMessageListResponseDto,
@@ -9,20 +9,20 @@ import type {
 } from '../model/dto'
 
 export const getChatMessages = (chatRoomId: number, params?: { cursor?: string; size?: number }) =>
-  request<ChatMessageListResponseDto>({
+  mockRequest<ChatMessageListResponseDto>({
     method: 'GET',
     url: `/chat-rooms/${chatRoomId}/messages${buildQuery(params ?? {})}`,
   })
 
 export const sendChatMessage = (chatRoomId: number, payload: ChatMessageSendRequestDto) =>
-  request<ChatMessageSendResponseDto>({
+  mockRequest<ChatMessageSendResponseDto>({
     method: 'POST',
     url: `/chat-rooms/${chatRoomId}/messages`,
     data: payload,
   })
 
 export const updateChatReadCursor = (chatRoomId: number, payload: ChatReadCursorRequestDto) =>
-  request<ChatReadCursorResponseDto>({
+  mockRequest<ChatReadCursorResponseDto>({
     method: 'PATCH',
     url: `/chat-rooms/${chatRoomId}/read-cursor`,
     data: payload,

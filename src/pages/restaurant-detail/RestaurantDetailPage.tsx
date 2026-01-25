@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Heart, Share2, UserPlus, MapPin, Clock, Phone, Star } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
@@ -17,17 +18,9 @@ import { RestaurantMetaRow } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import { cn } from '@/shared/lib/utils'
 
-type RestaurantDetailPageProps = {
-  restaurantId: string
-  onBack?: () => void
-  onWriteReview?: (restaurantId: string) => void
-}
-
-export function RestaurantDetailPage({
-  restaurantId,
-  onBack,
-  onWriteReview,
-}: RestaurantDetailPageProps) {
+export function RestaurantDetailPage() {
+  const { id: restaurantId } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [isSaved, setIsSaved] = useState(false)
 
   const restaurant = {
@@ -79,7 +72,7 @@ export function RestaurantDetailPage({
 
   return (
     <div className="pb-6">
-      <TopAppBar title={restaurant.name} showBackButton onBack={onBack} />
+      <TopAppBar title={restaurant.name} showBackButton onBack={() => navigate(-1)} />
 
       <div className="relative mb-4">
         <Carousel className="w-full">
@@ -197,7 +190,10 @@ export function RestaurantDetailPage({
                 </div>
                 <p className="text-sm text-muted-foreground">{restaurant.reviewCount}개의 리뷰</p>
               </div>
-              <Button variant="outline" onClick={() => onWriteReview?.(restaurantId)}>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/restaurants/${restaurantId}/review`)}
+              >
                 리뷰 작성
               </Button>
             </div>
