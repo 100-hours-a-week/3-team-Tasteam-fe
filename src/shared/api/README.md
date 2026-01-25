@@ -30,8 +30,8 @@ export const getMe = () => {
 ## 공통 응답 타입
 
 ```ts
-import type { ApiResponse } from '@/shared/types/api'
+import type { SuccessResponse } from '@/shared/types/api'
 
 type User = { id: string; name: string }
-type UserResponse = ApiResponse<User>
+type UserResponse = SuccessResponse<User>
 ```
