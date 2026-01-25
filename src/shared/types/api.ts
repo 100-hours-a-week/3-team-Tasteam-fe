@@ -1,12 +1,17 @@
-export type ApiResponse<T> = {
-  data: T
-  message?: string
-  code?: string | number
-  success?: boolean
+export type FieldErrorResponse = {
+  field: string
+  reason: string
+  rejectedValue?: unknown
 }
 
-export type ApiErrorResponse = {
-  message?: string
-  code?: string | number
-  errors?: Record<string, string[]>
+export type ErrorResponse<E = unknown> = {
+  success: boolean
+  code: string
+  message: string
+  errors?: E
+}
+
+export type SuccessResponse<T> = {
+  success?: boolean
+  data: T
 }
