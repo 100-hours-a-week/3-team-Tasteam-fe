@@ -50,3 +50,8 @@ dist
 dist-ssr
 *.local
 .mcp.json
+
+
+# mockup files
+mockups/
+/mockup
