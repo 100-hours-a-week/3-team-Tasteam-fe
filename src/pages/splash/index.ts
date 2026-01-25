@@ -1,0 +1,1 @@
+export { SplashPage } from './SplashPage'
