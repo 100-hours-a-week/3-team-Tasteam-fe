@@ -1,0 +1,1 @@
+export { MyReviewsPage } from './MyReviewsPage'

@@ -1,0 +1,1 @@
+export { WriteReviewPage } from './WriteReviewPage'

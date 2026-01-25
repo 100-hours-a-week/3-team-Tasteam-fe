@@ -1,0 +1,1 @@
+export { OtpVerificationPage } from './OtpVerificationPage'
