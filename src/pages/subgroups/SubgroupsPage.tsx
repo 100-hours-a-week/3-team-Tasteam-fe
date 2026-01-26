@@ -1,292 +1,463 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { X, MessageSquare, Heart, ChevronRight } from 'lucide-react'
+import { UserPlus, MoreVertical, ArrowUpRight, MessageSquare, Star } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
+import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
-import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
-import { Dialog, DialogContent } from '@/shared/ui/dialog'
 import { RestaurantCard } from '@/entities/restaurant/ui'
-import { getSubgroup, getSubgroupReviews } from '@/entities/subgroup/api/subgroupApi'
-import { getMyFavoriteRestaurants } from '@/entities/favorite/api/favoriteApi'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shared/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { ROUTES } from '@/shared/config/routes'
-import type { SubgroupDetailDto } from '@/entities/subgroup/model/dto'
-import type { ReviewListItemDto } from '@/entities/review/model/dto'
-import type { FavoriteRestaurantItemDto } from '@/entities/favorite/model/dto'
+
+// Mock data
+const subGroupsMock: Record<string, any> = {
+  '1': {
+    id: '1',
+    name: '강남 지역팀',
+    description: '강남역 근처 맛집을 탐방하는 소그룹',
+    memberCount: 4,
+    createdDate: '2024.01.15',
+    isAdmin: true,
+    parentGroupName: '카카오 모빌리티',
+    members: [
+      {
+        id: '1',
+        name: '김철수',
+        avatar: 'https://i.pravatar.cc/150?img=1',
+        role: '소그룹장',
+        isAdmin: true,
+      },
+      {
+        id: '2',
+        name: '이영희',
+        avatar: 'https://i.pravatar.cc/150?img=2',
+        role: '멤버',
+        isAdmin: false,
+      },
+      {
+        id: '3',
+        name: '박민수',
+        avatar: 'https://i.pravatar.cc/150?img=3',
+        role: '멤버',
+        isAdmin: false,
+      },
+      {
+        id: '4',
+        name: '최지훈',
+        avatar: 'https://i.pravatar.cc/150?img=4',
+        role: '멤버',
+        isAdmin: false,
+      },
+    ],
+    restaurants: [
+      {
+        id: '1',
+        name: '강남 스시 오마카세',
+        category: '일식',
+        rating: 4.8,
+        distance: '300m',
+        image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+        tags: ['오마카세', '프리미엄'],
+      },
+      {
+        id: '2',
+        name: '더 키친 강남',
+        category: '양식',
+        rating: 4.6,
+        distance: '450m',
+        image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800',
+        tags: ['스테이크', '분위기 좋은'],
+      },
+      {
+        id: '3',
+        name: '강남 카페 루프탑',
+        category: '카페',
+        rating: 4.4,
+        distance: '600m',
+        image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
+        tags: ['루프탑', '디저트'],
+      },
+    ],
+  },
+  '2': {
+    id: '2',
+    name: '일식 애호가',
+    description: '일식 맛집만 모아서 공유하는 소그룹',
+    memberCount: 5,
+    createdDate: '2024.01.10',
+    isAdmin: false,
+    parentGroupName: '카카오 모빌리티',
+    members: [
+      {
+        id: '5',
+        name: '정수진',
+        avatar: 'https://i.pravatar.cc/150?img=5',
+        role: '소그룹장',
+        isAdmin: true,
+      },
+      {
+        id: '2',
+        name: '이영희',
+        avatar: 'https://i.pravatar.cc/150?img=2',
+        role: '멤버',
+        isAdmin: false,
+      },
+      {
+        id: '6',
+        name: '강민호',
+        avatar: 'https://i.pravatar.cc/150?img=6',
+        role: '멤버',
+        isAdmin: false,
+      },
+      {
+        id: '7',
+        name: '윤서연',
+        avatar: 'https://i.pravatar.cc/150?img=7',
+        role: '멤버',
+        isAdmin: false,
+      },
+      {
+        id: '8',
+        name: '조현우',
+        avatar: 'https://i.pravatar.cc/150?img=8',
+        role: '멤버',
+        isAdmin: false,
+      },
+    ],
+    restaurants: [
+      {
+        id: '4',
+        name: '스시 사토',
+        category: '일식',
+        rating: 4.9,
+        distance: '1.5km',
+        image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+        tags: ['초밥', '신선한'],
+      },
+      {
+        id: '5',
+        name: '라멘 이치방',
+        category: '일식',
+        rating: 4.5,
+        distance: '800m',
+        image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800',
+        tags: ['라멘', '돈코츠'],
+      },
+    ],
+  },
+  '3': {
+    id: '3',
+    name: '주말 브런치',
+    description: '주말 브런치 카페 탐방 소그룹',
+    memberCount: 3,
+    createdDate: '2024.01.20',
+    isAdmin: false,
+    parentGroupName: '카카오 모빌리티',
+    members: [
+      {
+        id: '9',
+        name: '한지민',
+        avatar: 'https://i.pravatar.cc/150?img=9',
+        role: '소그룹장',
+        isAdmin: true,
+      },
+      {
+        id: '1',
+        name: '김철수',
+        avatar: 'https://i.pravatar.cc/150?img=1',
+        role: '멤버',
+        isAdmin: false,
+      },
+      {
+        id: '3',
+        name: '박민수',
+        avatar: 'https://i.pravatar.cc/150?img=3',
+        role: '멤버',
+        isAdmin: false,
+      },
+    ],
+    restaurants: [
+      {
+        id: '6',
+        name: '브런치 앤 브런치',
+        category: '카페',
+        rating: 4.7,
+        distance: '1.2km',
+        image: 'https://images.unsplash.com/photo-1533777324565-a040eb52facd?w=800',
+        tags: ['브런치', '베이커리'],
+      },
+      {
+        id: '7',
+        name: '선데이 모닝',
+        category: '카페',
+        rating: 4.6,
+        distance: '900m',
+        image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800',
+        tags: ['커피', '홈메이드'],
+      },
+      {
+        id: '8',
+        name: '가든 카페',
+        category: '카페',
+        rating: 4.5,
+        distance: '1.8km',
+        image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
+        tags: ['정원', '브런치'],
+      },
+    ],
+  },
+}
 
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [subgroup, setSubgroup] = useState<SubgroupDetailDto | null>(null)
-  const [favorites, setFavorites] = useState<FavoriteRestaurantItemDto[]>([])
-  const [reviews, setReviews] = useState<ReviewListItemDto[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isMember, setIsMember] = useState(false)
-  const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
-  useEffect(() => {
-    if (!id) return
+  const subGroup = subGroupsMock[id || '1'] || subGroupsMock['1']
+  const { members, restaurants, parentGroupName } = subGroup
 
-    const loadData = async () => {
-      try {
-        setIsLoading(true)
-        const subgroupId = parseInt(id, 10)
+  const handleSaveToggle = (restaurantId: string) => {
+    setSavedRestaurants((prev) => ({
+      ...prev,
+      [restaurantId]: !prev[restaurantId],
+    }))
+  }
 
-        // 하위 그룹 정보 로드
-        const subgroupResponse = await getSubgroup(subgroupId)
-        if (subgroupResponse.data) {
-          setSubgroup(subgroupResponse.data)
-          // TODO: 실제 API에서 가입 여부 확인
-          setIsMember(false) // 임시로 false
-        }
+  const handleInvite = () => {
+    // Invite functionality
+  }
 
-        // 찜 목록 로드 (최근 2개)
-        try {
-          const favoritesResponse = await getMyFavoriteRestaurants()
-          if (favoritesResponse.items) {
-            setFavorites(favoritesResponse.items.slice(0, 2))
-          }
-        } catch (error) {
-          console.error('Failed to load favorites:', error)
-        }
-
-        // 최근 리뷰 로드 (최근 2개)
-        try {
-          const reviewsResponse = await getSubgroupReviews(subgroupId, { size: 2 })
-          if (reviewsResponse.items) {
-            setReviews(reviewsResponse.items.slice(0, 2))
-          }
-        } catch (error) {
-          console.error('Failed to load reviews:', error)
-        }
-      } catch (error) {
-        console.error('Failed to load subgroup:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    loadData()
-  }, [id])
-
-  const handleJoinClick = () => {
-    if (!id) return
-    navigate(ROUTES.joinGroup)
+  const handleLeaveSubGroup = () => {
+    // Leave sub-group functionality
+    navigate(-1)
   }
 
   const handleChatClick = () => {
     if (!id) return
-    // TODO: 실제 채팅방 ID로 이동
     navigate(ROUTES.chatRoom(id))
   }
 
-  const handleGroupNameClick = (groupId: number) => {
-    navigate(ROUTES.groupDetail(groupId.toString()))
+  const handleGroupNameClick = () => {
+    // Assuming we have a group id in mock or can navigate back to groups
+    navigate(ROUTES.groups)
   }
-
-  const handleFavoriteMoreClick = () => {
-    navigate(ROUTES.myFavorites)
-  }
-
-  const handleReviewMoreClick = () => {
-    if (!id) return
-    // TODO: 리뷰 상세 목록 페이지로 이동
-    navigate(ROUTES.groupDetail(id))
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <TopAppBar title="하위 그룹 상세" showBackButton onBack={() => navigate(-1)} />
-        <Container className="py-8">
-          <div className="text-center text-muted-foreground">로딩 중...</div>
-        </Container>
-      </div>
-    )
-  }
-
-  if (!subgroup) {
-    return (
-      <div className="min-h-screen bg-background">
-        <TopAppBar title="하위 그룹 상세" showBackButton onBack={() => navigate(-1)} />
-        <Container className="py-8">
-          <div className="text-center text-muted-foreground">하위 그룹을 찾을 수 없습니다.</div>
-        </Container>
-      </div>
-    )
-  }
-
-  const backgroundImageUrl = subgroup.thumnailImage?.url || ''
-  const profileImageUrl = subgroup.thumnailImage?.url || ''
-  const groupName = '카카오 모빌리티' // TODO: 실제 그룹 이름 가져오기
-  const subgroupName = subgroup.name
-  const address = '경기 성남시 분당구 대왕판교로 660\n유스페이스 1 A동 405호' // TODO: 실제 주소 가져오기
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <TopAppBar showBackButton onBack={() => navigate(-1)} />
+    <div className="min-h-screen bg-background pb-24">
+      <TopAppBar showBackButton onBack={() => navigate(-1)} title="하위 그룹 상세" />
 
-      {/* 배경 이미지 섹션 */}
-      <div className="relative w-full h-44 bg-muted">
-        {backgroundImageUrl ? (
-          <ImageWithFallback
-            src={backgroundImageUrl}
-            alt="하위 그룹 배경"
-            className="w-full h-full object-cover cursor-pointer"
-            onClick={() => setExpandedImage(backgroundImageUrl)}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-muted-foreground">이미지 없음</div>
-          </div>
-        )}
-
-        {/* 닫기/뒤로가기 버튼 */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm hover:bg-background"
-          onClick={() => navigate(-1)}
-          aria-label="뒤로 가기"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-
-      <Container className="pt-4 space-y-6">
-        {/* 프로필 섹션 */}
-        <div className="flex items-start gap-4">
-          {/* 프로필 이미지 */}
-          <Avatar
-            className="h-[120px] w-[120px] border-4 border-background cursor-pointer"
-            onClick={() => profileImageUrl && setExpandedImage(profileImageUrl)}
-          >
-            {profileImageUrl ? (
-              <AvatarImage src={profileImageUrl} alt={subgroupName} className="object-cover" />
-            ) : (
-              <AvatarFallback className="text-lg">{subgroupName.slice(0, 2)}</AvatarFallback>
-            )}
-          </Avatar>
-
-          {/* 그룹 정보 */}
-          <div className="flex-1 min-w-0 space-y-2">
-            {/* 그룹 이름 */}
-            <div>
-              <h1 className="text-xl font-bold leading-tight">
-                <button
-                  onClick={() => handleGroupNameClick(subgroup.groupId)}
-                  className="text-primary underline hover:text-primary/80 transition-colors"
-                >
-                  {groupName}
-                </button>
-                <span className="text-foreground"> / {subgroupName}</span>
-              </h1>
-            </div>
-
-            {/* 주소 */}
-            <p className="text-sm text-foreground whitespace-pre-line text-right leading-relaxed">
-              {address}
-            </p>
-
-            {/* 구성원 수 및 가입 버튼 */}
-            <div className="flex items-center justify-between">
-              <span className="text-base text-foreground">팀원 {subgroup.memberCount}명</span>
-              {!isMember && (
-                <Button variant="outline" size="sm" onClick={handleJoinClick} className="h-8">
-                  <Heart className="h-4 w-4 mr-1" />
-                  가입하기
-                </Button>
-              )}
-            </div>
-          </div>
+      {/* SubGroup Header */}
+      <Container className="pt-4 pb-6">
+        {/* Parent Group Badge */}
+        <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+          <button onClick={handleGroupNameClick} className="hover:text-primary transition-colors">
+            {parentGroupName}
+          </button>
+          <ArrowUpRight className="h-3 w-3" />
+          <span className="text-foreground">하위 그룹</span>
         </div>
 
-        {/* 찜 목록 섹션 */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">찜 목록</h2>
-            <button
-              onClick={handleFavoriteMoreClick}
-              className="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1"
-            >
-              더보기
-              <ChevronRight className="h-4 w-4" />
-            </button>
+        <Card className="p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold mb-2">{subGroup.name}</h1>
+              <p className="text-sm text-muted-foreground mb-3">{subGroup.description}</p>
+              <Badge variant="secondary">활성 소그룹</Badge>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {subGroup.isAdmin && (
+                  <>
+                    <DropdownMenuItem>소그룹 정보 수정</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem>알림 설정</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <DropdownMenuItem
+                      onSelect={(e) => e.preventDefault()}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      소그룹 나가기
+                    </DropdownMenuItem>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>소그룹을 나가시겠습니까?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        소그룹을 나가면 이 소그룹의 모든 정보와 활동 내역을 볼 수 없습니다. 다시
+                        가입하려면 초대를 받아야 합니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleLeaveSubGroup}
+                        className="bg-destructive hover:bg-destructive/90 text-white"
+                      >
+                        나가기
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          {favorites.length > 0 ? (
-            <div className="space-y-3">
-              {favorites.map((favorite) => (
+
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {members.slice(0, 5).map((member: any) => (
+                  <Avatar key={member.id} className="h-8 w-8 border-2 border-background">
+                    <AvatarImage src={member.avatar} alt={member.name} />
+                    <AvatarFallback className="text-xs">{member.name.slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+              <span className="text-sm text-muted-foreground">{members.length}명 참여 중</span>
+            </div>
+            <Button variant="outline" size="icon" className="rounded-full" onClick={handleInvite}>
+              <UserPlus className="h-4 w-4" />
+            </Button>
+          </div>
+        </Card>
+      </Container>
+
+      {/* Tabs */}
+      <Tabs defaultValue="restaurants" className="w-full">
+        <Container>
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="restaurants">맛집</TabsTrigger>
+            <TabsTrigger value="reviews">리뷰</TabsTrigger>
+          </TabsList>
+        </Container>
+
+        <TabsContent value="restaurants" className="mt-4">
+          <Container className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">소그룹 맛집 리스트</h3>
+              <Button variant="outline" size="sm">
+                맛집 추가
+              </Button>
+            </div>
+            <div className="grid gap-4">
+              {restaurants.map((restaurant: any) => (
                 <RestaurantCard
-                  key={favorite.restaurantId}
-                  name={favorite.name}
-                  category=""
-                  image={favorite.thumbnailUrl}
-                  onClick={() =>
-                    navigate(ROUTES.restaurantDetail(favorite.restaurantId.toString()))
-                  }
+                  key={restaurant.id}
+                  {...restaurant}
+                  isSaved={savedRestaurants[restaurant.id]}
+                  onSave={() => handleSaveToggle(restaurant.id)}
+                  onClick={() => navigate(ROUTES.restaurantDetail(restaurant.id))}
                 />
               ))}
             </div>
-          ) : (
-            <Card className="p-8 text-center text-muted-foreground">찜한 음식점이 없습니다.</Card>
-          )}
-        </div>
+          </Container>
+        </TabsContent>
 
-        {/* 최근 리뷰 섹션 */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">최근 리뷰</h2>
-            <button
-              onClick={handleReviewMoreClick}
-              className="text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1"
-            >
-              더보기
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-          {reviews.length > 0 ? (
-            <div className="space-y-3">
-              {reviews.map((review) => (
-                <Card key={review.id} className="p-4 border border-border rounded-lg">
-                  <div className="space-y-2">
-                    <div className="font-bold text-xs">더 피크닉</div>
-                    <p className="text-sm text-foreground line-clamp-2">{review.contentPreview}</p>
-                    <div className="text-xs text-muted-foreground">경기 성남시 분당구</div>
-                  </div>
-                </Card>
-              ))}
+        <TabsContent value="reviews" className="mt-4">
+          <Container className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">소그룹 리뷰</h3>
             </div>
-          ) : (
-            <Card className="p-8 text-center text-muted-foreground">리뷰가 없습니다.</Card>
-          )}
-        </div>
-      </Container>
 
-      {/* 채팅 아이콘 (플로팅 버튼) */}
+            <div className="space-y-3">
+              {/* Mock Reviews */}
+              <Card className="p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={members[0]?.avatar} alt={members[0]?.name} />
+                    <AvatarFallback>{members[0]?.name.slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="font-medium">{members[0]?.name}</span>
+                      <span className="text-xs text-muted-foreground">2일 전</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 mb-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star key={star} className="h-3 w-3 fill-primary text-primary" />
+                      ))}
+                    </div>
+                    <p className="text-xs font-semibold text-primary mb-1">
+                      {restaurants[0]?.name}
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      정말 맛있었어요! 강남에서 최고의 오마카세 경험이었습니다. 다음에 또 가고
+                      싶네요.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={members[1]?.avatar} alt={members[1]?.name} />
+                    <AvatarFallback>{members[1]?.name.slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="font-medium">{members[1]?.name}</span>
+                      <span className="text-xs text-muted-foreground">5일 전</span>
+                    </div>
+                    <div className="flex items-center gap-0.5 mb-2">
+                      {[1, 2, 3, 4].map((star) => (
+                        <Star key={star} className="h-3 w-3 fill-primary text-primary" />
+                      ))}
+                      <Star className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs font-semibold text-primary mb-1">
+                      {restaurants[1]?.name}
+                    </p>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      분위기가 좋고 스테이크가 맛있었습니다. 가격대는 조금 있지만 데이트하기 좋은
+                      곳이에요.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </Container>
+        </TabsContent>
+      </Tabs>
+
+      {/* Floating Chat Button */}
       <Button
         variant="default"
         size="icon"
-        className="fixed bottom-24 right-4 h-11 w-11 rounded-full shadow-lg z-40"
+        className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
         onClick={handleChatClick}
         aria-label="채팅하기"
       >
-        <MessageSquare className="h-5 w-5" />
+        <MessageSquare className="h-6 w-6" />
       </Button>
-
-      {/* 이미지 확대 다이얼로그 */}
-      <Dialog open={!!expandedImage} onOpenChange={(open) => !open && setExpandedImage(null)}>
-        <DialogContent className="max-w-4xl p-0" showCloseButton>
-          {expandedImage && (
-            <ImageWithFallback
-              src={expandedImage}
-              alt="확대된 이미지"
-              className="w-full h-auto max-h-[90vh] object-contain"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
