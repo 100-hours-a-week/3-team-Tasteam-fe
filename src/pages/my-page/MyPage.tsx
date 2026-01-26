@@ -1,18 +1,14 @@
+import { useEffect, useState } from 'react'
 import { ChevronRight, Heart, FileText, Bell, Settings, HelpCircle, LogOut } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Separator } from '@/shared/ui/separator'
+import { getMe } from '@/entities/member/api/memberApi'
+import type { MemberMeResponseDto } from '@/entities/member/model/dto'
 
 type MyPageProps = {
-  user?: {
-    nickname: string
-    email: string
-    profileImageUrl?: string
-    reviewCount: number
-    favoriteCount: number
-  }
   onEditProfile?: () => void
   onMyFavorites?: () => void
   onMyReviews?: () => void
@@ -22,13 +18,15 @@ type MyPageProps = {
   onLogout?: () => void
 }
 
+const defaultUser = {
+  nickname: '사용자',
+  email: 'user@example.com',
+  profileImageUrl: '',
+  reviewCount: 0,
+  favoriteCount: 0,
+}
+
 export function MyPage({
-  user = {
-    nickname: '사용자',
-    email: 'user@example.com',
-    reviewCount: 0,
-    favoriteCount: 0,
-  },
   onEditProfile,
   onMyFavorites,
   onMyReviews,
@@ -37,6 +35,23 @@ export function MyPage({
   onHelp,
   onLogout,
 }: MyPageProps) {
+  const [userData, setUserData] = useState<MemberMeResponseDto | null>(null)
+
+  useEffect(() => {
+    getMe()
+      .then(setUserData)
+      .catch(() => {})
+  }, [])
+
+  const user = userData?.data?.member
+    ? {
+        nickname: userData.data.member.nickname,
+        email: 'user@example.com',
+        profileImageUrl: userData.data.member.profileImageUrl ?? '',
+        reviewCount: userData.data.reviews?.data?.length ?? 0,
+        favoriteCount: 0,
+      }
+    : defaultUser
   const menuItems = [
     { icon: Heart, label: '찜한 맛집', onClick: onMyFavorites, count: user.favoriteCount },
     { icon: FileText, label: '내 리뷰', onClick: onMyReviews, count: user.reviewCount },

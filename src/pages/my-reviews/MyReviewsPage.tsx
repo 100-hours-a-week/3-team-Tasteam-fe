@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FileText, Star, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
+import { getMyReviews } from '@/entities/member/api/memberApi'
 
 type Review = {
   id: string
@@ -38,32 +39,50 @@ type MyReviewsPageProps = {
   onBack?: () => void
 }
 
+const defaultReviews: Review[] = [
+  {
+    id: '1',
+    restaurantName: '한옥마을 순두부',
+    rating: 5,
+    content:
+      '정말 맛있어요! 순두부찌개가 부드럽고 깊은 맛이 납니다. 반찬도 맛있고 분위기도 좋아요.',
+    createdAt: '2024-01-15',
+  },
+  {
+    id: '2',
+    restaurantName: '우동 카덴',
+    rating: 4,
+    content: '면발이 쫄깃하고 국물이 진해요. 다만 양이 조금 적은 편입니다.',
+    createdAt: '2024-01-10',
+  },
+  {
+    id: '3',
+    restaurantName: '브런치 카페',
+    rating: 5,
+    content: '에그 베네딕트가 정말 맛있어요. 커피도 맛있고 분위기가 좋습니다.',
+    createdAt: '2024-01-05',
+  },
+]
+
 export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyReviewsPageProps) {
-  const [reviews, setReviews] = useState<Review[]>([
-    {
-      id: '1',
-      restaurantName: '한옥마을 순두부',
-      rating: 5,
-      content:
-        '정말 맛있어요! 순두부찌개가 부드럽고 깊은 맛이 납니다. 반찬도 맛있고 분위기도 좋아요.',
-      createdAt: '2024-01-15',
-    },
-    {
-      id: '2',
-      restaurantName: '우동 카덴',
-      rating: 4,
-      content: '면발이 쫄깃하고 국물이 진해요. 다만 양이 조금 적은 편입니다.',
-      createdAt: '2024-01-10',
-    },
-    {
-      id: '3',
-      restaurantName: '브런치 카페',
-      rating: 5,
-      content: '에그 베네딕트가 정말 맛있어요. 커피도 맛있고 분위기가 좋습니다.',
-      createdAt: '2024-01-05',
-    },
-  ])
+  const [reviews, setReviews] = useState<Review[]>([])
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+
+  useEffect(() => {
+    getMyReviews()
+      .then((response) => {
+        const apiData =
+          response.items?.map((item) => ({
+            id: String(item.id),
+            restaurantName: item.restaurantName,
+            rating: 5,
+            content: item.reviewContent,
+            createdAt: '',
+          })) ?? defaultReviews
+        setReviews(apiData)
+      })
+      .catch(() => setReviews(defaultReviews))
+  }, [])
 
   const handleDelete = (id: string) => {
     setReviews((prev) => prev.filter((r) => r.id !== id))

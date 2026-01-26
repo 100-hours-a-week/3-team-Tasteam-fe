@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Heart } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { RestaurantCard } from '@/entities/restaurant/ui'
+import { getMyFavoriteRestaurants } from '@/entities/favorite/api/favoriteApi'
 
 type FavoriteRestaurant = {
   id: string
@@ -21,33 +22,53 @@ type MyFavoritesPageProps = {
   onBack?: () => void
 }
 
+const defaultFavorites: FavoriteRestaurant[] = [
+  {
+    id: '1',
+    name: '한옥마을 순두부',
+    category: '한식',
+    rating: 4.5,
+    reviewCount: 128,
+    address: '서울시 종로구',
+  },
+  {
+    id: '2',
+    name: '우동 카덴',
+    category: '일식',
+    rating: 4.3,
+    reviewCount: 89,
+    address: '서울시 마포구',
+  },
+  {
+    id: '3',
+    name: '브런치 카페',
+    category: '카페',
+    rating: 4.7,
+    reviewCount: 256,
+    address: '서울시 강남구',
+  },
+]
+
 export function MyFavoritesPage({ onRestaurantClick, onBack }: MyFavoritesPageProps) {
-  const [favorites, setFavorites] = useState<FavoriteRestaurant[]>([
-    {
-      id: '1',
-      name: '한옥마을 순두부',
-      category: '한식',
-      rating: 4.5,
-      reviewCount: 128,
-      address: '서울시 종로구',
-    },
-    {
-      id: '2',
-      name: '우동 카덴',
-      category: '일식',
-      rating: 4.3,
-      reviewCount: 89,
-      address: '서울시 마포구',
-    },
-    {
-      id: '3',
-      name: '브런치 카페',
-      category: '카페',
-      rating: 4.7,
-      reviewCount: 256,
-      address: '서울시 강남구',
-    },
-  ])
+  const [favorites, setFavorites] = useState<FavoriteRestaurant[]>([])
+
+  useEffect(() => {
+    getMyFavoriteRestaurants()
+      .then((response) => {
+        const apiData =
+          response.items?.map((item) => ({
+            id: String(item.restaurantId),
+            name: item.name,
+            category: '맛집',
+            rating: 4.5,
+            reviewCount: 0,
+            address: '',
+            imageUrl: item.thumbnailUrl,
+          })) ?? defaultFavorites
+        setFavorites(apiData)
+      })
+      .catch(() => setFavorites(defaultFavorites))
+  }, [])
 
   const handleRemove = (id: string) => {
     setFavorites((prev) => prev.filter((f) => f.id !== id))

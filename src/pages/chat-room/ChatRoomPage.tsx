@@ -8,7 +8,47 @@ import { ChatInput } from '@/widgets/chat-input'
 import { ListState } from '@/widgets/list-state'
 import { Button } from '@/shared/ui/button'
 import { ChatMessageBubble, ChatDateDivider } from '@/entities/chat/ui'
+import { getChatMessages } from '@/entities/chat/api/chatApi'
 import type { ChatMessageDto } from '@/entities/chat/model/dto'
+
+const defaultMessages: ChatMessageDto[] = [
+  {
+    id: 1,
+    memberId: 100,
+    memberNickname: '김철수',
+    memberProfileImageUrl: '',
+    messageType: 'system',
+    content: '김철수님이 입장하셨습니다.',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 2,
+    memberId: 100,
+    memberNickname: '김철수',
+    memberProfileImageUrl: '',
+    messageType: 'text',
+    content: '안녕하세요! 반갑습니다.',
+    createdAt: new Date(Date.now() - 86400000 + 1000).toISOString(),
+  },
+  {
+    id: 3,
+    memberId: 1,
+    memberNickname: '',
+    memberProfileImageUrl: '',
+    messageType: 'text',
+    content: '네, 안녕하세요!',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    id: 4,
+    memberId: 101,
+    memberNickname: '이영희',
+    memberProfileImageUrl: '',
+    messageType: 'text',
+    content: '오늘 점심 뭐 드셨나요?',
+    createdAt: new Date(Date.now() - 1800000).toISOString(),
+  },
+]
 
 export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
@@ -30,48 +70,25 @@ export function ChatRoomPage() {
     const loadInitialMessages = async () => {
       setIsLoading(true)
       try {
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        const mockMessages: ChatMessageDto[] = [
-          {
-            id: 1,
-            memberId: 100,
-            memberNickname: '김철수',
-            memberProfileImageUrl: '',
-            messageType: 'system',
-            content: '김철수님이 입장하셨습니다.',
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-          },
-          {
-            id: 2,
-            memberId: 100,
-            memberNickname: '김철수',
-            memberProfileImageUrl: '',
-            messageType: 'text',
-            content: '안녕하세요! 반갑습니다.',
-            createdAt: new Date(Date.now() - 86400000 + 1000).toISOString(),
-          },
-          {
-            id: 3,
-            memberId: Number(currentUserId),
-            memberNickname: '',
-            memberProfileImageUrl: '',
-            messageType: 'text',
-            content: '네, 안녕하세요!',
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-          },
-          {
-            id: 4,
-            memberId: 101,
-            memberNickname: '이영희',
-            memberProfileImageUrl: '',
-            messageType: 'text',
-            content: '오늘 점심 뭐 드셨나요?',
-            createdAt: new Date(Date.now() - 1800000).toISOString(),
-          },
-        ]
-        setMessages(mockMessages)
+        if (roomId) {
+          const response = await getChatMessages(Number(roomId))
+          const apiMessages: ChatMessageDto[] =
+            response.items?.map((item) => ({
+              id: item.id,
+              memberId: item.memberId,
+              memberNickname: item.memberNickname,
+              memberProfileImageUrl: item.memberProfileImageUrl,
+              messageType: item.messageType.toLowerCase() as 'text' | 'image' | 'system',
+              content: item.content,
+              createdAt: item.createdAt,
+            })) ?? defaultMessages
+          setMessages(apiMessages)
+        } else {
+          setMessages(defaultMessages)
+        }
         scrollToBottom(true)
       } catch {
+        setMessages(defaultMessages)
         toast.error('메시지를 불러오지 못했어요')
       } finally {
         setIsLoading(false)

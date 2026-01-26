@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Star, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
@@ -8,6 +9,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { Label } from '@/shared/ui/label'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
+import { createReview } from '@/entities/review/api/reviewApi'
 
 const TAGS = [
   '분위기 좋아요',
@@ -21,7 +23,7 @@ const TAGS = [
 ]
 
 export function WriteReviewPage() {
-  const { id: _restaurantId } = useParams<{ id: string }>()
+  const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const [rating, setRating] = useState(0)
@@ -49,10 +51,20 @@ export function WriteReviewPage() {
     setIsLoading(true)
     setError('')
 
-    setTimeout(() => {
-      setIsLoading(false)
+    try {
+      await createReview(Number(restaurantId), {
+        content: reviewText,
+        isRecommended: rating >= 4,
+        keywordIds: selectedTags.map((_, idx) => idx + 1),
+        imageIds: [],
+      })
+      toast.success('리뷰가 등록되었습니다')
       navigate(-1)
-    }, 1000)
+    } catch {
+      toast.error('리뷰 등록에 실패했습니다')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
