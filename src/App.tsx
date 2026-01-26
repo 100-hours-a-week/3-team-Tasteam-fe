@@ -21,6 +21,7 @@ import { NotificationsPage } from '@/pages/notifications'
 import { NotificationSettingsPage } from '@/pages/notification-settings'
 import { SettingsPage } from '@/pages/settings'
 import { RestaurantDetailPage } from '@/pages/restaurant-detail'
+import { RestaurantReviewsPage } from '@/pages/restaurant-reviews'
 import { WriteReviewPage } from '@/pages/write-review'
 import { ChatRoomPage } from '@/pages/chat-room'
 import { SubgroupsPage } from '@/pages/subgroups'
@@ -161,6 +162,7 @@ function App() {
         <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
 
         <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
+        <Route path="/restaurants/:id/reviews" element={<RestaurantReviewsPage />} />
         <Route path="/restaurants/:id/review" element={<WriteReviewPage />} />
 
         <Route path="/chat/:roomId" element={<ChatRoomPage />} />
