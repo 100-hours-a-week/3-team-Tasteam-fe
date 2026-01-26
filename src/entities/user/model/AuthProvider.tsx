@@ -6,11 +6,13 @@ import {
   getAccessToken,
   getRefreshEnabled,
   getTokenExpiry,
+  resetLoginRequired,
   setAccessToken,
   subscribeAccessToken,
   subscribeLoginRequired,
 } from '@/shared/lib/authToken'
 import { refreshAccessToken } from '@/entities/auth/api/authApi'
+import { AUTH_DEBUG } from '@/shared/config/env'
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [accessToken, setTokenState] = useState<string | null>(getAccessToken())
@@ -34,21 +36,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!getRefreshEnabled()) return
 
     const expiresAt = getTokenExpiry(accessToken)
+    if (AUTH_DEBUG) {
+      console.debug('[auth] accessToken exp(ms):', expiresAt)
+    }
     if (!expiresAt) return
 
-    const refreshAt = expiresAt - 90_000
+    const refreshAt = expiresAt - 60_000
+    if (AUTH_DEBUG) {
+      console.debug('[auth] refresh scheduled at:', new Date(refreshAt).toISOString())
+    }
     const delay = Math.max(refreshAt - Date.now(), 1000)
+    if (AUTH_DEBUG) {
+      console.debug('[auth] refresh timer registered')
+    }
     const timeoutId = window.setTimeout(async () => {
+      if (AUTH_DEBUG) {
+        console.debug('[auth] refresh attempt (timer)')
+      }
       try {
         const data = await refreshAccessToken(accessToken)
         const newToken = data.accessToken ?? data.data?.accessToken
         if (newToken) {
+          if (AUTH_DEBUG) {
+            console.debug('[auth] refresh success (timer)')
+          }
           setAccessToken(newToken)
           setTokenState(newToken)
           setShowLogin(false)
           return
         }
       } catch {
+        if (AUTH_DEBUG) {
+          console.debug('[auth] refresh failed (timer)')
+        }
         // fall through to show login
       }
       clearAccessToken()
@@ -74,12 +94,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setAccessToken(token)
         setTokenState(token)
         setUser(userValue)
+        resetLoginRequired()
         setShowLogin(false)
       },
       logout: () => {
         clearAccessToken()
         setTokenState(null)
         setUser(null)
+        resetLoginRequired()
         setShowLogin(false)
       },
     }),

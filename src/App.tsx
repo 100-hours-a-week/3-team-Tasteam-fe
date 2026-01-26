@@ -28,6 +28,7 @@ import { ErrorPage } from '@/pages/error-page'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
+import { resetLoginRequired } from '@/shared/lib/authToken'
 import { Route, Routes } from 'react-router-dom'
 
 function App() {
@@ -57,8 +58,12 @@ function App() {
       <Toaster position="top-center" />
       <LoginRequiredModal
         open={showLogin}
-        onClose={closeLogin}
+        onClose={() => {
+          resetLoginRequired()
+          closeLogin()
+        }}
         onLogin={() => {
+          resetLoginRequired()
           closeLogin()
           navigate('/login')
         }}

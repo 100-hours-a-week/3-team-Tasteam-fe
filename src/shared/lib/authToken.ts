@@ -2,6 +2,7 @@ let accessToken: string | null = null
 let refreshEnabled = false
 const listeners = new Set<(token: string | null) => void>()
 const loginRequiredListeners = new Set<() => void>()
+let loginRequiredFired = false
 
 const notify = () => {
   listeners.forEach((listener) => listener(accessToken))
@@ -44,7 +45,13 @@ export const subscribeLoginRequired = (listener: () => void) => {
 }
 
 export const notifyLoginRequired = () => {
+  if (loginRequiredFired) return
+  loginRequiredFired = true
   loginRequiredListeners.forEach((listener) => listener())
+}
+
+export const resetLoginRequired = () => {
+  loginRequiredFired = false
 }
 
 const decodeJwtPayload = (token: string) => {

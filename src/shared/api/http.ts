@@ -9,6 +9,7 @@ import {
   notifyLoginRequired,
   setAccessToken,
 } from '@/shared/lib/authToken'
+import { AUTH_DEBUG } from '@/shared/config/env'
 
 type RefreshResponse = {
   accessToken?: string
@@ -40,9 +41,17 @@ let refreshPromise: Promise<string | null> | null = null
  */
 const refreshAccessToken = async (currentToken: string | null) => {
   if (!refreshPromise) {
+    if (AUTH_DEBUG) {
+      console.debug('[auth] refresh attempt (401)')
+    }
     refreshPromise = refreshClient
       .post<RefreshResponse>(API_ENDPOINTS.tokenRefresh, { accessToken: currentToken })
-      .then((response) => response.data.accessToken ?? null)
+      .then((response) => {
+        if (AUTH_DEBUG) {
+          console.debug('[auth] refresh response (401)', response.data)
+        }
+        return response.data.accessToken ?? null
+      })
       .finally(() => {
         refreshPromise = null
       })
