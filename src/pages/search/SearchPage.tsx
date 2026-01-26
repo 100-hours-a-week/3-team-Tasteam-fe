@@ -125,7 +125,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                 <div className="space-y-4">
                   <Label className="text-base">가격대</Label>
                   <Select value={priceRange} onValueChange={setPriceRange}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
