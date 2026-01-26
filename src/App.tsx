@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { HomePage } from '@/pages/home/HomePage'
 import { LoginPage } from '@/pages/login/LoginPage'
@@ -32,6 +33,19 @@ function App() {
   const isReady = useBootstrap()
   const { showLogin } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return window.localStorage.getItem('hasSeenOnboarding') === 'true'
+  })
+
+  useEffect(() => {
+    if (!isReady) return
+    if (hasSeenOnboarding) return
+    if (location.pathname !== '/onboarding') {
+      navigate('/onboarding', { replace: true })
+    }
+  }, [hasSeenOnboarding, isReady, location.pathname, navigate])
 
   if (!isReady) {
     return <SplashPage />
@@ -58,7 +72,18 @@ function App() {
             />
           }
         />
-        <Route path="/onboarding" element={<OnboardingPage onComplete={() => navigate('/')} />} />
+        <Route
+          path="/onboarding"
+          element={
+            <OnboardingPage
+              onComplete={() => {
+                window.localStorage.setItem('hasSeenOnboarding', 'true')
+                setHasSeenOnboarding(true)
+                navigate('/')
+              }}
+            />
+          }
+        />
 
         <Route
           path="/search"
