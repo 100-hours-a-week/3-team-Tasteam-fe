@@ -421,7 +421,6 @@ export function SubgroupsPage() {
                       id={review.id}
                       userName={review.userName}
                       userAvatar={review.userAvatar}
-                      rating={review.rating}
                       date={review.date}
                       content={review.content}
                     />
