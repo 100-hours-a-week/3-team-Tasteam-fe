@@ -10,7 +10,6 @@ export const ROUTES = {
   joinGroup: '/groups/join',
   groupDetail: (id: string) => `/groups/${id}`,
   profile: '/profile',
-  myPage: '/my-page',
   editProfile: '/my-page/edit',
   myFavorites: '/my-page/favorites',
   myReviews: '/my-page/reviews',

@@ -14,7 +14,6 @@ import { CreateGroupPage } from '@/pages/create-group'
 import { JoinGroupPage } from '@/pages/join-group'
 import { GroupDetailPage } from '@/pages/group-detail'
 import { ProfilePage } from '@/pages/profile'
-import { MyPage } from '@/pages/my-page'
 import { EditProfilePage } from '@/pages/edit-profile'
 import { MyFavoritesPage } from '@/pages/my-favorites'
 import { MyReviewsPage } from '@/pages/my-reviews'
@@ -127,24 +126,10 @@ function App() {
             <ProfilePage
               onEditProfile={() => navigate('/my-page/edit')}
               onSettingsClick={() => navigate('/settings')}
-              onMyFavorites={() => navigate('/my-page/favorites')}
-              onMyReviews={() => navigate('/my-page/reviews')}
               onNotifications={() => navigate('/notifications')}
               onNotificationSettings={() => navigate('/notifications/settings')}
               onLogout={() => navigate('/login')}
-            />
-          }
-        />
-        <Route
-          path="/my-page"
-          element={
-            <MyPage
-              onEditProfile={() => navigate('/my-page/edit')}
-              onMyFavorites={() => navigate('/my-page/favorites')}
-              onMyReviews={() => navigate('/my-page/reviews')}
-              onNotificationSettings={() => navigate('/notifications/settings')}
-              onSettings={() => navigate('/settings')}
-              onLogout={() => navigate('/login')}
+              onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
             />
           }
         />
