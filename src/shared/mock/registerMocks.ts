@@ -42,11 +42,11 @@ export function registerAllMocks() {
     mockRestaurantFavoriteStatusResponse,
   )
 
-  registerMockData('/groups/:id', 'GET', mockGroupDetailResponse)
-  registerMockData('/groups/:id/members', 'GET', mockGroupMemberListResponse)
-  registerMockData('/groups/:id/reviews', 'GET', mockGroupReviewListResponse)
-  registerMockData('/groups/:id/subgroups', 'GET', mockSubgroupListResponse)
-  registerMockData('/subgroups/:id', 'GET', mockSubgroupDetailResponse)
+  registerMockData('/api/v1/groups/:id', 'GET', mockGroupDetailResponse)
+  registerMockData('/api/v1/groups/:id/members', 'GET', mockGroupMemberListResponse)
+  registerMockData('/api/v1/groups/:id/reviews', 'GET', mockGroupReviewListResponse)
+  registerMockData('/api/v1/groups/:id/subgroups', 'GET', mockSubgroupListResponse)
+  registerMockData('/api/v1/subgroups/:id', 'GET', mockSubgroupDetailResponse)
 
   registerMockData('/chat-rooms/:id/messages', 'GET', mockChatMessageListResponse)
 
