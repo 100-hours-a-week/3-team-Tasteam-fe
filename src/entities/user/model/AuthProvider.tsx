@@ -14,9 +14,8 @@ import {
 import { refreshAccessToken } from '@/entities/auth/api/authApi'
 import { AUTH_DEBUG } from '@/shared/config/env'
 
-const extractAccessToken = (
-  data: { accessToken?: string } | { data?: { accessToken?: string } },
-) => ('accessToken' in data ? (data.accessToken ?? null) : (data.data?.accessToken ?? null))
+const extractAccessToken = (data: { data: { accessToken?: string } }) =>
+  data.data.accessToken ?? null
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [accessToken, setTokenState] = useState<string | null>(getAccessToken())

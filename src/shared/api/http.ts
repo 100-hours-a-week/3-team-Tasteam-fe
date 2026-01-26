@@ -10,13 +10,9 @@ import {
   setAccessToken,
 } from '@/shared/lib/authToken'
 import { AUTH_DEBUG } from '@/shared/config/env'
+import type { SuccessResponse } from '@/shared/types/api'
 
-type RefreshResponse = {
-  accessToken?: string
-  data?: {
-    accessToken?: string
-  }
-}
+type RefreshResponse = SuccessResponse<{ accessToken?: string }>
 
 /**
  * axios 인스턴스를 생성하는 유틸.
@@ -53,7 +49,7 @@ const refreshAccessToken = async (currentToken: string | null) => {
         if (AUTH_DEBUG) {
           console.debug('[auth] refresh response (401)', response.data)
         }
-        return response.data.accessToken ?? response.data.data?.accessToken ?? null
+        return response.data.data?.accessToken ?? null
       })
       .finally(() => {
         refreshPromise = null

@@ -9,6 +9,4 @@ export type AuthTokenRequestDto = {
 
 export type AuthTokenResponseDto = SuccessResponse<{ accessToken: AccessToken }>
 
-export type RefreshTokenResponseDto =
-  | SuccessResponse<{ accessToken: AccessToken }>
-  | { accessToken: AccessToken }
+export type RefreshAccessTokenResponseDto = SuccessResponse<{ accessToken: AccessToken }>

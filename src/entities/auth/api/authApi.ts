@@ -2,7 +2,7 @@ import { mockRequest } from '@/shared/api/mockRequest'
 import type {
   AuthTokenRequestDto,
   AuthTokenResponseDto,
-  RefreshTokenResponseDto,
+  RefreshAccessTokenResponseDto,
 } from '../model/dto'
 
 export const issueAccessToken = (payload: AuthTokenRequestDto) =>
@@ -13,7 +13,7 @@ export const issueAccessToken = (payload: AuthTokenRequestDto) =>
   })
 
 export const refreshAccessToken = (accessToken?: string | null) =>
-  mockRequest<RefreshTokenResponseDto>({
+  mockRequest<RefreshAccessTokenResponseDto>({
     method: 'POST',
     url: '/api/v1/auth/token/refresh',
     data: { accessToken: accessToken ?? null },

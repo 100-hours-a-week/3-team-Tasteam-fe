@@ -1,4 +1,4 @@
-import type { AuthTokenResponseDto, RefreshTokenResponseDto } from '@/entities/auth/model/dto'
+import type { AuthTokenResponseDto, RefreshAccessTokenResponseDto } from '@/entities/auth/model/dto'
 import type { MainResponse } from '@/entities/main/model/types'
 import type { SearchResponse, RecentSearchesResponse } from '@/entities/search/model/types'
 import type {
@@ -58,7 +58,7 @@ export const mockAuthTokenResponse: AuthTokenResponseDto = {
   },
 }
 
-export const mockRefreshTokenResponse: RefreshTokenResponseDto = {
+export const mockRefreshTokenResponse: RefreshAccessTokenResponseDto = {
   success: true,
   data: {
     accessToken: 'mock-refresh-access-token',
