@@ -103,27 +103,29 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[80vh]">
-              <SheetHeader>
+            <SheetContent side="bottom" className="h-[80vh] rounded-t-xl">
+              <SheetHeader className="px-6 pt-6">
                 <SheetTitle>필터</SheetTitle>
                 <SheetDescription>거리와 가격대를 선택해 검색 결과를 필터링하세요</SheetDescription>
               </SheetHeader>
-              <div className="space-y-6 mt-6">
-                <div className="space-y-3">
-                  <Label>거리</Label>
-                  <Slider
-                    value={distance}
-                    onValueChange={setDistance}
-                    max={10}
-                    step={0.5}
-                    className="w-full"
-                  />
-                  <p className="text-sm text-muted-foreground">{distance[0]}km 이내</p>
+              <div className="space-y-6 px-6 pb-6 pt-2">
+                <div className="space-y-4">
+                  <Label className="text-base">거리</Label>
+                  <div className="pt-2">
+                    <Slider
+                      value={distance}
+                      onValueChange={setDistance}
+                      max={10}
+                      step={0.5}
+                      className="w-full"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground text-right">{distance[0]}km 이내</p>
                 </div>
-                <div className="space-y-3">
-                  <Label>가격대</Label>
+                <div className="space-y-4">
+                  <Label className="text-base">가격대</Label>
                   <Select value={priceRange} onValueChange={setPriceRange}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -134,11 +136,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex gap-2 pt-4">
-                  <Button variant="outline" className="flex-1">
+                <div className="flex gap-3 pt-6">
+                  <Button variant="outline" className="flex-1 h-12 text-base">
                     초기화
                   </Button>
-                  <Button className="flex-1">적용</Button>
+                  <Button className="flex-1 h-12 text-base">적용</Button>
                 </div>
               </div>
             </SheetContent>
