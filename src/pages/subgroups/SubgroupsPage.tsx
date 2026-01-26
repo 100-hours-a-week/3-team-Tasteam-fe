@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { UserPlus, MoreVertical, ArrowUpRight, MessageSquare, Star } from 'lucide-react'
+import { UserPlus, MoreVertical, ArrowUpRight, MessageSquare } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
@@ -9,6 +9,7 @@ import { Card } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { RestaurantCard } from '@/entities/restaurant/ui'
+import { ReviewCard } from '@/entities/review/ui'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -98,6 +99,27 @@ const subGroupsMock: Record<string, any> = {
         tags: ['루프탑', '디저트'],
       },
     ],
+    reviews: [
+      {
+        id: 'r1',
+        userName: '김철수',
+        userAvatar: 'https://i.pravatar.cc/150?img=1',
+        rating: 5,
+        date: '2일 전',
+        content: '정말 맛있었어요! 강남에서 최고의 오마카세 경험이었습니다. 다음에 또 가고 싶네요.',
+        restaurantName: '강남 스시 오마카세',
+      },
+      {
+        id: 'r2',
+        userName: '이영희',
+        userAvatar: 'https://i.pravatar.cc/150?img=2',
+        rating: 4,
+        date: '5일 전',
+        content:
+          '분위기가 좋고 스테이크가 맛있었습니다. 가격대는 조금 있지만 데이트하기 좋은 곳이에요.',
+        restaurantName: '더 키친 강남',
+      },
+    ],
   },
   '2': {
     id: '2',
@@ -164,6 +186,7 @@ const subGroupsMock: Record<string, any> = {
         tags: ['라멘', '돈코츠'],
       },
     ],
+    reviews: [],
   },
   '3': {
     id: '3',
@@ -225,6 +248,7 @@ const subGroupsMock: Record<string, any> = {
         tags: ['정원', '브런치'],
       },
     ],
+    reviews: [],
   },
 }
 
@@ -234,7 +258,7 @@ export function SubgroupsPage() {
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subGroup = subGroupsMock[id || '1'] || subGroupsMock['1']
-  const { members, restaurants, parentGroupName } = subGroup
+  const { members, restaurants, parentGroupName, reviews } = subGroup
 
   const handleSaveToggle = (restaurantId: string) => {
     setSavedRestaurants((prev) => ({
@@ -258,7 +282,6 @@ export function SubgroupsPage() {
   }
 
   const handleGroupNameClick = () => {
-    // Assuming we have a group id in mock or can navigate back to groups
     navigate(ROUTES.groups)
   }
 
@@ -388,61 +411,27 @@ export function SubgroupsPage() {
             </div>
 
             <div className="space-y-3">
-              {/* Mock Reviews */}
-              <Card className="p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={members[0]?.avatar} alt={members[0]?.name} />
-                    <AvatarFallback>{members[0]?.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-medium">{members[0]?.name}</span>
-                      <span className="text-xs text-muted-foreground">2일 전</span>
-                    </div>
-                    <div className="flex items-center gap-0.5 mb-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star key={star} className="h-3 w-3 fill-primary text-primary" />
-                      ))}
-                    </div>
-                    <p className="text-xs font-semibold text-primary mb-1">
-                      {restaurants[0]?.name}
+              {reviews.length > 0 ? (
+                reviews.map((review: any) => (
+                  <div key={review.id} className="space-y-1">
+                    <p className="text-xs font-semibold text-primary px-1">
+                      {review.restaurantName}
                     </p>
-                    <p className="text-sm text-foreground leading-relaxed">
-                      정말 맛있었어요! 강남에서 최고의 오마카세 경험이었습니다. 다음에 또 가고
-                      싶네요.
-                    </p>
+                    <ReviewCard
+                      id={review.id}
+                      userName={review.userName}
+                      userAvatar={review.userAvatar}
+                      rating={review.rating}
+                      date={review.date}
+                      content={review.content}
+                    />
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  등록된 리뷰가 없습니다.
                 </div>
-              </Card>
-
-              <Card className="p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={members[1]?.avatar} alt={members[1]?.name} />
-                    <AvatarFallback>{members[1]?.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="font-medium">{members[1]?.name}</span>
-                      <span className="text-xs text-muted-foreground">5일 전</span>
-                    </div>
-                    <div className="flex items-center gap-0.5 mb-2">
-                      {[1, 2, 3, 4].map((star) => (
-                        <Star key={star} className="h-3 w-3 fill-primary text-primary" />
-                      ))}
-                      <Star className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                    <p className="text-xs font-semibold text-primary mb-1">
-                      {restaurants[1]?.name}
-                    </p>
-                    <p className="text-sm text-foreground leading-relaxed">
-                      분위기가 좋고 스테이크가 맛있었습니다. 가격대는 조금 있지만 데이트하기 좋은
-                      곳이에요.
-                    </p>
-                  </div>
-                </div>
-              </Card>
+              )}
             </div>
           </Container>
         </TabsContent>
