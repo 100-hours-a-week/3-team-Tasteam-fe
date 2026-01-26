@@ -1,20 +1,9 @@
 import { useEffect, useState } from 'react'
 import { bootstrapApp } from './bootstrap'
 
-let hasShownSplash = false
-
 const getInitialReady = () => {
-  if (hasShownSplash) {
-    return true
-  }
-
   const hasSeenSplash = sessionStorage.getItem('app:seen_splash') === 'true'
-  if (hasSeenSplash) {
-    hasShownSplash = true
-    return true
-  }
-
-  return false
+  return hasSeenSplash
 }
 
 export const useBootstrap = () => {
@@ -32,7 +21,6 @@ export const useBootstrap = () => {
     bootstrapApp().then(() => {
       if (alive) {
         sessionStorage.setItem('app:seen_splash', 'true')
-        hasShownSplash = true
         setIsReady(true)
       }
     })

@@ -8,6 +8,7 @@ import { Card } from '@/shared/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
+import { useAuth } from '@/entities/user/model/useAuth'
 
 type ProfilePageProps = {
   onSettingsClick?: () => void
@@ -31,6 +32,35 @@ export function ProfilePage({
   onNotificationSettings,
 }: ProfilePageProps) {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return (
+      <div className="pb-20 min-h-screen bg-background">
+        <TopAppBar title="프로필" />
+        <Container className="flex items-center justify-center py-16">
+          <div className="w-full max-w-sm text-center space-y-3">
+            <h3>로그인이 필요해요</h3>
+            <p className="text-sm text-muted-foreground">
+              로그인하면 내 정보와 활동 내역을 확인할 수 있어요.
+            </p>
+            <Button className="w-full" onClick={() => navigate('/login')}>
+              로그인하기
+            </Button>
+          </div>
+        </Container>
+        <BottomTabBar
+          currentTab="profile"
+          onTabChange={(tab: TabId) => {
+            if (tab === 'home') navigate(ROUTES.home)
+            else if (tab === 'search') navigate(ROUTES.search)
+            else if (tab === 'groups') navigate(ROUTES.groups)
+            else if (tab === 'profile') navigate(ROUTES.profile)
+          }}
+        />
+      </div>
+    )
+  }
 
   const user = {
     name: '김철수',

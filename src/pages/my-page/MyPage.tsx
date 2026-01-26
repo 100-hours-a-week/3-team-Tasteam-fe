@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ChevronRight, Heart, FileText, Bell, Settings, HelpCircle, LogOut } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Separator } from '@/shared/ui/separator'
+import { Button } from '@/shared/ui/button'
 import { getMe } from '@/entities/member/api/memberApi'
 import type { MemberMeResponseDto } from '@/entities/member/model/dto'
+import { useAuth } from '@/entities/user/model/useAuth'
 
 type MyPageProps = {
   onEditProfile?: () => void
@@ -35,13 +38,35 @@ export function MyPage({
   onHelp,
   onLogout,
 }: MyPageProps) {
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [userData, setUserData] = useState<MemberMeResponseDto | null>(null)
 
   useEffect(() => {
+    if (!isAuthenticated) return
     getMe()
       .then(setUserData)
       .catch(() => {})
-  }, [])
+  }, [isAuthenticated])
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <TopAppBar title="마이페이지" />
+        <Container className="flex items-center justify-center py-16">
+          <div className="w-full max-w-sm text-center space-y-3">
+            <h3>로그인이 필요해요</h3>
+            <p className="text-sm text-muted-foreground">
+              로그인하면 내 리뷰와 찜한 맛집을 확인할 수 있어요.
+            </p>
+            <Button className="w-full" onClick={() => navigate('/login')}>
+              로그인하기
+            </Button>
+          </div>
+        </Container>
+      </div>
+    )
+  }
 
   const user = userData?.data?.member
     ? {

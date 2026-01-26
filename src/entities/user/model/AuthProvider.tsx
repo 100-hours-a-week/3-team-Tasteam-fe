@@ -1,12 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AuthContext } from './authContext'
 import type { AuthContextValue, User } from './authContext'
-import { clearAccessToken, getAccessToken, setAccessToken } from '@/shared/lib/authToken'
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+  subscribeAccessToken,
+} from '@/shared/lib/authToken'
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [accessToken, setTokenState] = useState<string | null>(getAccessToken())
   const [user, setUser] = useState<User>(null)
   const [showLogin, setShowLogin] = useState(false)
+
+  useEffect(() => {
+    return subscribeAccessToken((token) => {
+      setTokenState(token)
+    })
+  }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({

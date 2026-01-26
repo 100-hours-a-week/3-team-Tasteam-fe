@@ -2,7 +2,12 @@ import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '@/shared/config/env'
 import { API_ENDPOINTS } from '@/shared/config/routes'
-import { clearAccessToken, getAccessToken, setAccessToken } from '@/shared/lib/authToken'
+import {
+  clearAccessToken,
+  getAccessToken,
+  getRefreshEnabled,
+  setAccessToken,
+} from '@/shared/lib/authToken'
 
 type RefreshResponse = {
   accessToken?: string
@@ -76,6 +81,10 @@ http.interceptors.response.use(
     originalRequest._retry = true
 
     try {
+      if (!getRefreshEnabled()) {
+        clearAccessToken()
+        return Promise.reject(error)
+      }
       const newToken = await refreshAccessToken(getAccessToken())
       if (!newToken) {
         clearAccessToken()
