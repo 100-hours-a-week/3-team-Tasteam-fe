@@ -1,9 +1,20 @@
+import animate from 'tailwindcss-animate'
+
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   // Support both `.dark` and `[data-theme="dark"]` for the `dark:` variant.
   darkMode: ['variant', ['.dark &', '[data-theme=\"dark\"] &']],
   theme: {
     extend: {
+      keyframes: {
+        'caret-blink': {
+          '0%, 70%, 100%': { opacity: '1' },
+          '20%, 50%': { opacity: '0' },
+        },
+      },
+      animation: {
+        'caret-blink': 'caret-blink 1.25s ease-out infinite',
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -40,11 +51,12 @@ export default {
         },
       },
       borderRadius: {
+        xs: 'calc(var(--radius) - 6px)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
     },
   },
-  plugins: [],
+  plugins: [animate],
 }
