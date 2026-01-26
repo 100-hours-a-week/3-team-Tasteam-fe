@@ -56,6 +56,7 @@ export function RestaurantReviewsPage() {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
   const observer = useRef<IntersectionObserver | null>(null)
+
   const fetchReviews = useCallback(async () => {
     if (!restaurantId || isLoading || !hasNextPage) return
 
