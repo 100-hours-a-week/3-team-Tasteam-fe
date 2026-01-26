@@ -2,6 +2,7 @@ import { MapPin, Star, Heart } from 'lucide-react'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
 import type { RestaurantListItemDto, RestaurantDetailDto } from '../model/dto'
 
@@ -84,7 +85,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
       >
         {imgSrc && (
           <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-            <img src={imgSrc} alt={name} className="object-cover w-full h-full" />
+            <ImageWithFallback src={imgSrc} alt={name} className="object-cover w-full h-full" />
             {onSave && (
               <Button
                 variant="ghost"
@@ -163,7 +164,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
       onClick={onClick}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <img
+        <ImageWithFallback
           src={getImageUrl(restaurant)}
           alt={restaurant.name}
           className="object-cover w-full h-full"

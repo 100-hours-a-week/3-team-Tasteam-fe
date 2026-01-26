@@ -160,7 +160,20 @@ function App() {
           }
         />
 
-        <Route path="/" element={showLogin ? <LoginPage /> : <HomePage />} />
+        <Route
+          path="/"
+          element={
+            showLogin ? (
+              <LoginPage />
+            ) : (
+              <HomePage
+                onSearchClick={() => navigate('/search')}
+                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
+                onGroupClick={(id) => navigate(`/groups/${id}`)}
+              />
+            )
+          }
+        />
         <Route
           path="*"
           element={
