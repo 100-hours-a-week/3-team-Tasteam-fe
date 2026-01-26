@@ -3,37 +3,100 @@
 @tailwind utilities;
 
 :root {
-  /* shadcn/ui-style semantic tokens (HSL triplets). */
+  --font-size: 16px;
+
+  /* Tasteam Color System - Light Theme */
   --background: 0 0% 100%;
   --foreground: 220.9 39.3% 11%;
-
   --card: 0 0% 100%;
   --card-foreground: 220.9 39.3% 11%;
-
   --popover: 0 0% 100%;
   --popover-foreground: 220.9 39.3% 11%;
-
-  /* Brand color: #FFAE42 */
   --primary: 34.3 100% 62.9%;
   --primary-foreground: 0 0% 100%;
-
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
-
   --muted: 210 40% 96.1%;
   --muted-foreground: 215.4 16.3% 46.9%;
-
   --accent: 210 40% 96.1%;
   --accent-foreground: 222.2 47.4% 11.2%;
-
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
-  --ring: var(--primary);
+  --ring: 34.3 100% 62.9%;
 
+  /* Legacy brand tokens (compatibility) */
+  --color-brand: hsl(34.3 100% 62.9%);
+  --color-brand-strong: hsl(34.3 100% 52%);
+  --color-brand-soft: hsl(34.3 100% 95%);
+
+  /* Sub-color Palette (complements brand orange) */
+  --turquoise: 174 44% 55%;
+  --turquoise-foreground: 0 0% 100%;
+  --turquoise-soft: 174 44% 95%;
+
+  --coral: 12 88% 68%;
+  --coral-foreground: 0 0% 100%;
+  --coral-soft: 12 88% 95%;
+
+  --sage: 142 22% 60%;
+  --sage-foreground: 0 0% 100%;
+  --sage-soft: 142 22% 95%;
+
+  --lavender: 270 40% 70%;
+  --lavender-foreground: 0 0% 100%;
+  --lavender-soft: 270 40% 95%;
+
+  --peach: 25 95% 78%;
+  --peach-foreground: 222.2 47.4% 11.2%;
+  --peach-soft: 25 95% 95%;
+
+  /* Spacing scale (4px base) */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Border radius */
   --radius: 0.5rem;
+
+  /* Typography scale */
+  --text-display: 1.5rem;
+  --text-title: 1.25rem;
+  --text-heading: 1.125rem;
+  --text-body: 1rem;
+  --text-caption: 0.75rem;
+
+  --line-display: 2rem;
+  --line-title: 1.75rem;
+  --line-heading: 1.625rem;
+  --line-body: 1.5rem;
+  --line-caption: 1.125rem;
+
+  --font-weight-medium: 600;
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+
+  /* Chart colors */
+  --chart-1: 0 84.2% 60.2%;
+  --chart-2: 210 40% 50%;
+  --chart-3: 34.3 100% 62.9%;
+  --chart-4: 120 40% 50%;
+  --chart-5: 280 40% 50%;
+
+  /* Extended chart colors using sub-palette */
+  --chart-turquoise: 174 44% 55%;
+  --chart-coral: 12 88% 68%;
+  --chart-sage: 142 22% 60%;
+  --chart-lavender: 270 40% 70%;
+  --chart-peach: 25 95% 78%;
 
   font-family:
     'Pretendard',
@@ -41,12 +104,6 @@
     system-ui,
     -apple-system,
     sans-serif;
-
-  /* Legacy brand tokens (kept for existing CSS usage). */
-  --color-brand: hsl(var(--primary));
-  --color-brand-strong: hsl(34.3 100% 52%);
-  --color-brand-soft: hsl(34.3 100% 95%);
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -56,31 +113,27 @@
 [data-theme='dark'] {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
-
   --card: 222.2 84% 4.9%;
   --card-foreground: 210 40% 98%;
-
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
-
   --primary: 34.3 100% 62.9%;
   --primary-foreground: 0 0% 100%;
-
   --secondary: 217.2 32.6% 17.5%;
   --secondary-foreground: 210 40% 98%;
-
   --muted: 217.2 32.6% 17.5%;
   --muted-foreground: 215 20.2% 65.1%;
-
   --accent: 217.2 32.6% 17.5%;
   --accent-foreground: 210 40% 98%;
-
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
-
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
-  --ring: var(--primary);
+  --ring: 34.3 100% 62.9%;
+
+  --color-brand: hsl(34.3 100% 62.9%);
+  --color-brand-strong: hsl(34.3 100% 52%);
+  --color-brand-soft: hsl(34.3 100% 15%);
 }
 
 * {
@@ -107,10 +160,20 @@ dd {
   margin: 0;
 }
 
+html {
+  font-size: var(--font-size);
+}
+
+html,
+body,
+#root {
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
-  line-height: 1.5;
+  line-height: var(--line-body);
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
@@ -147,8 +210,89 @@ svg {
   max-width: 100%;
 }
 
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+h1 {
+  font-size: var(--text-display);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-display);
+}
+
+h2 {
+  font-size: var(--text-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-title);
+}
+
+h3 {
+  font-size: var(--text-heading);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-heading);
+}
+
+h4 {
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-body);
+}
+
+p,
+label,
+button,
+input {
+  font-size: var(--text-body);
+  line-height: var(--line-body);
+}
+
+label,
+button {
+  font-weight: var(--font-weight-medium);
+}
+
+p,
+input {
+  font-weight: var(--font-weight-normal);
+}
+
+.caption {
+  font-size: var(--text-caption);
+  line-height: var(--line-caption);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
 .container {
   width: min(1120px, 100%);
   margin: 0 auto;
   padding: 0 24px;
+}
+
+@layer utilities {
+  .outline-hidden {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

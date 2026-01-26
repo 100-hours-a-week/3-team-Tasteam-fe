@@ -1,4 +1,4 @@
-import { request } from '@/shared/api/request'
+import { mockRequest } from '@/shared/api/mockRequest'
 import type {
   AuthTokenRequestDto,
   AuthTokenResponseDto,
@@ -6,14 +6,14 @@ import type {
 } from '../model/dto'
 
 export const issueAccessToken = (payload: AuthTokenRequestDto) =>
-  request<AuthTokenResponseDto>({
+  mockRequest<AuthTokenResponseDto>({
     method: 'POST',
     url: '/api/v1/auth/token',
     data: payload,
   })
 
 export const refreshAccessToken = (accessToken?: string | null) =>
-  request<RefreshTokenResponseDto>({
+  mockRequest<RefreshTokenResponseDto>({
     method: 'POST',
     url: '/api/v1/auth/token/refresh',
     data: { accessToken: accessToken ?? null },
@@ -21,7 +21,7 @@ export const refreshAccessToken = (accessToken?: string | null) =>
   })
 
 export const logout = () =>
-  request<void>({
+  mockRequest<void>({
     method: 'DELETE',
     url: '/api/v1/auth/token',
   })

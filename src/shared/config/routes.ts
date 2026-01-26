@@ -2,6 +2,23 @@ export const ROUTES = {
   home: '/',
   login: '/login',
   signup: '/signup',
+  otp: '/otp',
+  onboarding: '/onboarding',
+  search: '/search',
+  groups: '/groups',
+  createGroup: '/groups/create',
+  joinGroup: '/groups/join',
+  groupDetail: (id: string) => `/groups/${id}`,
+  profile: '/profile',
+  editProfile: '/my-page/edit',
+  myFavorites: '/my-page/favorites',
+  myReviews: '/my-page/reviews',
+  notifications: '/notifications',
+  notificationSettings: '/notifications/settings',
+  settings: '/settings',
+  restaurantDetail: (id: string) => `/restaurants/${id}`,
+  writeReview: (restaurantId: string) => `/restaurants/${restaurantId}/review`,
+  chatRoom: (roomId: string) => `/chat/${roomId}`,
 } as const
 
 export const API_ENDPOINTS = {

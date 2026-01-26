@@ -1,0 +1,1 @@
+export { SubgroupCard } from './SubgroupCard'

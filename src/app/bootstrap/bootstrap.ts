@@ -1,6 +1,8 @@
 import { request } from '@/shared/api/request'
 import { API_ENDPOINTS } from '@/shared/config/routes'
-import { setAccessToken } from '@/shared/lib/authToken'
+import { clearAccessToken, setAccessToken, setRefreshEnabled } from '@/shared/lib/authToken'
+import { registerAllMocks } from '@/shared/mock/registerMocks'
+import { DUMMY_DATA } from '@/shared/config/env'
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
@@ -12,6 +14,10 @@ type RefreshResponse = {
 }
 
 const runBootstrapTasks = async () => {
+  if (DUMMY_DATA) {
+    registerAllMocks()
+  }
+  setRefreshEnabled(true)
   try {
     const data = await request<RefreshResponse>({
       method: 'POST',
@@ -24,7 +30,10 @@ const runBootstrapTasks = async () => {
       setAccessToken(token)
     }
   } catch {
+    clearAccessToken()
     // refresh 실패는 무시하고 비로그인 상태로 진행
+  } finally {
+    setRefreshEnabled(false)
   }
 }
 
