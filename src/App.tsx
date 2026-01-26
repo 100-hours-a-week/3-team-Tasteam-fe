@@ -119,7 +119,7 @@ function App() {
             />
           }
         />
-        <Route path="/groups/:id" element={<SubgroupsPage />} />
+        <Route path="/groups/:id" element={<GroupDetailPage />} />
         <Route path="/subgroups/:id" element={<SubgroupsPage />} />
 
         <Route

@@ -9,6 +9,7 @@ export const ROUTES = {
   createGroup: '/groups/create',
   joinGroup: '/groups/join',
   groupDetail: (id: string) => `/groups/${id}`,
+  subgroupDetail: (id: string) => `/subgroups/${id}`,
   profile: '/profile',
   editProfile: '/my-page/edit',
   myFavorites: '/my-page/favorites',

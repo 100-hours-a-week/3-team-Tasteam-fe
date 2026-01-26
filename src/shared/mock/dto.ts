@@ -400,8 +400,8 @@ export const mockSubgroupListResponse: SubgroupListResponseDto = {
   items: [
     {
       subgroupId: 77,
-      name: 'Dinner Crew',
-      description: 'Local dinner spots',
+      name: '점심 맛집 탐험대',
+      description: '매일 점심 새로운 맛집을 찾아 떠나는 팀',
       memberCount: 12,
       thumnailImage: {
         id: 'sub-thumb-1',
@@ -409,11 +409,40 @@ export const mockSubgroupListResponse: SubgroupListResponseDto = {
       },
       createdAt: now,
     },
+    {
+      subgroupId: 78,
+      name: '커피 러버스',
+      description: '판교 근처 숨은 카페를 발굴하는 모임',
+      memberCount: 8,
+      thumnailImage: {
+        id: 'sub-thumb-2',
+        url: 'https://cdn.example.com/subgroups/78.png',
+      },
+      createdAt: now,
+    },
+    {
+      subgroupId: 79,
+      name: '야식 클럽',
+      description: '퇴근 후 야식 맛집 공유',
+      memberCount: 5,
+      createdAt: now,
+    },
+    {
+      subgroupId: 80,
+      name: '건강식 연구소',
+      description: '샐러드, 포케, 비건 맛집 탐방',
+      memberCount: 15,
+      thumnailImage: {
+        id: 'sub-thumb-4',
+        url: 'https://cdn.example.com/subgroups/80.png',
+      },
+      createdAt: now,
+    },
   ],
   pagination: {
-    nextCursor: 'cursor-sub-77',
+    nextCursor: null as unknown as string,
     size: 20,
-    hasNext: true,
+    hasNext: false,
   },
 }
 
