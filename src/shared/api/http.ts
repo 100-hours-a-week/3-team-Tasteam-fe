@@ -13,6 +13,9 @@ import { AUTH_DEBUG } from '@/shared/config/env'
 
 type RefreshResponse = {
   accessToken?: string
+  data?: {
+    accessToken?: string
+  }
 }
 
 /**
@@ -50,7 +53,7 @@ const refreshAccessToken = async (currentToken: string | null) => {
         if (AUTH_DEBUG) {
           console.debug('[auth] refresh response (401)', response.data)
         }
-        return response.data.accessToken ?? null
+        return response.data.accessToken ?? response.data.data?.accessToken ?? null
       })
       .finally(() => {
         refreshPromise = null
