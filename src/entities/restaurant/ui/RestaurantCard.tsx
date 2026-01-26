@@ -80,7 +80,10 @@ export function RestaurantCard(props: RestaurantCardProps) {
 
     return (
       <Card
-        className={cn('overflow-hidden cursor-pointer transition-all hover:shadow-md', className)}
+        className={cn(
+          'overflow-hidden cursor-pointer transition-all hover:shadow-md p-0 gap-0',
+          className,
+        )}
         onClick={onClick}
       >
         {imgSrc && (
@@ -160,7 +163,10 @@ export function RestaurantCard(props: RestaurantCardProps) {
 
   return (
     <Card
-      className={cn('overflow-hidden cursor-pointer transition-all hover:shadow-md', className)}
+      className={cn(
+        'overflow-hidden cursor-pointer transition-all hover:shadow-md p-0 gap-0',
+        className,
+      )}
       onClick={onClick}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">

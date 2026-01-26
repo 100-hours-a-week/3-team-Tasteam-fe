@@ -54,7 +54,7 @@ export function ReviewCard(props: ReviewCardProps) {
   if (isSimpleProps(props)) {
     const { userName, userAvatar, rating, date, content, images, className } = props
     return (
-      <Card className={cn('p-4', className)}>
+      <Card className={cn('p-4 gap-0', className)}>
         <div className="flex items-start gap-3 mb-3">
           <Avatar className="h-10 w-10">
             {userAvatar && <AvatarImage src={userAvatar} alt={userName} />}
@@ -102,7 +102,7 @@ export function ReviewCard(props: ReviewCardProps) {
   const images = getImages(review)
 
   return (
-    <Card className={cn('p-4', className)}>
+    <Card className={cn('p-4 gap-0', className)}>
       <div className="flex items-start gap-3 mb-3">
         <Avatar className="h-10 w-10">
           <AvatarFallback>{review.author.nickname.slice(0, 2)}</AvatarFallback>
