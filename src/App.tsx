@@ -27,11 +27,12 @@ import { SubgroupsPage } from '@/pages/subgroups'
 import { ErrorPage } from '@/pages/error-page'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
+import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
 import { Route, Routes } from 'react-router-dom'
 
 function App() {
   const isReady = useBootstrap()
-  const { showLogin, isAuthenticated } = useAuth()
+  const { showLogin, isAuthenticated, closeLogin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -54,6 +55,14 @@ function App() {
   return (
     <>
       <Toaster position="top-center" />
+      <LoginRequiredModal
+        open={showLogin}
+        onClose={closeLogin}
+        onLogin={() => {
+          closeLogin()
+          navigate('/login')
+        }}
+      />
       <Routes>
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route

@@ -33,7 +33,7 @@ const runBootstrapTasks = async () => {
     clearAccessToken()
     // refresh 실패는 무시하고 비로그인 상태로 진행
   } finally {
-    setRefreshEnabled(false)
+    setRefreshEnabled(true)
   }
 }
 

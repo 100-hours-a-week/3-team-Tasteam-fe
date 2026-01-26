@@ -6,6 +6,7 @@ import {
   clearAccessToken,
   getAccessToken,
   getRefreshEnabled,
+  notifyLoginRequired,
   setAccessToken,
 } from '@/shared/lib/authToken'
 
@@ -83,11 +84,13 @@ http.interceptors.response.use(
     try {
       if (!getRefreshEnabled()) {
         clearAccessToken()
+        notifyLoginRequired()
         return Promise.reject(error)
       }
       const newToken = await refreshAccessToken(getAccessToken())
       if (!newToken) {
         clearAccessToken()
+        notifyLoginRequired()
         return Promise.reject(error)
       }
 
@@ -98,6 +101,7 @@ http.interceptors.response.use(
       return http.request(originalRequest)
     } catch (refreshError) {
       clearAccessToken()
+      notifyLoginRequired()
       return Promise.reject(refreshError)
     }
   },
