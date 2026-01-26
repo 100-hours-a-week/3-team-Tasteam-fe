@@ -24,6 +24,7 @@ type RestaurantSimpleProps = {
   address?: string
   image?: string
   imageUrl?: string
+  images?: string[]
   tags?: string[]
   isSaved?: boolean
   onSave?: () => void
@@ -42,11 +43,19 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)}km`
 }
 
-function getImageUrl(restaurant: RestaurantListItemDto | RestaurantDetailDto): string {
-  if ('thumbnailImage' in restaurant) {
-    return restaurant.thumbnailImage.url
+function getCardImages(props: RestaurantCardProps): string[] {
+  if (isSimpleProps(props)) {
+    if (props.images && props.images.length > 0) return props.images
+    if (props.image) return [props.image]
+    if (props.imageUrl) return [props.imageUrl]
+    return []
   }
-  return restaurant.images[0]?.url ?? ''
+
+  const { restaurant } = props
+  if ('thumbnailImage' in restaurant) {
+    return [restaurant.thumbnailImage.url]
+  }
+  return restaurant.images.map((img) => img.url)
 }
 
 function getRecommendRatio(
@@ -59,6 +68,42 @@ function getRecommendRatio(
 }
 
 export function RestaurantCard(props: RestaurantCardProps) {
+  const images = getCardImages(props)
+
+  const renderImages = () => (
+    <div className="relative h-36 flex overflow-hidden bg-muted">
+      {images.length > 1 ? (
+        <>
+          <div className="w-1/2 h-full border-r border-white/10 relative">
+            <ImageWithFallback
+              src={images[0]}
+              alt="restaurant image 1"
+              className="object-cover w-full h-full"
+            />
+          </div>
+          <div className="w-1/2 h-full relative">
+            <ImageWithFallback
+              src={images[1]}
+              alt="restaurant image 2"
+              className="object-cover w-full h-full"
+            />
+            {images.length > 2 && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white font-medium">
+                +{images.length - 2}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <ImageWithFallback
+          src={images[0] || ''}
+          alt="restaurant image"
+          className="object-cover w-full h-full"
+        />
+      )}
+    </div>
+  )
+
   if (isSimpleProps(props)) {
     const {
       name,
@@ -67,15 +112,12 @@ export function RestaurantCard(props: RestaurantCardProps) {
       reviewCount,
       distance,
       address,
-      image,
-      imageUrl,
       tags,
       isSaved,
       onSave,
       onClick,
       className,
     } = props
-    const imgSrc = image || imageUrl || ''
     const locationText = distance || address || ''
 
     return (
@@ -86,28 +128,26 @@ export function RestaurantCard(props: RestaurantCardProps) {
         )}
         onClick={onClick}
       >
-        {imgSrc && (
-          <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-            <ImageWithFallback src={imgSrc} alt={name} className="object-cover w-full h-full" />
-            {onSave && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  'absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background',
-                  isSaved && 'text-primary',
-                )}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSave()
-                }}
-                aria-label={isSaved ? '저장 취소' : '저장'}
-              >
-                <Heart className={cn('h-4 w-4', isSaved && 'fill-current')} />
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="relative">
+          {renderImages()}
+          {onSave && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                'absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background z-10',
+                isSaved && 'text-primary',
+              )}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSave()
+              }}
+              aria-label={isSaved ? '저장 취소' : '저장'}
+            >
+              <Heart className={cn('h-4 w-4', isSaved && 'fill-current')} />
+            </Button>
+          )}
+        </div>
         <div className="p-4 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="flex-1 min-w-0 truncate">{name}</h3>
@@ -130,7 +170,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
               </div>
             )}
           </div>
-          {!imgSrc && onSave && (
+          {!images.length && onSave && (
             <Button
               variant="ghost"
               size="sm"
@@ -169,18 +209,14 @@ export function RestaurantCard(props: RestaurantCardProps) {
       )}
       onClick={onClick}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <ImageWithFallback
-          src={getImageUrl(restaurant)}
-          alt={restaurant.name}
-          className="object-cover w-full h-full"
-        />
+      <div className="relative">
+        {renderImages()}
         {onFavoriteToggle && (
           <Button
             variant="ghost"
             size="icon"
             className={cn(
-              'absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background',
+              'absolute top-2 right-2 bg-background/80 backdrop-blur-sm hover:bg-background z-10',
               isFavorite && 'text-primary',
             )}
             onClick={(e) => {

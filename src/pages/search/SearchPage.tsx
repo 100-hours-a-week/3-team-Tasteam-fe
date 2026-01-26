@@ -45,7 +45,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
       category: '일식',
       rating: 4.5,
       distance: '500m',
-      image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+      images: [
+        'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+        'https://images.unsplash.com/photo-1553621042-f6e147245754?w=800',
+        'https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=800',
+      ],
       tags: ['신선한 재료', '런치 세트'],
     },
     {
@@ -54,7 +58,10 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
       category: '이탈리안',
       rating: 4.7,
       distance: '1.2km',
-      image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
+      images: [
+        'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
+        'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800',
+      ],
       tags: ['수제 파스타'],
     },
   ]
