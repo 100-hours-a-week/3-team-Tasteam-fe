@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { TopAppBar } from '@/widgets/top-app-bar'
 import { ROUTES } from '@/shared/config/routes'
 import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
@@ -75,6 +76,7 @@ export function GroupsPage({ onGroupClick, onCreateGroup }: GroupsPageProps) {
 
   return (
     <div className="pb-20">
+      <TopAppBar title="그룹" />
       <Container className="pt-4 pb-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -51,7 +51,7 @@ export function MemberRow(props: MemberRowProps) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="truncate font-medium">{nickname}</h4>
+            <h4 className="truncate">{nickname}</h4>
             {isAdmin && (
               <Badge variant="secondary" className="text-xs">
                 관리자
@@ -80,7 +80,7 @@ export function MemberRow(props: MemberRowProps) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h4 className="truncate font-medium">{member.nickname}</h4>
+          <h4 className="truncate">{member.nickname}</h4>
           {isAdmin && (
             <Badge variant="secondary" className="text-xs">
               관리자

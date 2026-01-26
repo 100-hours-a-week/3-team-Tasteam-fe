@@ -62,11 +62,11 @@ export function ReviewCard(props: ReviewCardProps) {
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <h4 className="truncate font-medium">{userName}</h4>
+              <h4 className="truncate">{userName}</h4>
               <span className="text-xs text-muted-foreground shrink-0">{date}</span>
             </div>
             {rating !== undefined && (
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, idx) => (
                   <Star
                     key={idx}
@@ -109,7 +109,7 @@ export function ReviewCard(props: ReviewCardProps) {
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
-            <h4 className="truncate font-medium">{review.author.nickname}</h4>
+            <h4 className="truncate">{review.author.nickname}</h4>
             <span className="text-xs text-muted-foreground shrink-0">
               {formatDate(review.createdAt)}
             </span>

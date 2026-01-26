@@ -1,6 +1,7 @@
 import { ChevronRight, Heart, Users, Bell, Settings, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { TopAppBar } from '@/widgets/top-app-bar'
 import { ROUTES } from '@/shared/config/routes'
 import { Container } from '@/widgets/container'
 import { Card } from '@/shared/ui/card'
@@ -54,6 +55,7 @@ export function ProfilePage({
 
   return (
     <div className="pb-20">
+      <TopAppBar title="프로필" />
       <Container className="pt-6 pb-6">
         <Card className="p-6">
           <div className="flex items-start gap-4">

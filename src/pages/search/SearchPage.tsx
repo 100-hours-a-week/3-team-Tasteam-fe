@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { TopAppBar } from '@/widgets/top-app-bar'
 import { ROUTES } from '@/shared/config/routes'
 import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
@@ -84,7 +85,8 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
   return (
     <div className="pb-20">
-      <Container className="pt-4 pb-4 sticky top-0 bg-background z-10 border-b">
+      <TopAppBar title="검색" />
+      <Container className="pt-4 pb-4 sticky top-14 bg-background z-10 border-b">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

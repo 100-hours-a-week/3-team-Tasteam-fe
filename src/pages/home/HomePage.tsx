@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
 import { RestaurantCard } from '@/entities/restaurant/ui'
@@ -112,6 +113,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onGroupClick }: Hom
 
   return (
     <div className="pb-20">
+      <TopAppBar title="Tasteam" />
       <Container className="pt-4 pb-6">
         <div className="relative" onClick={handleSearchClick}>
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
