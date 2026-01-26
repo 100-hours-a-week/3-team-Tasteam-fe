@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { UserPlus, MoreVertical, Calendar, MapPin } from 'lucide-react'
+import { UserPlus, MoreVertical, Calendar, MapPin, Users, ChevronRight } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { FloatingChatButton } from '@/widgets/floating-chat-button'
@@ -30,7 +30,10 @@ import {
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { MemberRow } from '@/entities/group/ui'
 import { getGroup, getGroupMembers } from '@/entities/group/api/groupApi'
+import { getSubgroups } from '@/entities/subgroup/api/subgroupApi'
+import { ROUTES } from '@/shared/config/routes'
 import type { GroupDetailResponseDto, GroupMemberListResponseDto } from '@/entities/group/model/dto'
+import type { SubgroupListItemDto } from '@/entities/subgroup/model/dto'
 
 const defaultMembers = [
   {
@@ -109,6 +112,7 @@ export function GroupDetailPage() {
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
   const [groupData, setGroupData] = useState<GroupDetailResponseDto | null>(null)
   const [membersData, setMembersData] = useState<GroupMemberListResponseDto | null>(null)
+  const [subgroups, setSubgroups] = useState<SubgroupListItemDto[]>([])
 
   useEffect(() => {
     if (groupId) {
@@ -117,6 +121,9 @@ export function GroupDetailPage() {
         .catch(() => {})
       getGroupMembers(Number(groupId))
         .then(setMembersData)
+        .catch(() => {})
+      getSubgroups(Number(groupId))
+        .then((res) => setSubgroups(res.items ?? []))
         .catch(() => {})
     }
   }, [groupId])
@@ -226,14 +233,55 @@ export function GroupDetailPage() {
         </Card>
       </Container>
 
-      <Tabs defaultValue="events" className="w-full">
+      <Tabs defaultValue="subgroups" className="w-full">
         <Container>
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="subgroups">서브그룹</TabsTrigger>
             <TabsTrigger value="events">일정</TabsTrigger>
             <TabsTrigger value="restaurants">맛집</TabsTrigger>
             <TabsTrigger value="members">멤버</TabsTrigger>
           </TabsList>
         </Container>
+
+        <TabsContent value="subgroups" className="mt-4">
+          <Container className="space-y-3">
+            {subgroups.length > 0 ? (
+              subgroups.map((sg) => (
+                <Card
+                  key={sg.subgroupId}
+                  className="p-4 cursor-pointer hover:bg-accent transition-colors"
+                  onClick={() => navigate(ROUTES.subgroupDetail(String(sg.subgroupId)))}
+                >
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-12 w-12">
+                      {sg.thumnailImage?.url ? (
+                        <AvatarImage src={sg.thumnailImage.url} alt={sg.name} />
+                      ) : null}
+                      <AvatarFallback>{sg.name.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium truncate">{sg.name}</h4>
+                      {sg.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          {sg.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <Users className="h-3 w-3" />
+                        <span>{sg.memberCount}명</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">아직 서브그룹이 없습니다</p>
+              </div>
+            )}
+          </Container>
+        </TabsContent>
 
         <TabsContent value="events" className="mt-4">
           <Container className="space-y-3">

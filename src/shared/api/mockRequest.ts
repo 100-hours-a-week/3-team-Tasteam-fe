@@ -23,7 +23,9 @@ function findMockData(config: AxiosRequestConfig): unknown | undefined {
   }
 
   for (const key of Object.keys(mockDataRegistry)) {
-    const [registeredMethod, registeredUrl] = key.split(':')
+    const colonIndex = key.indexOf(':')
+    const registeredMethod = key.slice(0, colonIndex)
+    const registeredUrl = key.slice(colonIndex + 1)
     if (registeredMethod !== method) continue
 
     const pattern = registeredUrl.replace(/:\w+/g, '[^/]+')

@@ -23,6 +23,7 @@ import { SettingsPage } from '@/pages/settings'
 import { RestaurantDetailPage } from '@/pages/restaurant-detail'
 import { WriteReviewPage } from '@/pages/write-review'
 import { ChatRoomPage } from '@/pages/chat-room'
+import { SubgroupsPage } from '@/pages/subgroups'
 import { ErrorPage } from '@/pages/error-page'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
@@ -119,6 +120,7 @@ function App() {
           }
         />
         <Route path="/groups/:id" element={<GroupDetailPage />} />
+        <Route path="/subgroups/:id" element={<SubgroupsPage />} />
 
         <Route
           path="/profile"

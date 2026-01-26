@@ -39,7 +39,7 @@ export const getMyGroups = (params?: { cursor?: string }) =>
 export const getMyGroupsOverview = (params?: { cursor?: string }) =>
   mockRequest<MemberGroupOverviewListResponseDto>({
     method: 'GET',
-    url: `/members/me/groups${buildQuery(params ?? {})}`,
+    url: `/api/v1/members/me/groups${buildQuery(params ?? {})}`,
   })
 
 export const getMyGroupRequests = (params?: { cursor?: string }) =>
@@ -57,20 +57,20 @@ export const getMyReviews = (params?: { cursor?: string }) =>
 export const sendGroupEmailVerification = (groupId: number, payload: { email: string }) =>
   mockRequest<GroupEmailVerificationResponseDto>({
     method: 'POST',
-    url: `/groups/${groupId}/email-verifications`,
+    url: `/api/v1/groups/${groupId}/email-verifications`,
     data: payload,
   })
 
 export const verifyGroupEmailCode = (groupId: number, payload: { code: string }) =>
   mockRequest<GroupJoinVerificationResponseDto>({
     method: 'POST',
-    url: `/groups/${groupId}/email-authentications`,
+    url: `/api/v1/groups/${groupId}/email-authentications`,
     data: payload,
   })
 
 export const verifyGroupPassword = (groupId: number, payload: { code: string }) =>
   mockRequest<GroupJoinVerificationResponseDto>({
     method: 'POST',
-    url: `/groups/${groupId}/password-authentications`,
+    url: `/api/v1/groups/${groupId}/password-authentications`,
     data: payload,
   })
