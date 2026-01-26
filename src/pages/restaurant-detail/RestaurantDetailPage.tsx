@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Heart, Share2, UserPlus, MapPin, Clock, Phone, Star } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -17,58 +17,93 @@ import {
 import { RestaurantMetaRow } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import { cn } from '@/shared/lib/utils'
+import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
+import type { RestaurantDetailResponseDto } from '@/entities/restaurant/model/dto'
+
+const defaultRestaurant = {
+  id: '',
+  name: '맛있는 스시 레스토랑',
+  category: '일식',
+  rating: 4.5,
+  reviewCount: 124,
+  distance: '500m',
+  address: '서울시 강남구 테헤란로 123',
+  phone: '02-1234-5678',
+  hours: '11:00 - 22:00 (라스트오더 21:30)',
+  tags: ['신선한 재료', '런치 세트', '예약 필수', '주차 가능'],
+  images: [
+    'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+    'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=800',
+    'https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?w=800',
+  ],
+  description:
+    '신선한 재료로 만든 정통 일본식 스시를 제공합니다. 20년 경력의 셰프가 직접 준비하는 오마카세 코스가 인기입니다.',
+}
+
+const defaultMenu = [
+  { name: '런치 세트', price: '15,000원', description: '사시미, 스시, 미소시루 포함' },
+  { name: '오마카세 A', price: '50,000원', description: '셰프 추천 10가지 코스' },
+  { name: '오마카세 B', price: '80,000원', description: '프리미엄 15가지 코스' },
+  { name: '모둠 사시미', price: '35,000원', description: '제철 생선 모둠' },
+]
+
+const defaultReviews = [
+  {
+    id: '1',
+    userName: '김철수',
+    userAvatar: 'https://i.pravatar.cc/150?img=1',
+    rating: 5,
+    date: '2024.01.20',
+    content: '정말 신선하고 맛있었어요! 셰프님도 친절하시고 분위기도 좋았습니다.',
+    images: ['https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400'],
+  },
+  {
+    id: '2',
+    userName: '이영희',
+    userAvatar: 'https://i.pravatar.cc/150?img=2',
+    rating: 4,
+    date: '2024.01.18',
+    content: '런치 세트가 가성비가 좋아요. 점심 시간에는 웨이팅이 있으니 예약 추천합니다.',
+  },
+]
 
 export function RestaurantDetailPage() {
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [isSaved, setIsSaved] = useState(false)
+  const [apiData, setApiData] = useState<RestaurantDetailResponseDto | null>(null)
 
-  const restaurant = {
-    id: restaurantId,
-    name: '맛있는 스시 레스토랑',
-    category: '일식',
-    rating: 4.5,
-    reviewCount: 124,
-    distance: '500m',
-    address: '서울시 강남구 테헤란로 123',
-    phone: '02-1234-5678',
-    hours: '11:00 - 22:00 (라스트오더 21:30)',
-    tags: ['신선한 재료', '런치 세트', '예약 필수', '주차 가능'],
-    images: [
-      'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
-      'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=800',
-      'https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?w=800',
-    ],
-    description:
-      '신선한 재료로 만든 정통 일본식 스시를 제공합니다. 20년 경력의 셰프가 직접 준비하는 오마카세 코스가 인기입니다.',
-  }
+  useEffect(() => {
+    if (restaurantId) {
+      getRestaurant(Number(restaurantId))
+        .then(setApiData)
+        .catch(() => {})
+    }
+  }, [restaurantId])
 
-  const menu = [
-    { name: '런치 세트', price: '15,000원', description: '사시미, 스시, 미소시루 포함' },
-    { name: '오마카세 A', price: '50,000원', description: '셰프 추천 10가지 코스' },
-    { name: '오마카세 B', price: '80,000원', description: '프리미엄 15가지 코스' },
-    { name: '모둠 사시미', price: '35,000원', description: '제철 생선 모둠' },
-  ]
+  const restaurant = apiData?.data
+    ? {
+        id: String(apiData.data.id),
+        name: apiData.data.name,
+        category: apiData.data.foodCategories?.[0] ?? '음식점',
+        rating: apiData.data.recommendStat?.positiveRatio
+          ? apiData.data.recommendStat.positiveRatio / 20
+          : 4.5,
+        reviewCount: apiData.data.recommendStat?.recommendedCount ?? 0,
+        distance: `${apiData.data.distanceMeter}m`,
+        address: apiData.data.address,
+        phone: '02-1234-5678',
+        hours: apiData.data.businessHours?.[0]
+          ? `${apiData.data.businessHours[0].open} - ${apiData.data.businessHours[0].close}`
+          : '정보 없음',
+        tags: apiData.data.foodCategories ?? [],
+        images: apiData.data.images?.map((img) => img.url) ?? defaultRestaurant.images,
+        description: apiData.data.aiSummary ?? defaultRestaurant.description,
+      }
+    : { ...defaultRestaurant, id: restaurantId ?? '' }
 
-  const reviews = [
-    {
-      id: '1',
-      userName: '김철수',
-      userAvatar: 'https://i.pravatar.cc/150?img=1',
-      rating: 5,
-      date: '2024.01.20',
-      content: '정말 신선하고 맛있었어요! 셰프님도 친절하시고 분위기도 좋았습니다.',
-      images: ['https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400'],
-    },
-    {
-      id: '2',
-      userName: '이영희',
-      userAvatar: 'https://i.pravatar.cc/150?img=2',
-      rating: 4,
-      date: '2024.01.18',
-      content: '런치 세트가 가성비가 좋아요. 점심 시간에는 웨이팅이 있으니 예약 추천합니다.',
-    },
-  ]
+  const menu = defaultMenu
+  const reviews = defaultReviews
 
   return (
     <div className="pb-6">

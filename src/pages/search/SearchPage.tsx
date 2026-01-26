@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
-import { BottomTabBar } from '@/widgets/bottom-tab-bar'
+import { useNavigate } from 'react-router-dom'
+import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { ROUTES } from '@/shared/config/routes'
 import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
@@ -26,6 +28,7 @@ type SearchPageProps = {
 }
 
 export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps) {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [recentSearches, setRecentSearches] = useState(['스시', '파스타', '강남역'])
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
@@ -211,7 +214,14 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
         </Tabs>
       )}
 
-      <BottomTabBar currentTab="search" />
+      <BottomTabBar
+        currentTab="search"
+        onTabChange={(tab: TabId) => {
+          if (tab === 'home') navigate(ROUTES.home)
+          else if (tab === 'groups') navigate(ROUTES.groups)
+          else if (tab === 'profile') navigate(ROUTES.profile)
+        }}
+      />
     </div>
   )
 }

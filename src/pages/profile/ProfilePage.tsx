@@ -1,5 +1,7 @@
 import { ChevronRight, Heart, Users, Bell, Settings, LogOut } from 'lucide-react'
-import { BottomTabBar } from '@/widgets/bottom-tab-bar'
+import { useNavigate } from 'react-router-dom'
+import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { ROUTES } from '@/shared/config/routes'
 import { Container } from '@/widgets/container'
 import { Card } from '@/shared/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -27,6 +29,8 @@ export function ProfilePage({
   onNotifications,
   onNotificationSettings,
 }: ProfilePageProps) {
+  const navigate = useNavigate()
+
   const user = {
     name: '김철수',
     email: 'chulsoo@example.com',
@@ -126,7 +130,14 @@ export function ProfilePage({
         </div>
       </Container>
 
-      <BottomTabBar currentTab="profile" />
+      <BottomTabBar
+        currentTab="profile"
+        onTabChange={(tab: TabId) => {
+          if (tab === 'home') navigate(ROUTES.home)
+          else if (tab === 'search') navigate(ROUTES.search)
+          else if (tab === 'groups') navigate(ROUTES.groups)
+        }}
+      />
     </div>
   )
 }

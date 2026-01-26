@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Plus, Search } from 'lucide-react'
-import { BottomTabBar } from '@/widgets/bottom-tab-bar'
+import { useNavigate } from 'react-router-dom'
+import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { ROUTES } from '@/shared/config/routes'
 import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
@@ -13,6 +15,7 @@ type GroupsPageProps = {
 }
 
 export function GroupsPage({ onGroupClick, onCreateGroup }: GroupsPageProps) {
+  const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
 
   const myGroups = [
@@ -119,7 +122,14 @@ export function GroupsPage({ onGroupClick, onCreateGroup }: GroupsPageProps) {
         </TabsContent>
       </Tabs>
 
-      <BottomTabBar currentTab="groups" />
+      <BottomTabBar
+        currentTab="groups"
+        onTabChange={(tab: TabId) => {
+          if (tab === 'home') navigate(ROUTES.home)
+          else if (tab === 'search') navigate(ROUTES.search)
+          else if (tab === 'profile') navigate(ROUTES.profile)
+        }}
+      />
     </div>
   )
 }

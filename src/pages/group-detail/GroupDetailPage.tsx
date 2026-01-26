@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, MoreVertical, Calendar, MapPin } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -29,91 +29,127 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { MemberRow } from '@/entities/group/ui'
+import { getGroup, getGroupMembers } from '@/entities/group/api/groupApi'
+import type { GroupDetailResponseDto, GroupMemberListResponseDto } from '@/entities/group/model/dto'
+
+const defaultMembers = [
+  {
+    id: '1',
+    name: '김철수',
+    avatar: 'https://i.pravatar.cc/150?img=1',
+    role: '그룹장',
+    isAdmin: true,
+  },
+  {
+    id: '2',
+    name: '이영희',
+    avatar: 'https://i.pravatar.cc/150?img=2',
+    role: '멤버',
+    isAdmin: false,
+  },
+  {
+    id: '3',
+    name: '박민수',
+    avatar: 'https://i.pravatar.cc/150?img=3',
+    role: '멤버',
+    isAdmin: false,
+  },
+  {
+    id: '4',
+    name: '최지훈',
+    avatar: 'https://i.pravatar.cc/150?img=4',
+    role: '멤버',
+    isAdmin: false,
+  },
+]
+
+const defaultEvents = [
+  {
+    id: '1',
+    title: '금요일 점심 모임',
+    date: '2024.01.26',
+    time: '12:00',
+    location: '맛있는 스시 레스토랑',
+    participants: 6,
+  },
+  {
+    id: '2',
+    title: '신년 회식',
+    date: '2024.02.02',
+    time: '18:00',
+    location: '정통 파스타 하우스',
+    participants: 8,
+  },
+]
+
+const defaultGroupRestaurants = [
+  {
+    id: '1',
+    name: '맛있는 스시 레스토랑',
+    category: '일식',
+    rating: 4.5,
+    distance: '500m',
+    image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+    tags: ['신선한 재료', '런치 세트'],
+  },
+  {
+    id: '2',
+    name: '정통 파스타 하우스',
+    category: '이탈리안',
+    rating: 4.7,
+    distance: '1.2km',
+    image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
+    tags: ['수제 파스타'],
+  },
+]
 
 export function GroupDetailPage() {
   const { id: groupId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
+  const [groupData, setGroupData] = useState<GroupDetailResponseDto | null>(null)
+  const [membersData, setMembersData] = useState<GroupMemberListResponseDto | null>(null)
 
-  const group = {
-    id: groupId,
-    name: '회사 점심 모임',
-    description: '매주 금요일 점심 메뉴를 함께 고르고 맛집을 탐방합니다.',
-    memberCount: 8,
-    createdDate: '2024.01.01',
-    isAdmin: true,
-  }
+  useEffect(() => {
+    if (groupId) {
+      getGroup(Number(groupId))
+        .then(setGroupData)
+        .catch(() => {})
+      getGroupMembers(Number(groupId))
+        .then(setMembersData)
+        .catch(() => {})
+    }
+  }, [groupId])
 
-  const members = [
-    {
-      id: '1',
-      name: '김철수',
-      avatar: 'https://i.pravatar.cc/150?img=1',
-      role: '그룹장',
-      isAdmin: true,
-    },
-    {
-      id: '2',
-      name: '이영희',
-      avatar: 'https://i.pravatar.cc/150?img=2',
-      role: '멤버',
-      isAdmin: false,
-    },
-    {
-      id: '3',
-      name: '박민수',
-      avatar: 'https://i.pravatar.cc/150?img=3',
-      role: '멤버',
-      isAdmin: false,
-    },
-    {
-      id: '4',
-      name: '최지훈',
-      avatar: 'https://i.pravatar.cc/150?img=4',
-      role: '멤버',
-      isAdmin: false,
-    },
-  ]
+  const group = groupData?.data
+    ? {
+        id: String(groupData.data.groupId),
+        name: groupData.data.name,
+        description: groupData.data.address ?? '',
+        memberCount: 8,
+        createdDate: groupData.data.createdAt?.slice(0, 10) ?? '',
+        isAdmin: true,
+      }
+    : {
+        id: groupId ?? '',
+        name: '회사 점심 모임',
+        description: '매주 금요일 점심 메뉴를 함께 고르고 맛집을 탐방합니다.',
+        memberCount: 8,
+        createdDate: '2024.01.01',
+        isAdmin: true,
+      }
 
-  const events = [
-    {
-      id: '1',
-      title: '금요일 점심 모임',
-      date: '2024.01.26',
-      time: '12:00',
-      location: '맛있는 스시 레스토랑',
-      participants: 6,
-    },
-    {
-      id: '2',
-      title: '신년 회식',
-      date: '2024.02.02',
-      time: '18:00',
-      location: '정통 파스타 하우스',
-      participants: 8,
-    },
-  ]
+  const members =
+    membersData?.items?.map((m, idx) => ({
+      id: String(m.memberId),
+      name: m.nickname,
+      avatar: m.profileImage ?? `https://i.pravatar.cc/150?img=${idx + 1}`,
+      role: idx === 0 ? '그룹장' : '멤버',
+      isAdmin: idx === 0,
+    })) ?? defaultMembers
 
-  const groupRestaurants = [
-    {
-      id: '1',
-      name: '맛있는 스시 레스토랑',
-      category: '일식',
-      rating: 4.5,
-      distance: '500m',
-      image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
-      tags: ['신선한 재료', '런치 세트'],
-    },
-    {
-      id: '2',
-      name: '정통 파스타 하우스',
-      category: '이탈리안',
-      rating: 4.7,
-      distance: '1.2km',
-      image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
-      tags: ['수제 파스타'],
-    },
-  ]
+  const events = defaultEvents
+  const groupRestaurants = defaultGroupRestaurants
 
   const handleSaveToggle = (id: string) => {
     setSavedRestaurants((prev) => ({ ...prev, [id]: !prev[id] }))

@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { BottomTabBar } from '@/widgets/bottom-tab-bar'
+import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { GroupCard } from '@/entities/group/ui'
+import { ROUTES } from '@/shared/config/routes'
+import { getMainPage } from '@/entities/main/api/mainApi'
+import type { MainResponse } from '@/entities/main/model/types'
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -13,64 +16,84 @@ type HomePageProps = {
   onGroupClick?: (id: string) => void
 }
 
+const defaultRestaurants = [
+  {
+    id: '1',
+    name: '맛있는 스시 레스토랑',
+    category: '일식',
+    rating: 4.5,
+    distance: '500m',
+    image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
+    tags: ['신선한 재료', '런치 세트', '예약 필수'],
+  },
+  {
+    id: '2',
+    name: '정통 파스타 하우스',
+    category: '이탈리안',
+    rating: 4.7,
+    distance: '1.2km',
+    image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
+    tags: ['수제 파스타', '와인 페어링'],
+  },
+  {
+    id: '3',
+    name: '강남 BBQ',
+    category: '한식',
+    rating: 4.3,
+    distance: '800m',
+    image: 'https://images.unsplash.com/photo-1588347818036-891e9c90c08d?w=800',
+    tags: ['고급 한우', '개별 룸'],
+  },
+]
+
+const defaultGroups = [
+  {
+    id: '1',
+    name: '회사 점심 모임',
+    description: '매주 금요일 점심 메뉴 추천',
+    memberCount: 8,
+    memberAvatars: [
+      { src: 'https://i.pravatar.cc/150?img=1', name: '김철수' },
+      { src: 'https://i.pravatar.cc/150?img=2', name: '이영희' },
+      { src: 'https://i.pravatar.cc/150?img=3', name: '박민수' },
+    ],
+    status: '활성',
+  },
+  {
+    id: '2',
+    name: '강남 맛집 탐험대',
+    description: '강남 지역 숨은 맛집을 찾아서',
+    memberCount: 15,
+    memberAvatars: [
+      { src: 'https://i.pravatar.cc/150?img=4', name: '최지훈' },
+      { src: 'https://i.pravatar.cc/150?img=5', name: '정수연' },
+    ],
+  },
+]
+
 export function HomePage({ onSearchClick, onRestaurantClick, onGroupClick }: HomePageProps) {
   const navigate = useNavigate()
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
+  const [mainData, setMainData] = useState<MainResponse | null>(null)
 
-  const recommendedRestaurants = [
-    {
-      id: '1',
-      name: '맛있는 스시 레스토랑',
-      category: '일식',
+  useEffect(() => {
+    getMainPage({ latitude: 37.5, longitude: 127.0 })
+      .then(setMainData)
+      .catch(() => {})
+  }, [])
+
+  const recommendedRestaurants =
+    mainData?.data?.sections?.[0]?.items?.map((item) => ({
+      id: String(item.restaurantId),
+      name: item.name,
+      category: item.category,
       rating: 4.5,
-      distance: '500m',
-      image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
-      tags: ['신선한 재료', '런치 세트', '예약 필수'],
-    },
-    {
-      id: '2',
-      name: '정통 파스타 하우스',
-      category: '이탈리안',
-      rating: 4.7,
-      distance: '1.2km',
-      image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
-      tags: ['수제 파스타', '와인 페어링'],
-    },
-    {
-      id: '3',
-      name: '강남 BBQ',
-      category: '한식',
-      rating: 4.3,
-      distance: '800m',
-      image: 'https://images.unsplash.com/photo-1588347818036-891e9c90c08d?w=800',
-      tags: ['고급 한우', '개별 룸'],
-    },
-  ]
+      distance: `${item.distanceMeter}m`,
+      image: item.thumbnailImageUrl,
+      tags: [],
+    })) ?? defaultRestaurants
 
-  const myGroups = [
-    {
-      id: '1',
-      name: '회사 점심 모임',
-      description: '매주 금요일 점심 메뉴 추천',
-      memberCount: 8,
-      memberAvatars: [
-        { src: 'https://i.pravatar.cc/150?img=1', name: '김철수' },
-        { src: 'https://i.pravatar.cc/150?img=2', name: '이영희' },
-        { src: 'https://i.pravatar.cc/150?img=3', name: '박민수' },
-      ],
-      status: '활성',
-    },
-    {
-      id: '2',
-      name: '강남 맛집 탐험대',
-      description: '강남 지역 숨은 맛집을 찾아서',
-      memberCount: 15,
-      memberAvatars: [
-        { src: 'https://i.pravatar.cc/150?img=4', name: '최지훈' },
-        { src: 'https://i.pravatar.cc/150?img=5', name: '정수연' },
-      ],
-    },
-  ]
+  const myGroups = defaultGroups
 
   const handleSaveToggle = (id: string) => {
     setSavedRestaurants((prev) => ({
@@ -160,7 +183,14 @@ export function HomePage({ onSearchClick, onRestaurantClick, onGroupClick }: Hom
         </Container>
       </section>
 
-      <BottomTabBar currentTab="home" />
+      <BottomTabBar
+        currentTab="home"
+        onTabChange={(tab: TabId) => {
+          if (tab === 'search') navigate(ROUTES.search)
+          else if (tab === 'groups') navigate(ROUTES.groups)
+          else if (tab === 'profile') navigate(ROUTES.profile)
+        }}
+      />
     </div>
   )
 }
