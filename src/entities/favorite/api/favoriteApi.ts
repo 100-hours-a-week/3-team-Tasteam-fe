@@ -16,43 +16,43 @@ export const addRestaurantFavorite = (restaurantId: number) =>
 export const getMyFavoriteRestaurants = () =>
   mockRequest<FavoriteRestaurantListResponseDto>({
     method: 'GET',
-    url: '/members/me/favorites/restaurants',
+    url: '/api/v1/members/me/favorites/restaurants',
   })
 
 export const addMyFavoriteRestaurant = (payload: FavoriteCreateRequestDto) =>
   mockRequest<FavoriteCreateResponseDto>({
     method: 'POST',
-    url: '/members/me/favorites/restaurants',
+    url: '/api/v1/members/me/favorites/restaurants',
     data: payload,
   })
 
 export const deleteMyFavoriteRestaurant = (restaurantId: number) =>
   mockRequest<void>({
     method: 'DELETE',
-    url: `/me/favorites/restaurants/${restaurantId}`,
+    url: `/api/v1/members/me/favorites/restaurants/${restaurantId}`,
   })
 
 export const getRestaurantFavoriteStatus = (restaurantId: number) =>
   mockRequest<RestaurantFavoriteStatusResponseDto>({
     method: 'GET',
-    url: `/restaurants/${restaurantId}/favorite-status`,
+    url: `/api/v1/restaurants/${restaurantId}/favorite-status`,
   })
 
 export const getSubgroupFavorites = (subgroupId: number) =>
   mockRequest<SubgroupFavoriteListResponseDto>({
     method: 'GET',
-    url: `/subgroups/${subgroupId}/favorites`,
+    url: `/api/v1/subgroups/${subgroupId}/favorites`,
   })
 
 export const addSubgroupFavorite = (subgroupId: number, payload: FavoriteCreateRequestDto) =>
   mockRequest<FavoriteCreateResponseDto>({
     method: 'POST',
-    url: `/subgroups/${subgroupId}/favorites`,
+    url: `/api/v1/subgroups/${subgroupId}/favorites`,
     data: payload,
   })
 
 export const deleteSubgroupFavorite = (subgroupId: number, restaurantId: number) =>
   mockRequest<void>({
     method: 'DELETE',
-    url: `/subgroups/${subgroupId}/favorites/${restaurantId}`,
+    url: `/api/v1/subgroups/${subgroupId}/favorites/${restaurantId}`,
   })
