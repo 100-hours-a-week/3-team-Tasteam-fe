@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { HomePage } from '@/pages/home/HomePage'
 import { LoginPage } from '@/pages/login/LoginPage'
@@ -31,7 +31,7 @@ import { Route, Routes } from 'react-router-dom'
 
 function App() {
   const isReady = useBootstrap()
-  const { showLogin } = useAuth()
+  const { showLogin, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -56,7 +56,10 @@ function App() {
       <Toaster position="top-center" />
       <Routes>
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
+        />
         <Route
           path="/signup"
           element={
