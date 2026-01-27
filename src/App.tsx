@@ -96,12 +96,7 @@ function App() {
 
         <Route
           path="/groups"
-          element={
-            <GroupsPage
-              onCreateGroup={() => navigate('/groups/create')}
-              onGroupClick={(id) => navigate(`/groups/${id}`)}
-            />
-          }
+          element={<GroupsPage onGroupClick={(id) => navigate(`/groups/${id}`)} />}
         />
         <Route
           path="/groups/create"
