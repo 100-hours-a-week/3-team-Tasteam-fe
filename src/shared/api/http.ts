@@ -6,7 +6,6 @@ import {
   clearAccessToken,
   getAccessToken,
   getRefreshEnabled,
-  notifyLoginRequired,
   setAccessToken,
 } from '@/shared/lib/authToken'
 import { logger } from '@/shared/lib/logger'
@@ -40,19 +39,19 @@ let refreshPromise: Promise<string | null> | null = null
  */
 const refreshAccessToken = async (currentToken: string | null) => {
   if (!refreshPromise) {
-    logger.debug('[auth] refresh attempt (401)', { currentTokenExists: !!currentToken })
+    logger.debug('[인증] 리프레시 시도 (401)', { currentTokenExists: !!currentToken })
     refreshPromise = refreshClient
       .post<RefreshResponse>(API_ENDPOINTS.tokenRefresh, { accessToken: currentToken })
       .then((response) => {
-        logger.debug('[auth] refresh response (401)', response.data)
+        logger.debug('[인증] 리프레시 응답 (401)', response.data)
         return response.data.data?.accessToken ?? null
       })
       .finally(() => {
         refreshPromise = null
-        logger.debug('[auth] refreshPromise cleared')
+        logger.debug('[인증] refreshPromise 초기화됨')
       })
   } else {
-    logger.debug('[auth] refreshPromise already exists, waiting...')
+    logger.debug('[인증] refreshPromise 존재, 대기 중...')
   }
 
   return refreshPromise
@@ -68,20 +67,20 @@ http.interceptors.request.use(
     if (token) {
       config.headers = config.headers ?? {}
       config.headers.Authorization = `Bearer ${token}`
-      logger.debug(`[http] Request sent to ${config.url}`, {
+      logger.debug(`[HTTP] ${config.url}로 요청 전송`, {
         method: config.method,
         tokenExists: !!token,
         hasAuthHeader: !!config.headers.Authorization,
       })
     } else {
-      logger.debug(`[http] Request sent to ${config.url} (no token)`, {
+      logger.debug(`[HTTP] ${config.url}로 요청 전송 (토큰 없음)`, {
         method: config.method,
       })
     }
     return config
   },
   (error) => {
-    logger.error('[http] Request error:', error)
+    logger.error('[HTTP] 요청 오류:', error)
     return Promise.reject(error)
   },
 )
@@ -92,7 +91,7 @@ http.interceptors.request.use(
  */
 http.interceptors.response.use(
   (response) => {
-    logger.debug(`[http] Response received from ${response.config.url}`, {
+    logger.debug(`[HTTP] ${response.config.url}에서 응답 수신`, {
       status: response.status,
       method: response.config.method,
       data: response.data,
@@ -102,7 +101,7 @@ http.interceptors.response.use(
   async (error) => {
     const errorResponse = error.response
     const errorData = errorResponse?.data
-    logger.error(`[http] Error response from ${error.config?.url}`, {
+    logger.error(`[HTTP] ${error.config?.url}에서 오류 응답`, {
       status: errorResponse?.status,
       code: errorData?.code,
       message: errorData?.message,
@@ -113,7 +112,7 @@ http.interceptors.response.use(
     const status = errorResponse?.status
     const isRefreshCall = originalRequest?.url?.includes(API_ENDPOINTS.tokenRefresh)
 
-    logger.debug('[auth] Interceptor 401 check:', {
+    logger.debug('[인증] 인터셉터 401 확인:', {
       status,
       isRetry: originalRequest?._retry,
       isRefreshCall,
@@ -128,33 +127,28 @@ http.interceptors.response.use(
 
     try {
       if (!getRefreshEnabled()) {
-        logger.debug('[auth] Refresh disabled, clearing token and notifying login required.')
+        logger.debug('[인증] 리프레시 비활성화, 토큰 제거.')
         clearAccessToken()
-        notifyLoginRequired()
         return Promise.reject(error)
       }
 
-      logger.debug('[auth] Attempting to refresh token...')
+      logger.debug('[인증] 토큰 리프레시 시도 중...')
       const newToken = await refreshAccessToken(getAccessToken())
       if (!newToken) {
-        logger.debug(
-          '[auth] Failed to get new token after refresh, clearing and notifying login required.',
-        )
+        logger.debug('[인증] 리프레시 후 새 토큰 획득 실패, 제거.')
         clearAccessToken()
-        notifyLoginRequired()
         return Promise.reject(error)
       }
 
-      logger.debug('[auth] New token received, setting and retrying original request.')
+      logger.debug('[인증] 새 토큰 수신, 설정 후 원래 요청 재시도.')
       setAccessToken(newToken)
       originalRequest.headers = originalRequest.headers ?? {}
       originalRequest.headers.Authorization = `Bearer ${newToken}`
 
       return http.request(originalRequest)
     } catch (refreshError) {
-      logger.error('[auth] Token refresh failed unexpectedly:', refreshError)
+      logger.error('[인증] 토큰 리프레시가 예상치 않게 실패함:', refreshError)
       clearAccessToken()
-      notifyLoginRequired()
       return Promise.reject(refreshError)
     }
   },
