@@ -1,372 +1,176 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { UserPlus, MoreVertical, Calendar, MapPin, Users, ChevronRight } from 'lucide-react'
-import { TopAppBar } from '@/widgets/top-app-bar'
+import { useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Container } from '@/widgets/container'
-import { FloatingChatButton } from '@/widgets/floating-chat-button'
-import { Button } from '@/shared/ui/button'
-import { Badge } from '@/shared/ui/badge'
-import { Card } from '@/shared/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/ui/alert-dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
-import { RestaurantCard } from '@/entities/restaurant/ui'
-import { MemberRow } from '@/entities/group/ui'
-import { getGroup, getGroupMembers } from '@/entities/group/api/groupApi'
-import { getSubgroups } from '@/entities/subgroup/api/subgroupApi'
 import { ROUTES } from '@/shared/config/routes'
-import type { GroupDetailResponseDto, GroupMemberListResponseDto } from '@/entities/group/model/dto'
-import type { SubgroupListItemDto } from '@/entities/subgroup/model/dto'
+import {
+  GroupCategoryFilter,
+  GroupDetailHeader,
+  GroupReviewCard,
+  type GroupDetailHeaderData,
+  type GroupReviewCardItem,
+} from '@/features/groups'
 
-const defaultMembers = [
-  {
-    id: '1',
-    name: '김철수',
-    avatar: 'https://i.pravatar.cc/150?img=1',
-    role: '그룹장',
-    isAdmin: true,
-  },
-  {
-    id: '2',
-    name: '이영희',
-    avatar: 'https://i.pravatar.cc/150?img=2',
-    role: '멤버',
-    isAdmin: false,
-  },
-  {
-    id: '3',
-    name: '박민수',
-    avatar: 'https://i.pravatar.cc/150?img=3',
-    role: '멤버',
-    isAdmin: false,
-  },
-  {
-    id: '4',
-    name: '최지훈',
-    avatar: 'https://i.pravatar.cc/150?img=4',
-    role: '멤버',
-    isAdmin: false,
-  },
+const CATEGORY_OPTIONS = [
+  '한식',
+  '중식',
+  '일식',
+  '양식',
+  '아시안',
+  '분식',
+  '패스트푸드',
+  '카페',
+  '디저트',
+  '주점',
+  '고깃집',
 ]
 
-const defaultEvents = [
-  {
-    id: '1',
-    title: '금요일 점심 모임',
-    date: '2024.01.26',
-    time: '12:00',
-    location: '맛있는 스시 레스토랑',
-    participants: 6,
-  },
-  {
-    id: '2',
-    title: '신년 회식',
-    date: '2024.02.02',
-    time: '18:00',
-    location: '정통 파스타 하우스',
-    participants: 8,
-  },
-]
+const mockGroup: GroupDetailHeaderData = {
+  name: '카카오 테크 부트캠프',
+  profileImage: 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=200',
+  addressLine: '경기 성남시 분당구 대왕판교로 660',
+  addressDetail: '유스페이스 1 A동 405호',
+  memberCount: 123,
+}
 
-const defaultGroupRestaurants = [
+const mockReviews: GroupReviewCardItem[] = [
   {
-    id: '1',
-    name: '맛있는 스시 레스토랑',
-    category: '일식',
-    rating: 4.5,
-    distance: '500m',
-    image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
-    tags: ['신선한 재료', '런치 세트'],
-  },
-  {
-    id: '2',
-    name: '정통 파스타 하우스',
-    category: '이탈리안',
-    rating: 4.7,
+    id: 'review-1',
+    restaurantId: 'rest-101',
+    restaurantName: '연남 파스타 라운지',
+    category: '양식',
     distance: '1.2km',
-    image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
-    tags: ['수제 파스타'],
+    priceRange: '₩₩',
+    totalReviews: 142,
+    images: [
+      'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800',
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&fit=crop&auto=format',
+    ],
+    tagLine: '크리미한 풍미가 최고',
+    summary: '트러플 크림 파스타가 진짜 고소하고, 빵까지 완벽해서 재방문 각.',
+    author: '미니미',
+    createdAt: '2026.01.20 19:40',
+    isRecommended: true,
+  },
+  {
+    id: 'review-2',
+    restaurantId: 'rest-102',
+    restaurantName: '연희 김밥식당',
+    category: '분식',
+    distance: '900m',
+    priceRange: '₩',
+    totalReviews: 88,
+    images: ['https://images.unsplash.com/photo-1604908811078-68aa83d2b7d4?w=800'],
+    tagLine: '간단하게 든든',
+    summary: '멸치국수 국물이 깔끔하고 김밥이 꽉 차 있어요.',
+    author: '정열',
+    createdAt: '2026.01.18 12:10',
+  },
+  {
+    id: 'review-3',
+    restaurantId: 'rest-103',
+    restaurantName: '홍대 숯불갈비',
+    category: '고깃집',
+    distance: '2.1km',
+    priceRange: '₩₩₩',
+    totalReviews: 230,
+    images: [
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800',
+      'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800',
+    ],
+    tagLine: '불향 제대로',
+    summary: '갈비 양도 많고 숯불 향이 좋아서 회식 장소로 추천이에요.',
+    author: '도담',
+    createdAt: '2026.01.17 20:05',
+    isRecommended: true,
+  },
+  {
+    id: 'review-4',
+    restaurantId: 'rest-104',
+    restaurantName: '라떼하우스 합정',
+    category: '카페',
+    distance: '650m',
+    priceRange: '₩',
+    totalReviews: 61,
+    images: [
+      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800',
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800',
+    ],
+    tagLine: '뷰 좋은 작업 카페',
+    summary: '좌석이 넓고 콘센트가 많아서 작업하기 좋아요.',
+    author: '소이라떼',
+    createdAt: '2026.01.15 15:22',
+  },
+  {
+    id: 'review-5',
+    restaurantId: 'rest-105',
+    restaurantName: '합정 태국포차',
+    category: '아시안(태국, 베트남, 인도)',
+    distance: '1.7km',
+    priceRange: '₩₩',
+    totalReviews: 109,
+    images: [
+      'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800',
+      'https://images.unsplash.com/photo-1546554137-f86b9593a222?w=800',
+      'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=800',
+    ],
+    tagLine: '향신료 밸런스 굿',
+    summary: '똠얌꿍이 적당히 매콤해서 술안주로 최고였습니다.',
+    author: '타이러버',
+    createdAt: '2026.01.14 21:18',
   },
 ]
 
 export function GroupDetailPage() {
-  const { id: groupId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
-  const [groupData, setGroupData] = useState<GroupDetailResponseDto | null>(null)
-  const [membersData, setMembersData] = useState<GroupMemberListResponseDto | null>(null)
-  const [subgroups, setSubgroups] = useState<SubgroupListItemDto[]>([])
+  const { id: groupId } = useParams<{ id: string }>()
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (groupId) {
-      getGroup(Number(groupId))
-        .then(setGroupData)
-        .catch(() => {})
-      getGroupMembers(Number(groupId))
-        .then(setMembersData)
-        .catch(() => {})
-      getSubgroups(Number(groupId))
-        .then((res) => setSubgroups(res.items ?? []))
-        .catch(() => {})
-    }
-  }, [groupId])
-
-  const group = groupData?.data
-    ? {
-        id: String(groupData.data.groupId),
-        name: groupData.data.name,
-        description: groupData.data.address ?? '',
-        memberCount: 8,
-        createdDate: groupData.data.createdAt?.slice(0, 10) ?? '',
-        isAdmin: true,
-      }
-    : {
-        id: groupId ?? '',
-        name: '회사 점심 모임',
-        description: '매주 금요일 점심 메뉴를 함께 고르고 맛집을 탐방합니다.',
-        memberCount: 8,
-        createdDate: '2024.01.01',
-        isAdmin: true,
-      }
-
-  const members =
-    membersData?.items?.map((m, idx) => ({
-      id: String(m.memberId),
-      name: m.nickname,
-      avatar: m.profileImage ?? `https://i.pravatar.cc/150?img=${idx + 1}`,
-      role: idx === 0 ? '그룹장' : '멤버',
-      isAdmin: idx === 0,
-    })) ?? defaultMembers
-
-  const events = defaultEvents
-  const groupRestaurants = defaultGroupRestaurants
-
-  const handleSaveToggle = (id: string) => {
-    setSavedRestaurants((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
-
-  const handleChatClick = () => {
-    navigate(`/chat/${groupId}`)
-  }
+  const filteredReviews = useMemo(() => {
+    if (!selectedCategory) return mockReviews
+    return mockReviews.filter((review) => review.category === selectedCategory)
+  }, [selectedCategory])
 
   return (
-    <div className="pb-6">
-      <TopAppBar title={group.name} showBackButton onBack={() => navigate(-1)} />
+    <div className="pb-10">
+      <GroupDetailHeader
+        group={mockGroup}
+        onBack={() => navigate(-1)}
+        onJoin={() => navigate(ROUTES.joinGroup)}
+        onMoreAction={(action) => {
+          if (action === 'info') {
+            navigate(ROUTES.groupDetail(groupId ?? ''))
+          }
+        }}
+      />
 
-      <Container className="pt-4 pb-6">
-        <Card className="p-6 space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="mb-2 text-xl font-bold">{group.name}</h1>
-              <p className="text-sm text-muted-foreground mb-3">{group.description}</p>
-              <Badge variant="secondary">활성 그룹</Badge>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>그룹 정보 수정</DropdownMenuItem>
-                <DropdownMenuItem>알림 설정</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      그룹 나가기
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>그룹을 나가시겠습니까?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        그룹을 나가면 그룹의 모든 정보와 활동 내역을 볼 수 없습니다.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>취소</AlertDialogCancel>
-                      <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
-                        나가기
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex -space-x-2">
-              {members.slice(0, 5).map((member) => (
-                <Avatar key={member.id} className="h-8 w-8 border-2 border-background">
-                  <AvatarImage src={member.avatar} alt={member.name} />
-                  <AvatarFallback className="text-xs">{member.name.slice(0, 2)}</AvatarFallback>
-                </Avatar>
-              ))}
-            </div>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              멤버 초대
-            </Button>
-          </div>
-        </Card>
+      <Container className="pt-3 pb-3 border-b border-border">
+        <GroupCategoryFilter
+          categories={CATEGORY_OPTIONS}
+          value={selectedCategory}
+          onChange={setSelectedCategory}
+        />
       </Container>
 
-      <Tabs defaultValue="subgroups" className="w-full">
-        <Container>
-          <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="subgroups">서브그룹</TabsTrigger>
-            <TabsTrigger value="events">일정</TabsTrigger>
-            <TabsTrigger value="restaurants">맛집</TabsTrigger>
-            <TabsTrigger value="members">멤버</TabsTrigger>
-          </TabsList>
-        </Container>
+      <Container className="mt-4 space-y-4">
+        {filteredReviews.map((review) => (
+          <GroupReviewCard
+            key={review.id}
+            review={review}
+            onClick={(restaurantId) => navigate(ROUTES.restaurantDetail(restaurantId))}
+          />
+        ))}
 
-        <TabsContent value="subgroups" className="mt-4">
-          <Container className="space-y-3">
-            {subgroups.length > 0 ? (
-              subgroups.map((sg) => (
-                <Card
-                  key={sg.subgroupId}
-                  className="p-4 cursor-pointer hover:bg-accent transition-colors"
-                  onClick={() => navigate(ROUTES.subgroupDetail(String(sg.subgroupId)))}
-                >
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      {sg.thumnailImage?.url ? (
-                        <AvatarImage src={sg.thumnailImage.url} alt={sg.name} />
-                      ) : null}
-                      <AvatarFallback>{sg.name.slice(0, 2)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{sg.name}</h4>
-                      {sg.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                          {sg.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <Users className="h-3 w-3" />
-                        <span>{sg.memberCount}명</span>
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                  </div>
-                </Card>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">아직 서브그룹이 없습니다</p>
-              </div>
-            )}
-          </Container>
-        </TabsContent>
+        {filteredReviews.length === 0 && (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            선택한 카테고리에 해당하는 리뷰가 없습니다.
+          </div>
+        )}
 
-        <TabsContent value="events" className="mt-4">
-          <Container className="space-y-3">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium">예정된 일정</h3>
-              <Button variant="outline" size="sm">
-                <Calendar className="h-4 w-4 mr-2" />
-                일정 만들기
-              </Button>
-            </div>
-            {events.map((event) => (
-              <Card key={event.id} className="p-4">
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="mb-1 font-medium">{event.title}</h4>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>
-                            {event.date} {event.time}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="outline">{event.participants}명 참여</Badge>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{event.location}</span>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </Container>
-        </TabsContent>
-
-        <TabsContent value="restaurants" className="mt-4">
-          <Container className="space-y-3">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium">그룹 맛집 리스트</h3>
-              <Button variant="outline" size="sm">
-                맛집 추가
-              </Button>
-            </div>
-            {groupRestaurants.map((restaurant) => (
-              <RestaurantCard
-                key={restaurant.id}
-                {...restaurant}
-                isSaved={savedRestaurants[restaurant.id]}
-                onSave={() => handleSaveToggle(restaurant.id)}
-                onClick={() => navigate(`/restaurants/${restaurant.id}`)}
-              />
-            ))}
-          </Container>
-        </TabsContent>
-
-        <TabsContent value="members" className="mt-4">
-          <Container>
-            <Card className="divide-y">
-              <div className="p-4 flex items-center justify-between">
-                <h3 className="font-medium">멤버 {members.length}명</h3>
-                {group.isAdmin && (
-                  <Button variant="ghost" size="sm">
-                    관리
-                  </Button>
-                )}
-              </div>
-              {members.map((member) => (
-                <MemberRow
-                  key={member.id}
-                  memberId={Number(member.id)}
-                  nickname={member.name}
-                  profileImage={member.avatar}
-                  isAdmin={member.isAdmin}
-                  showActions={group.isAdmin}
-                  className="px-4"
-                />
-              ))}
-            </Card>
-          </Container>
-        </TabsContent>
-      </Tabs>
-
-      <FloatingChatButton onClick={handleChatClick} />
+        <div className="py-4 text-center text-xs text-muted-foreground">
+          스크롤하면 다음 리뷰를 불러옵니다.
+        </div>
+      </Container>
     </div>
   )
 }

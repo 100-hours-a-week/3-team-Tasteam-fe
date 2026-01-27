@@ -1,2 +1,5 @@
 export { GroupListCard, type GroupListItem, type SubgroupListItem } from './GroupListCard'
 export { SubgroupList } from './SubgroupList'
+export { GroupDetailHeader, type GroupDetailHeaderData } from './GroupDetailHeader'
+export { GroupCategoryFilter } from './GroupCategoryFilter'
+export { GroupReviewCard, type GroupReviewCardItem } from './GroupReviewCard'

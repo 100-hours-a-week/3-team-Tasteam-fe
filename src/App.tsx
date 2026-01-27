@@ -32,6 +32,16 @@ import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
 import { resetLoginRequired } from '@/shared/lib/authToken'
 import { Route, Routes } from 'react-router-dom'
 
+function ScrollToTop() {
+  const location = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [location.pathname])
+
+  return null
+}
+
 function App() {
   const isReady = useBootstrap()
   const { showLogin, isAuthenticated, closeLogin, logout } = useAuth()
@@ -56,6 +66,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <Toaster position="top-center" />
       <LoginRequiredModal
         open={showLogin}
