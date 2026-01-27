@@ -30,14 +30,39 @@ import { RestaurantMetaRow } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import { Container } from '@/widgets/container'
 import { cn } from '@/shared/lib/utils'
+import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
+import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
+import type { ReviewListItemDto } from '@/entities/review/model/dto'
 
 export function RestaurantDetailPage() {
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [isSaved, setIsSaved] = React.useState(false)
+  const [restaurantData, setRestaurantData] = React.useState<{
+    id: number
+    name: string
+    address: string
+    foodCategories: string[]
+    images?: { id: string; url: string }[]
+    image?: { id: number | string; url: string } | null
+    recommendStat?: {
+      recommendedCount: number
+      notRecommendedCount: number
+      positiveRatio: number
+    }
+    aiSummary?: string | null
+    aiFeatures?: string | null
+  } | null>(null)
+
+  React.useEffect(() => {
+    if (!restaurantId) return
+    getRestaurant(Number(restaurantId))
+      .then((res) => setRestaurantData(res.data))
+      .catch(() => {})
+  }, [restaurantId])
 
   // Mock data - Enhanced with all details from design spec
-  const restaurant = {
+  const mockRestaurant = {
     id: restaurantId || '1',
     name: '맛있는 스시 레스토랑',
     category: '일식',
@@ -77,41 +102,101 @@ export function RestaurantDetailPage() {
     },
   }
 
-  const reviews = [
+  const mockPreviewReviews: ReviewListItemDto[] = [
     {
-      id: '1',
-      userName: '김철수',
-      userAvatar: 'https://i.pravatar.cc/150?img=1',
-      rating: 5,
-      date: '2024.01.20',
-      content:
+      id: 1,
+      author: { nickname: '김철수' },
+      contentPreview:
         '정말 신선하고 맛있었어요! 셰프님도 친절하시고 분위기도 좋았습니다. 다음에 또 방문하고 싶네요.',
-      images: ['https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400'],
-      helpful: 24,
+      isRecommended: true,
+      keywords: ['맛있어요', '친절해요'],
+      thumbnailImage: {
+        id: 'img-1',
+        url: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400',
+      },
+      createdAt: '2024-01-20T12:00:00Z',
     },
     {
-      id: '2',
-      userName: '이영희',
-      userAvatar: 'https://i.pravatar.cc/150?img=2',
-      rating: 4,
-      date: '2024.01.18',
-      content: '런치 세트가 가성비가 좋아요. 점심 시간에는 웨이팅이 있으니 예약 추천합니다.',
-      helpful: 18,
+      id: 2,
+      author: { nickname: '이영희' },
+      contentPreview: '런치 세트가 가성비가 좋아요. 점심 시간에는 웨이팅이 있으니 예약 추천합니다.',
+      isRecommended: true,
+      keywords: ['가성비', '예약필수'],
+      thumbnailImage: null,
+      createdAt: '2024-01-18T12:00:00Z',
     },
     {
-      id: '3',
-      userName: '박민수',
-      userAvatar: 'https://i.pravatar.cc/150?img=3',
-      rating: 5,
-      date: '2024.01.15',
-      content: '오마카세 B 코스를 먹었는데 정말 훌륭했습니다. 특히 참치가 일품이었어요!',
-      images: [
-        'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=400',
-        'https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?w=400',
-      ],
-      helpful: 32,
+      id: 3,
+      author: { nickname: '박민수' },
+      contentPreview: '오마카세 B 코스를 먹었는데 정말 훌륭했습니다. 특히 참치가 일품이었어요!',
+      isRecommended: true,
+      keywords: ['오마카세', '참치맛집'],
+      thumbnailImage: {
+        id: 'img-3',
+        url: 'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=400',
+      },
+      createdAt: '2024-01-15T12:00:00Z',
     },
   ]
+
+  const [previewReviews, setPreviewReviews] =
+    React.useState<ReviewListItemDto[]>(mockPreviewReviews)
+
+  React.useEffect(() => {
+    if (!restaurantId) return
+
+    getRestaurantReviews(Number(restaurantId), { size: 3 })
+      .then((res) => {
+        const anyRes = res as {
+          items?: ReviewListItemDto[]
+          data?: { items?: ReviewListItemDto[] }
+        }
+        const items = anyRes.items ?? anyRes.data?.items
+        if (items && items.length > 0) {
+          setPreviewReviews(items.slice(0, 3))
+        }
+      })
+      .catch(() => {})
+  }, [restaurantId])
+
+  const restaurant = (() => {
+    if (!restaurantData) return mockRestaurant
+
+    const positiveRatio = restaurantData.recommendStat?.positiveRatio
+    const sentiment =
+      typeof positiveRatio === 'number'
+        ? {
+            positive: positiveRatio,
+            negative: Math.max(0, 100 - positiveRatio),
+          }
+        : mockRestaurant.sentiment
+
+    const reviewCountFromStat = restaurantData.recommendStat
+      ? restaurantData.recommendStat.recommendedCount +
+        restaurantData.recommendStat.notRecommendedCount
+      : mockRestaurant.reviewCount
+
+    const imagesFromApi =
+      restaurantData.images && restaurantData.images.length > 0
+        ? restaurantData.images.map((img) => img.url)
+        : restaurantData.image?.url
+          ? [restaurantData.image.url]
+          : null
+    const images = imagesFromApi ?? mockRestaurant.images
+
+    return {
+      ...mockRestaurant,
+      id: String(restaurantData.id),
+      name: restaurantData.name,
+      category: restaurantData.foodCategories[0] ?? mockRestaurant.category,
+      address: restaurantData.address,
+      images,
+      reviewCount: reviewCountFromStat,
+      aiSummary: restaurantData.aiSummary ?? mockRestaurant.aiSummary,
+      feature: restaurantData.aiFeatures ?? mockRestaurant.feature,
+      sentiment,
+    }
+  })()
 
   const handleSave = () => {
     setIsSaved(!isSaved)
@@ -272,16 +357,8 @@ export function RestaurantDetailPage() {
 
             {/* Review List */}
             <div className="space-y-3">
-              {reviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  id={review.id}
-                  userName={review.userName}
-                  userAvatar={review.userAvatar}
-                  date={review.date}
-                  content={review.content}
-                  images={review.images}
-                />
+              {previewReviews.map((review) => (
+                <ReviewCard key={review.id} review={review} />
               ))}
             </div>
 

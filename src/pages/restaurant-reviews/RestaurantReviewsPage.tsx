@@ -85,8 +85,19 @@ export function RestaurantReviewsPage() {
         size: 10,
       })
 
-      if (response && 'items' in response && response.items.length > 0) {
-        const { items, pagination } = response
+      const anyRes = response as {
+        items?: ReviewListItemDto[]
+        pagination?: { nextCursor: string | null; hasNext: boolean; size: number }
+        data?: {
+          items?: ReviewListItemDto[]
+          pagination?: { nextCursor: string | null; hasNext: boolean; size: number }
+        }
+      }
+
+      const items = anyRes.items ?? anyRes.data?.items
+      const pagination = anyRes.pagination ?? anyRes.data?.pagination
+
+      if (items && items.length > 0 && pagination) {
         setReviews((prev) => [...prev, ...items])
         setNextCursor(pagination.nextCursor)
         setHasNextPage(pagination.hasNext)
