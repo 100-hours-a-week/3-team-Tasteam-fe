@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Container } from '@/widgets/container'
 import { ROUTES } from '@/shared/config/routes'
 import {
@@ -123,7 +123,6 @@ const mockReviews: GroupReviewCardItem[] = [
 
 export function GroupDetailPage() {
   const navigate = useNavigate()
-  const { id: groupId } = useParams<{ id: string }>()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   const filteredReviews = useMemo(() => {
@@ -136,12 +135,8 @@ export function GroupDetailPage() {
       <GroupDetailHeader
         group={mockGroup}
         onBack={() => navigate(-1)}
-        onJoin={() => navigate(ROUTES.joinGroup)}
-        onMoreAction={(action) => {
-          if (action === 'info') {
-            navigate(ROUTES.groupDetail(groupId ?? ''))
-          }
-        }}
+        onJoin={() => navigate(ROUTES.subgroupList)}
+        onMoreAction={() => navigate(ROUTES.subgroupList)}
       />
 
       <Container className="pt-3 pb-3 border-b border-border">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Users, Check } from 'lucide-react'
+import { Search, Users, Check, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
@@ -8,7 +8,6 @@ import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
-import { Badge } from '@/shared/ui/badge'
 
 type Group = {
   id: string
@@ -17,15 +16,14 @@ type Group = {
   memberCount: number
   imageUrl?: string
   isJoined: boolean
-  tags: string[]
 }
 
-type JoinGroupPageProps = {
+type SubgroupListPageProps = {
   onGroupClick?: (groupId: string) => void
   onBack?: () => void
 }
 
-export function JoinGroupPage({ onGroupClick, onBack }: JoinGroupPageProps) {
+export function SubgroupListPage({ onGroupClick, onBack }: SubgroupListPageProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [groups, setGroups] = useState<Group[]>([
     {
@@ -34,7 +32,6 @@ export function JoinGroupPage({ onGroupClick, onBack }: JoinGroupPageProps) {
       description: '서울 숨은 맛집을 찾아다니는 모임입니다',
       memberCount: 24,
       isJoined: false,
-      tags: ['한식', '일식'],
     },
     {
       id: '2',
@@ -42,7 +39,6 @@ export function JoinGroupPage({ onGroupClick, onBack }: JoinGroupPageProps) {
       description: '주말 브런치를 즐기는 모임',
       memberCount: 18,
       isJoined: true,
-      tags: ['브런치', '카페'],
     },
     {
       id: '3',
@@ -50,7 +46,6 @@ export function JoinGroupPage({ onGroupClick, onBack }: JoinGroupPageProps) {
       description: '야식 맛집 탐방 모임',
       memberCount: 45,
       isJoined: false,
-      tags: ['야식', '술집'],
     },
   ])
 
@@ -70,22 +65,29 @@ export function JoinGroupPage({ onGroupClick, onBack }: JoinGroupPageProps) {
     )
   }
 
-  const filteredGroups = groups.filter(
-    (g) =>
-      g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      g.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())),
+  const filteredGroups = groups.filter((g) =>
+    g.name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   return (
     <div className="flex flex-col h-full bg-background min-h-screen">
-      <TopAppBar title="그룹 찾기" showBackButton onBack={onBack} />
+      <TopAppBar
+        title="하위그룹 찾기"
+        showBackButton
+        onBack={onBack}
+        actions={
+          <Button variant="ghost" size="icon" aria-label="하위그룹 추가">
+            <Plus className="h-5 w-5" />
+          </Button>
+        }
+      />
 
       <Container className="flex-1 py-4 overflow-auto">
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="그룹 이름 또는 태그 검색"
+              placeholder="하위그룹 이름 검색"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -137,13 +139,6 @@ export function JoinGroupPage({ onGroupClick, onBack }: JoinGroupPageProps) {
                             <Users className="w-3 h-3 mr-1" />
                             {group.memberCount}명
                           </span>
-                          <div className="flex gap-1">
-                            {group.tags.map((tag) => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
                         </div>
                       </div>
                     </div>
