@@ -26,10 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 1주차 생략
       # Lint
-      #      - name: Run Lint
-      #        run: npm run lint
+      - name: Run Lint
+        run: npm run lint
 
       # 빌드
       - name: Build
