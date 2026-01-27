@@ -1,6 +1,6 @@
 import type { SuccessResponse } from '@/shared/types/api'
 import type { IsoDateTimeString } from '@/shared/types/common'
-import type { CursorPageResponse, CursorPagination } from '@/shared/types/pagination'
+import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type MemberProfileDto = {
   nickname: string
@@ -10,22 +10,22 @@ export type MemberProfileDto = {
 export type MemberMeResponseDto = SuccessResponse<{
   member: MemberProfileDto
   groupRequests: {
-    data: Array<{
+    items: Array<{
       id: number
       groupName: string
       groupAddress: string
       status: string
     }>
-    page: CursorPagination
+    hasMore: boolean
   }
   reviews: {
-    data: Array<{
+    items: Array<{
       id: number
       restaurantName: string
       restaurantAddress: string
       reviewContent: string
     }>
-    page: CursorPagination
+    hasMore: boolean
   }
 }>
 
@@ -76,8 +76,10 @@ export type MemberReviewListResponseDto = CursorPageResponse<{
 }>
 
 export type MemberProfileUpdateRequestDto = {
+  nickname?: string
   profileImageUrl?: string
   email?: string
+  bio?: string
 }
 
 export type GroupEmailVerificationResponseDto = SuccessResponse<{

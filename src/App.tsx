@@ -156,13 +156,14 @@ function App() {
               onSettingsClick={() => navigate('/settings')}
               onNotifications={() => navigate('/notifications')}
               onNotificationSettings={() => navigate('/notifications/settings')}
+              onMyFavorites={() => navigate('/my-page/favorites')}
+              onMyReviews={() => navigate('/my-page/reviews')}
               onLogout={async () => {
                 const ok = await logout()
                 if (ok) {
                   navigate('/')
                 }
               }}
-              onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
             />
           }
         />
@@ -170,7 +171,7 @@ function App() {
           path="/my-page/edit"
           element={
             <RequireAuth>
-              <EditProfilePage onBack={() => navigate(-1)} onSave={() => navigate(-1)} />
+              <EditProfilePage onBack={() => navigate(-1)} />
             </RequireAuth>
           }
         />
