@@ -13,7 +13,7 @@ export type AuthContextValue = {
   openLogin: () => void
   closeLogin: () => void
   loginWithToken: (token: string, user?: User) => void
-  logout: () => void
+  logout: () => Promise<boolean>
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined)

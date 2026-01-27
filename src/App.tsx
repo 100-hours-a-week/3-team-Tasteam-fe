@@ -33,7 +33,7 @@ import { Route, Routes } from 'react-router-dom'
 
 function App() {
   const isReady = useBootstrap()
-  const { showLogin, isAuthenticated, closeLogin } = useAuth()
+  const { showLogin, isAuthenticated, closeLogin, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -147,7 +147,12 @@ function App() {
               onSettingsClick={() => navigate('/settings')}
               onNotifications={() => navigate('/notifications')}
               onNotificationSettings={() => navigate('/notifications/settings')}
-              onLogout={() => navigate('/login')}
+              onLogout={async () => {
+                const ok = await logout()
+                if (ok) {
+                  navigate('/')
+                }
+              }}
               onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
             />
           }

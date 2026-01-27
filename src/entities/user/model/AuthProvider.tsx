@@ -11,7 +11,7 @@ import {
   subscribeAccessToken,
   subscribeLoginRequired,
 } from '@/shared/lib/authToken'
-import { refreshAccessToken } from '@/entities/auth/api/authApi'
+import { logout as logoutApi, refreshAccessToken } from '@/entities/auth/api/authApi'
 import { AUTH_DEBUG } from '@/shared/config/env'
 
 const extractAccessToken = (data: { data: { accessToken?: string } }) =>
@@ -100,12 +100,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         resetLoginRequired()
         setShowLogin(false)
       },
-      logout: () => {
+      logout: async () => {
+        try {
+          await logoutApi()
+        } catch {
+          if (AUTH_DEBUG) {
+            console.debug('[auth] logout failed')
+          }
+          return false
+        }
         clearAccessToken()
         setTokenState(null)
         setUser(null)
         resetLoginRequired()
         setShowLogin(false)
+        return true
       },
     }),
     [accessToken, showLogin, user],
