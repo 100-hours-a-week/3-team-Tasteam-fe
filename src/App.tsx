@@ -9,7 +9,7 @@ import { SignupPage } from '@/pages/signup'
 import { OtpVerificationPage } from '@/pages/otp-verification'
 import { OnboardingPage } from '@/pages/onboarding'
 import { SearchPage } from '@/pages/search'
-import { GroupsPage } from '@/pages/groups'
+import { GroupsPage } from '@/pages/group'
 import { CreateGroupPage } from '@/pages/create-group'
 import { JoinGroupPage } from '@/pages/join-group'
 import { GroupDetailPage } from '@/pages/group-detail'
@@ -114,12 +114,7 @@ function App() {
 
         <Route
           path="/groups"
-          element={
-            <GroupsPage
-              onCreateGroup={() => navigate('/groups/create')}
-              onGroupClick={(id) => navigate(`/groups/${id}`)}
-            />
-          }
+          element={<GroupsPage onGroupClick={(id) => navigate(`/groups/${id}`)} />}
         />
         <Route
           path="/groups/create"

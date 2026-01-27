@@ -1,21 +1,19 @@
 import { useState } from 'react'
-import { Plus, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { ROUTES } from '@/shared/config/routes'
 import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
-import { Button } from '@/shared/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { GroupCard } from '@/entities/group/ui'
 
 type GroupsPageProps = {
   onGroupClick?: (id: string) => void
-  onCreateGroup?: () => void
 }
 
-export function GroupsPage({ onGroupClick, onCreateGroup }: GroupsPageProps) {
+export function GroupsPage({ onGroupClick }: GroupsPageProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -87,9 +85,6 @@ export function GroupsPage({ onGroupClick, onCreateGroup }: GroupsPageProps) {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button className="w-full" onClick={onCreateGroup}>
-          <Plus className="h-4 w-4 mr-2" />새 그룹 만들기
-        </Button>
       </Container>
 
       <Tabs defaultValue="my-groups" className="pt-2">
@@ -109,7 +104,6 @@ export function GroupsPage({ onGroupClick, onCreateGroup }: GroupsPageProps) {
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground mb-4">아직 가입한 그룹이 없습니다</p>
-                <Button onClick={onCreateGroup}>첫 그룹 만들기</Button>
               </div>
             )}
           </Container>
