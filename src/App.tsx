@@ -11,7 +11,7 @@ import { OnboardingPage } from '@/pages/onboarding'
 import { SearchPage } from '@/pages/search'
 import { GroupsPage } from '@/pages/group'
 import { CreateGroupPage } from '@/pages/create-group'
-import { JoinGroupPage } from '@/pages/join-group'
+import { SubgroupListPage } from '@/pages/subgroup-list'
 import { GroupDetailPage } from '@/pages/group-detail'
 import { ProfilePage } from '@/pages/profile'
 import { EditProfilePage } from '@/pages/edit-profile'
@@ -137,11 +137,11 @@ function App() {
           }
         />
         <Route
-          path="/groups/join"
+          path="/subgroup-list"
           element={
-            <JoinGroupPage
+            <SubgroupListPage
               onBack={() => navigate(-1)}
-              onGroupClick={(id) => navigate(`/groups/${id}`)}
+              onGroupClick={(id) => navigate(`/subgroups/${id}`)}
             />
           }
         />

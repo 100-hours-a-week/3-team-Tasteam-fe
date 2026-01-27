@@ -10,7 +10,7 @@ export const ROUTES = {
   search: '/search',
   groups: '/groups',
   createGroup: '/groups/create',
-  joinGroup: '/groups/join',
+  subgroupList: '/subgroup-list',
   groupDetail: (id: string) => `/groups/${id}`,
   subgroupDetail: (id: string) => `/subgroups/${id}`,
   profile: '/profile',
