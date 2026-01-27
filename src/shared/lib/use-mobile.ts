@@ -2,6 +2,10 @@ import * as React from 'react'
 
 const MOBILE_BREAKPOINT = 768
 
+/**
+ * 모바일 기기 여부를 반환하는 훅입니다.
+ * @returns {boolean} 모바일 기기 여부
+ */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
 
