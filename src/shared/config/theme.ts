@@ -1,3 +1,6 @@
+/**
+ * 애플리케이션의 기본 테마 설정을 정의합니다.
+ */
 export const THEME = {
   colors: {
     primary: '#f97316',
