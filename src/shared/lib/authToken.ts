@@ -1,3 +1,5 @@
+import { AUTH_DEBUG } from '@/shared/config/env' // Import AUTH_DEBUG
+
 let accessToken: string | null = null
 let refreshEnabled = false
 const listeners = new Set<(token: string | null) => void>()
@@ -14,16 +16,25 @@ export const getAccessToken = () => {
 
 export const setAccessToken = (token: string | null) => {
   accessToken = token
+  if (AUTH_DEBUG) {
+    console.debug('[auth] Access Token set:', token ? 'exists' : 'null')
+  }
   notify()
 }
 
 export const clearAccessToken = () => {
   accessToken = null
+  if (AUTH_DEBUG) {
+    console.debug('[auth] Access Token cleared')
+  }
   notify()
 }
 
 export const setRefreshEnabled = (enabled: boolean) => {
   refreshEnabled = enabled
+  if (AUTH_DEBUG) {
+    console.debug('[auth] Refresh Enabled set to:', enabled)
+  }
 }
 
 export const getRefreshEnabled = () => {
@@ -47,11 +58,17 @@ export const subscribeLoginRequired = (listener: () => void) => {
 export const notifyLoginRequired = () => {
   if (loginRequiredFired) return
   loginRequiredFired = true
+  if (AUTH_DEBUG) {
+    console.debug('[auth] Login Required triggered')
+  }
   loginRequiredListeners.forEach((listener) => listener())
 }
 
 export const resetLoginRequired = () => {
   loginRequiredFired = false
+  if (AUTH_DEBUG) {
+    console.debug('[auth] Login Required reset')
+  }
 }
 
 const decodeJwtPayload = (token: string) => {
@@ -62,7 +79,10 @@ const decodeJwtPayload = (token: string) => {
     const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
     const json = atob(padded)
     return JSON.parse(json) as { exp?: number }
-  } catch {
+  } catch (e) {
+    if (AUTH_DEBUG) {
+      console.debug('[auth] JWT decoding error:', e)
+    }
     return null
   }
 }
