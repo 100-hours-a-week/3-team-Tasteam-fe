@@ -95,17 +95,22 @@ http.interceptors.response.use(
     logger.debug(`[http] Response received from ${response.config.url}`, {
       status: response.status,
       method: response.config.method,
+      data: response.data,
     })
     return response
   },
   async (error) => {
-    logger.debug(`[http] Error response from ${error.config?.url}`, {
-      status: error.response?.status,
-      message: error.message,
+    const errorResponse = error.response
+    const errorData = errorResponse?.data
+    logger.error(`[http] Error response from ${error.config?.url}`, {
+      status: errorResponse?.status,
+      code: errorData?.code,
+      message: errorData?.message,
+      errors: errorData?.errors,
     })
 
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
-    const status = error.response?.status
+    const status = errorResponse?.status
     const isRefreshCall = originalRequest?.url?.includes(API_ENDPOINTS.tokenRefresh)
 
     logger.debug('[auth] Interceptor 401 check:', {

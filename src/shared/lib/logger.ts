@@ -21,7 +21,15 @@ const createMethod = (
   method: (...args: unknown[]) => void,
   level: 'error' | 'warn' | 'info' | 'debug',
 ): ((...args: unknown[]) => void) => {
-  return isLogEnabled(level) ? method.bind(console) : noop
+  if (!isLogEnabled(level)) return noop
+  return (...args: unknown[]) => {
+    const [first, ...rest] = args
+    if (rest.length > 0 && typeof first === 'string') {
+      method(first + '\n', ...rest)
+    } else {
+      method(...args)
+    }
+  }
 }
 
 export const logger = {
