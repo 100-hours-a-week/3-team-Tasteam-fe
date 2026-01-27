@@ -1,4 +1,4 @@
-import { mockRequest } from '@/shared/api/mockRequest'
+import { request } from '@/shared/api/request'
 import { buildQuery } from '@/shared/api/query'
 import type {
   GroupCreateRequestDto,
@@ -12,58 +12,58 @@ import type {
 } from '../model/dto'
 
 export const createGroupRequest = (payload: GroupRequestCreateDto) =>
-  mockRequest<GroupRequestCreateResponseDto>({
+  request<GroupRequestCreateResponseDto>({
     method: 'POST',
     url: '/api/v1/group-requests',
     data: payload,
   })
 
 export const createGroup = (payload: GroupCreateRequestDto) =>
-  mockRequest<GroupCreateResponseDto>({
+  request<GroupCreateResponseDto>({
     method: 'POST',
     url: '/api/v1/groups',
     data: payload,
   })
 
 export const getGroup = (groupId: number) =>
-  mockRequest<GroupDetailResponseDto>({
+  request<GroupDetailResponseDto>({
     method: 'GET',
     url: `/api/v1/groups/${groupId}`,
   })
 
 export const updateGroup = (groupId: number, payload: GroupUpdateRequestDto) =>
-  mockRequest<void>({
+  request<void>({
     method: 'PATCH',
     url: `/api/v1/groups/${groupId}`,
     data: payload,
   })
 
 export const deleteGroup = (groupId: number) =>
-  mockRequest<void>({
+  request<void>({
     method: 'DELETE',
     url: `/api/v1/groups/${groupId}`,
   })
 
 export const leaveGroup = (groupId: number) =>
-  mockRequest<void>({
+  request<void>({
     method: 'DELETE',
     url: `/api/v1/groups/${groupId}/members/me`,
   })
 
 export const getGroupMembers = (groupId: number, params?: { cursor?: string; size?: number }) =>
-  mockRequest<GroupMemberListResponseDto>({
+  request<GroupMemberListResponseDto>({
     method: 'GET',
     url: `/api/v1/groups/${groupId}/members${buildQuery(params ?? {})}`,
   })
 
 export const deleteGroupMember = (groupId: number, userId: number) =>
-  mockRequest<void>({
+  request<void>({
     method: 'GET',
     url: `/api/v1/groups/${groupId}/members/${userId}`,
   })
 
 export const getGroupReviews = (groupId: number, params?: { cursor?: string; size?: number }) =>
-  mockRequest<GroupReviewListResponseDto>({
+  request<GroupReviewListResponseDto>({
     method: 'GET',
     url: `/api/v1/groups/${groupId}/reviews${buildQuery(params ?? {})}`,
   })

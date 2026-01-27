@@ -1,4 +1,4 @@
-import { mockRequest } from '@/shared/api/mockRequest'
+import { request } from '@/shared/api/request'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import type {
   AuthTokenRequestDto,
@@ -7,14 +7,14 @@ import type {
 } from '../model/dto'
 
 export const issueAccessToken = (payload: AuthTokenRequestDto) =>
-  mockRequest<AuthTokenResponseDto>({
+  request<AuthTokenResponseDto>({
     method: 'POST',
     url: '/api/v1/auth/token',
     data: payload,
   })
 
 export const refreshAccessToken = (accessToken?: string | null) =>
-  mockRequest<RefreshAccessTokenResponseDto>({
+  request<RefreshAccessTokenResponseDto>({
     method: 'POST',
     url: '/api/v1/auth/token/refresh',
     data: { accessToken: accessToken ?? null },
@@ -22,7 +22,7 @@ export const refreshAccessToken = (accessToken?: string | null) =>
   })
 
 export const logout = () =>
-  mockRequest<void>({
+  request<void>({
     method: 'POST',
     url: API_ENDPOINTS.logout,
   })

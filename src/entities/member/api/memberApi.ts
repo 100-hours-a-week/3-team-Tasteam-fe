@@ -1,4 +1,4 @@
-import { mockRequest } from '@/shared/api/mockRequest'
+import { request } from '@/shared/api/request'
 import { buildQuery } from '@/shared/api/query'
 import type {
   MemberMeResponseDto,
@@ -12,64 +12,64 @@ import type {
 } from '../model/dto'
 
 export const getMe = () =>
-  mockRequest<MemberMeResponseDto>({
+  request<MemberMeResponseDto>({
     method: 'GET',
     url: '/api/v1/members/me',
   })
 
 export const deleteMe = () =>
-  mockRequest<void>({
+  request<void>({
     method: 'DELETE',
     url: '/api/v1/members/me',
   })
 
 export const updateMeProfile = (payload: MemberProfileUpdateRequestDto) =>
-  mockRequest<void>({
+  request<void>({
     method: 'PATCH',
     url: '/api/v1/members/me/profile',
     data: payload,
   })
 
 export const getMyGroups = (params?: { cursor?: string }) =>
-  mockRequest<MemberGroupListResponseDto>({
+  request<MemberGroupListResponseDto>({
     method: 'GET',
     url: `/api/v1/members/me/groups${buildQuery(params ?? {})}`,
   })
 
 export const getMyGroupsOverview = (params?: { cursor?: string }) =>
-  mockRequest<MemberGroupOverviewListResponseDto>({
+  request<MemberGroupOverviewListResponseDto>({
     method: 'GET',
     url: `/api/v1/members/me/groups${buildQuery(params ?? {})}`,
   })
 
 export const getMyGroupRequests = (params?: { cursor?: string }) =>
-  mockRequest<MemberGroupRequestListResponseDto>({
+  request<MemberGroupRequestListResponseDto>({
     method: 'GET',
     url: `/api/v1/members/me/group-requests${buildQuery(params ?? {})}`,
   })
 
 export const getMyReviews = (params?: { cursor?: string }) =>
-  mockRequest<MemberReviewListResponseDto>({
+  request<MemberReviewListResponseDto>({
     method: 'GET',
     url: `/api/v1/members/me/reviews${buildQuery(params ?? {})}`,
   })
 
 export const sendGroupEmailVerification = (groupId: number, payload: { email: string }) =>
-  mockRequest<GroupEmailVerificationResponseDto>({
+  request<GroupEmailVerificationResponseDto>({
     method: 'POST',
     url: `/api/v1/groups/${groupId}/email-verifications`,
     data: payload,
   })
 
 export const verifyGroupEmailCode = (groupId: number, payload: { code: string }) =>
-  mockRequest<GroupJoinVerificationResponseDto>({
+  request<GroupJoinVerificationResponseDto>({
     method: 'POST',
     url: `/api/v1/groups/${groupId}/email-authentications`,
     data: payload,
   })
 
 export const verifyGroupPassword = (groupId: number, payload: { code: string }) =>
-  mockRequest<GroupJoinVerificationResponseDto>({
+  request<GroupJoinVerificationResponseDto>({
     method: 'POST',
     url: `/api/v1/groups/${groupId}/password-authentications`,
     data: payload,
