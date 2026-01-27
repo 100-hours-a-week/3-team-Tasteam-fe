@@ -1,0 +1,134 @@
+name: Frontend Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '롤백할 환경'
+        required: true
+        type: choice
+        options:
+          - develop
+          - main
+      run_number:
+        description: '롤백할 Run Number'
+        required: true
+        type: string
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment == 'main' && 'production' || 'development' }}
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. GitHub CLI를 이용해 run_number에 해당하는 실제 run-id를 찾습니다.
+      - name: Find Run ID
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 지정한 브랜치와 run_number에 맞는 run-id 찾기
+          RUN_ID=$(gh run list \
+            --workflow "Frontend CD" \
+            --json databaseId,number,headBranch \
+            --jq ".[] | select(.number == ${{ inputs.run_number }} and .headBranch == \"${{ inputs.environment }}\") | .databaseId" \
+            | head -n 1)
+
+          if [ -z "$RUN_ID" ]; then
+            echo "❌ Error: ${{ inputs.environment }} 브랜치의 Run Number ${{ inputs.run_number }}를 찾을 수 없습니다."
+            echo ""
+            echo "사용 가능한 최근 빌드 목록:"
+            gh run list --workflow "Frontend CD" --branch "${{ inputs.environment }}" --limit 10
+            exit 1
+          fi
+
+          echo "FOUND_RUN_ID=$RUN_ID" >> $GITHUB_ENV
+          echo "✅ 찾은 Run ID: $RUN_ID (Run Number: ${{ inputs.run_number }}, Branch: ${{ inputs.environment }})"
+
+      # 2. 찾은 Run ID를 사용하여 아티팩트를 다운로드합니다.
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: fe-${{ inputs.environment }}-${{ inputs.run_number }}
+          run-id: ${{ env.FOUND_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./rollback-temp
+
+      # 3. 다운로드한 버전 정보 확인
+      - name: Show Version Info
+        run: |
+          echo "=== Rollback Version Info ==="
+          if [ -f ./rollback-temp/version.txt ]; then
+            cat ./rollback-temp/version.txt
+          else
+            echo "version.txt not found"
+          fi
+          echo ""
+          echo "=== Downloaded Files ==="
+          ls -la ./rollback-temp/
+
+      # 4. 서버로 파일 전송
+      - name: Transfer to Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          source: "./rollback-temp/*"
+          target: "/home/${{ secrets.USERNAME }}/frontend/rollback"
+          strip_components: 1
+
+      # 5. 롤백 실행
+      - name: Deploy Rollback
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            ROLLBACK_DIR="/home/${{ secrets.USERNAME }}/frontend/rollback"
+            WEB_ROOT="/var/www/html"
+
+            # 현재 배포된 버전 백업 생성
+            BACKUP_DIR="/home/${{ secrets.USERNAME }}/frontend/backup-$(date +%Y%m%d-%H%M%S)"
+            mkdir -p $BACKUP_DIR
+            if [ "$(ls -A $WEB_ROOT)" ]; then
+              cp -r $WEB_ROOT/* $BACKUP_DIR/
+              echo "✅ 현재 버전 백업 완료: $BACKUP_DIR"
+            else
+              echo "⚠️  배포된 파일이 없어 백업을 건너뜁니다."
+            fi
+
+            # 롤백 실행
+            echo "🔄 롤백 시작..."
+            rm -rf $WEB_ROOT/*
+            cp -r $ROLLBACK_DIR/* $WEB_ROOT/
+
+            # 정리
+            rm -rf $ROLLBACK_DIR/*
+
+            echo "✅ 롤백 완료!"
+            if [ -f $WEB_ROOT/version.txt ]; then
+              echo ""
+              echo "=== 배포된 버전 정보 ==="
+              cat $WEB_ROOT/version.txt
+            fi
+
+      # 6. 롤백 결과 알림
+      - name: Notify Rollback Result
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "프론트엔드 ${{ inputs.environment == 'main' && '운영' || '개발' }} 서버 롤백 ${{ job.status == 'success' && '성공 ✅' || '실패 ❌' }}"
+          description: |
+            **결과:** ${{ job.status }}
+            **환경:** ${{ inputs.environment == 'main' && '운영' || '개발' }}
+            **롤백 대상 Run Number:** ${{ inputs.run_number }}
+            **실행자:** ${{ github.actor }}
+          color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
