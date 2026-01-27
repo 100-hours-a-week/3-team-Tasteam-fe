@@ -6,12 +6,13 @@ import {
   clearAccessToken,
   getAccessToken,
   getRefreshEnabled,
+  notifyLoginRequired,
   setAccessToken,
 } from '@/shared/lib/authToken'
+import { AUTH_DEBUG } from '@/shared/config/env'
+import type { SuccessResponse } from '@/shared/types/api'
 
-type RefreshResponse = {
-  accessToken?: string
-}
+type RefreshResponse = SuccessResponse<{ accessToken?: string }>
 
 /**
  * axios 인스턴스를 생성하는 유틸.
@@ -39,9 +40,17 @@ let refreshPromise: Promise<string | null> | null = null
  */
 const refreshAccessToken = async (currentToken: string | null) => {
   if (!refreshPromise) {
+    if (AUTH_DEBUG) {
+      console.debug('[auth] refresh attempt (401)')
+    }
     refreshPromise = refreshClient
       .post<RefreshResponse>(API_ENDPOINTS.tokenRefresh, { accessToken: currentToken })
-      .then((response) => response.data.accessToken ?? null)
+      .then((response) => {
+        if (AUTH_DEBUG) {
+          console.debug('[auth] refresh response (401)', response.data)
+        }
+        return response.data.data?.accessToken ?? null
+      })
       .finally(() => {
         refreshPromise = null
       })
@@ -83,11 +92,13 @@ http.interceptors.response.use(
     try {
       if (!getRefreshEnabled()) {
         clearAccessToken()
+        notifyLoginRequired()
         return Promise.reject(error)
       }
       const newToken = await refreshAccessToken(getAccessToken())
       if (!newToken) {
         clearAccessToken()
+        notifyLoginRequired()
         return Promise.reject(error)
       }
 
@@ -98,6 +109,7 @@ http.interceptors.response.use(
       return http.request(originalRequest)
     } catch (refreshError) {
       clearAccessToken()
+      notifyLoginRequired()
       return Promise.reject(refreshError)
     }
   },

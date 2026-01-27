@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { HomePage } from '@/pages/home/HomePage'
 import { LoginPage } from '@/pages/login/LoginPage'
@@ -28,11 +28,13 @@ import { SubgroupsPage } from '@/pages/subgroups'
 import { ErrorPage } from '@/pages/error-page'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
+import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
+import { resetLoginRequired } from '@/shared/lib/authToken'
 import { Route, Routes } from 'react-router-dom'
 
 function App() {
   const isReady = useBootstrap()
-  const { showLogin } = useAuth()
+  const { showLogin, isAuthenticated, closeLogin, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -55,9 +57,24 @@ function App() {
   return (
     <>
       <Toaster position="top-center" />
+      <LoginRequiredModal
+        open={showLogin}
+        onClose={() => {
+          resetLoginRequired()
+          closeLogin()
+        }}
+        onLogin={() => {
+          resetLoginRequired()
+          closeLogin()
+          navigate('/login')
+        }}
+      />
       <Routes>
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
+        />
         <Route
           path="/signup"
           element={
@@ -131,7 +148,12 @@ function App() {
               onSettingsClick={() => navigate('/settings')}
               onNotifications={() => navigate('/notifications')}
               onNotificationSettings={() => navigate('/notifications/settings')}
-              onLogout={() => navigate('/login')}
+              onLogout={async () => {
+                const ok = await logout()
+                if (ok) {
+                  navigate('/')
+                }
+              }}
               onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
             />
           }

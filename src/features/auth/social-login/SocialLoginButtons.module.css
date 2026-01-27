@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-items: center;
 }
 
 .button {
@@ -10,7 +11,34 @@
   border-radius: 14px;
   font-size: 14px;
   font-weight: 600;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+.buttonContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.kakao {
+  background: #fee500;
+  color: #000000;
+  border-color: #fee500;
+}
+
+.google {
   background: #ffffff;
-  border: 1px solid #fed7aa;
-  color: #9a3412;
+  color: #1f1f1f;
+  border-color: #dadce0;
 }

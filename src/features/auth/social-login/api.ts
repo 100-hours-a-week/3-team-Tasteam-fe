@@ -1,7 +1,7 @@
 import { API_BASE_URL } from '@/shared/config/env'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 
-type Provider = 'kakao' | 'google' | 'apple'
+type Provider = 'kakao' | 'google'
 
 export const getOAuthStartUrl = (provider: Provider, redirectUri: string) => {
   const url = new URL(API_ENDPOINTS.oauthStart(provider), API_BASE_URL)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
@@ -22,6 +22,12 @@ import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { GroupCard } from '@/entities/group/ui'
+import { deleteRecentSearch, getRecentSearches, searchAll } from '@/entities/search/api/searchApi'
+import type {
+  RecentSearch,
+  SearchGroupItem,
+  SearchRestaurantItem,
+} from '@/entities/search/model/types'
 
 type SearchPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -31,56 +37,25 @@ type SearchPageProps = {
 export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
-  const [recentSearches, setRecentSearches] = useState(['스시', '파스타', '강남역'])
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
+  const [restaurantResults, setRestaurantResults] = useState<SearchRestaurantItem[]>([])
+  const [groupResults, setGroupResults] = useState<SearchGroupItem[]>([])
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
   const [distance, setDistance] = useState([5])
   const [priceRange, setPriceRange] = useState('all')
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const searchRequestId = useRef(0)
 
   const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
 
-  const searchResults = [
-    {
-      id: '1',
-      name: '맛있는 스시 레스토랑',
-      category: '일식',
-      rating: 4.5,
-      distance: '500m',
-      images: [
-        'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
-        'https://images.unsplash.com/photo-1553621042-f6e147245754?w=800',
-        'https://images.unsplash.com/photo-1611143669185-af224c5e3252?w=800',
-      ],
-      tags: ['신선한 재료', '런치 세트'],
-    },
-    {
-      id: '2',
-      name: '정통 파스타 하우스',
-      category: '이탈리안',
-      rating: 4.7,
-      distance: '1.2km',
-      images: [
-        'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
-        'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=800',
-      ],
-      tags: ['수제 파스타'],
-    },
-  ]
-
-  const groupResults = [
-    {
-      id: '1',
-      name: '회사 점심 모임',
-      description: '매주 금요일 점심 메뉴 추천',
-      memberCount: 8,
-      memberAvatars: [
-        { src: 'https://i.pravatar.cc/150?img=1', name: '김철수' },
-        { src: 'https://i.pravatar.cc/150?img=2', name: '이영희' },
-      ],
-    },
-  ]
-
-  const removeRecentSearch = (keyword: string) => {
-    setRecentSearches((prev) => prev.filter((k) => k !== keyword))
+  const removeRecentSearch = async (id: number) => {
+    try {
+      await deleteRecentSearch(id)
+      setRecentSearches((prev) => prev.filter((item) => item.id !== id))
+    } catch {
+      // ignore
+    }
   }
 
   const handleSaveToggle = (id: string) => {
@@ -89,6 +64,57 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
       [id]: !prev[id],
     }))
   }
+
+  useEffect(() => {
+    let active = true
+    getRecentSearches()
+      .then((response) => {
+        if (!active) return
+        setRecentSearches(response.data)
+      })
+      .catch(() => {
+        if (!active) return
+        setRecentSearches([])
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const keyword = searchQuery.trim()
+    if (!keyword) {
+      return
+    }
+
+    const requestId = ++searchRequestId.current
+
+    const timeoutId = window.setTimeout(() => {
+      setIsSearching(true)
+      setSearchError(null)
+      searchAll({ keyword })
+        .then((response) => {
+          if (searchRequestId.current !== requestId) return
+          setRestaurantResults(response.data.restaurants.items)
+          setGroupResults(response.data.groups)
+        })
+        .catch(() => {
+          if (searchRequestId.current !== requestId) return
+          setRestaurantResults([])
+          setGroupResults([])
+          setSearchError('검색 중 오류가 발생했습니다.')
+        })
+        .finally(() => {
+          if (searchRequestId.current === requestId) {
+            setIsSearching(false)
+          }
+        })
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [searchQuery])
 
   return (
     <div className="pb-20">
@@ -160,30 +186,43 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           <div>
             <h3 className="mb-3 font-medium">최근 검색어</h3>
             <div className="flex flex-wrap gap-2">
-              {recentSearches.map((keyword, idx) => (
-                <Badge
-                  key={idx}
-                  variant="secondary"
-                  className="pl-3 pr-1 py-1.5 cursor-pointer hover:bg-secondary/80"
-                >
-                  {keyword}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 ml-1 hover:bg-transparent"
-                    onClick={() => removeRecentSearch(keyword)}
+              {Array.isArray(recentSearches) &&
+                recentSearches.map((item) => (
+                  <Badge
+                    key={item.id}
+                    variant="secondary"
+                    className="pl-3 pr-1 py-1.5 cursor-pointer hover:bg-secondary/80"
+                    onClick={() => setSearchQuery(item.keyword)}
                   >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
+                    {item.keyword}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 ml-1 hover:bg-transparent"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        removeRecentSearch(item.id)
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              {recentSearches.length === 0 && (
+                <p className="text-sm text-muted-foreground">최근 검색어가 없습니다.</p>
+              )}
             </div>
           </div>
           <div>
             <h3 className="mb-3 font-medium">추천 키워드</h3>
             <div className="flex flex-wrap gap-2">
               {recommendedKeywords.map((keyword, idx) => (
-                <Badge key={idx} variant="outline" className="cursor-pointer hover:bg-accent">
+                <Badge
+                  key={idx}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-accent"
+                  onClick={() => setSearchQuery(keyword)}
+                >
                   {keyword}
                 </Badge>
               ))}
@@ -203,13 +242,24 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
           <TabsContent value="restaurants" className="mt-4">
             <Container className="space-y-3">
-              {searchResults.map((restaurant) => (
+              {isSearching && <p className="text-sm text-muted-foreground">검색 중...</p>}
+              {!isSearching && searchError && (
+                <p className="text-sm text-destructive">{searchError}</p>
+              )}
+              {!isSearching && !searchError && restaurantResults.length === 0 && (
+                <p className="text-sm text-muted-foreground">검색 결과가 없습니다.</p>
+              )}
+              {restaurantResults.map((restaurant) => (
                 <RestaurantCard
-                  key={restaurant.id}
-                  {...restaurant}
-                  isSaved={savedRestaurants[restaurant.id]}
-                  onSave={() => handleSaveToggle(restaurant.id)}
-                  onClick={() => onRestaurantClick?.(restaurant.id)}
+                  key={restaurant.restaurantId}
+                  id={String(restaurant.restaurantId)}
+                  name={restaurant.name}
+                  category="음식점"
+                  address={restaurant.address}
+                  imageUrl={restaurant.imageUrl}
+                  isSaved={savedRestaurants[String(restaurant.restaurantId)]}
+                  onSave={() => handleSaveToggle(String(restaurant.restaurantId))}
+                  onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
                 />
               ))}
             </Container>
@@ -217,8 +267,24 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
           <TabsContent value="groups" className="mt-4">
             <Container className="space-y-3">
+              {isSearching && <p className="text-sm text-muted-foreground">검색 중...</p>}
+              {!isSearching && searchError && (
+                <p className="text-sm text-destructive">{searchError}</p>
+              )}
+              {!isSearching && !searchError && groupResults.length === 0 && (
+                <p className="text-sm text-muted-foreground">검색 결과가 없습니다.</p>
+              )}
               {groupResults.map((group) => (
-                <GroupCard key={group.id} {...group} onClick={() => onGroupClick?.(group.id)} />
+                <GroupCard
+                  key={group.groupId}
+                  id={String(group.groupId)}
+                  name={group.name}
+                  memberCount={group.memberCount}
+                  memberAvatars={
+                    group.logoImageUrl ? [{ src: group.logoImageUrl, name: group.name }] : []
+                  }
+                  onClick={() => onGroupClick?.(String(group.groupId))}
+                />
               ))}
             </Container>
           </TabsContent>

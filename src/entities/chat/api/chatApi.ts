@@ -11,19 +11,19 @@ import type {
 export const getChatMessages = (chatRoomId: number, params?: { cursor?: string; size?: number }) =>
   mockRequest<ChatMessageListResponseDto>({
     method: 'GET',
-    url: `/chat-rooms/${chatRoomId}/messages${buildQuery(params ?? {})}`,
+    url: `/api/v1/chat-rooms/${chatRoomId}/messages${buildQuery(params ?? {})}`,
   })
 
 export const sendChatMessage = (chatRoomId: number, payload: ChatMessageSendRequestDto) =>
   mockRequest<ChatMessageSendResponseDto>({
     method: 'POST',
-    url: `/chat-rooms/${chatRoomId}/messages`,
+    url: `/api/v1/chat-rooms/${chatRoomId}/messages`,
     data: payload,
   })
 
 export const updateChatReadCursor = (chatRoomId: number, payload: ChatReadCursorRequestDto) =>
   mockRequest<ChatReadCursorResponseDto>({
     method: 'PATCH',
-    url: `/chat-rooms/${chatRoomId}/read-cursor`,
+    url: `/api/v1/chat-rooms/${chatRoomId}/read-cursor`,
     data: payload,
   })
