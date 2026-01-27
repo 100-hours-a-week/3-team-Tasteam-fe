@@ -6,35 +6,27 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
-import { createReview } from '@/entities/review/api/reviewApi'
+import { createReview, getReviewKeywords } from '@/entities/review/api/reviewApi'
 import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
 import { cn } from '@/shared/lib/utils'
-
-const TAGS = [
-  '분위기 좋아요',
-  '가성비 좋아요',
-  '음식이 맛있어요',
-  '서비스가 좋아요',
-  '재방문 의사 있어요',
-  '깔끔해요',
-  '특별한 날 추천',
-  '혼밥 가능',
-]
-
-// Mock groups for the dropdown
-const MOCK_GROUPS = ['카카오테크부트캠프', '강남 맛집 탐험대', '회사 점심 모임', '주말 브런치 클럽']
+import { getMyGroupSummaries } from '@/entities/member/api/memberApi'
+import type { MemberGroupSummaryItemDto } from '@/entities/member/model/dto'
+import type { ReviewKeywordItemDto } from '@/entities/review/model/dto'
 
 export function WriteReviewPage() {
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const [restaurantName, setRestaurantName] = useState('로딩 중...')
-  const [category, setCategory] = useState(MOCK_GROUPS[0])
+  const [groups, setGroups] = useState<MemberGroupSummaryItemDto[]>([])
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
+  const [category, setCategory] = useState('그룹 불러오는 중...')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [selectedImages, setSelectedImages] = useState<{ url: string; file: File }[]>([])
   const [reviewText, setReviewText] = useState('')
   const [isRecommended, setIsRecommended] = useState(false)
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [keywords, setKeywords] = useState<ReviewKeywordItemDto[]>([])
+  const [selectedKeywordIds, setSelectedKeywordIds] = useState<number[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   // Drag to scroll logic
@@ -76,6 +68,25 @@ export function WriteReviewPage() {
     }
   }, [restaurantId])
 
+  useEffect(() => {
+    getMyGroupSummaries()
+      .then((list) => {
+        setGroups(list)
+        if (list.length > 0) {
+          setSelectedGroupId(list[0].groupId)
+          setCategory(list[0].name)
+        } else {
+          setSelectedGroupId(null)
+          setCategory('소속 그룹 없음')
+        }
+      })
+      .catch(() => {
+        setGroups([])
+        setSelectedGroupId(null)
+        setCategory('그룹 불러오기 실패')
+      })
+  }, [])
+
   const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     const validFiles = files.filter((file) => file.size <= 10 * 1024 * 1024)
@@ -90,12 +101,24 @@ export function WriteReviewPage() {
     setSelectedImages(selectedImages.filter((_, i) => i !== index))
   }
 
-  const handleTagToggle = (tag: string) => {
-    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  const handleKeywordToggle = (keywordId: number) => {
+    setSelectedKeywordIds((prev) =>
+      prev.includes(keywordId) ? prev.filter((id) => id !== keywordId) : [...prev, keywordId],
+    )
   }
 
+  useEffect(() => {
+    getReviewKeywords()
+      .then((list) => {
+        setKeywords(list)
+      })
+      .catch(() => {
+        setKeywords([])
+      })
+  }, [])
+
   const handleSubmit = async () => {
-    if (selectedTags.length === 0) {
+    if (selectedKeywordIds.length === 0) {
       toast.error('최소 1개 이상의 키워드를 선택해주세요')
       return
     }
@@ -105,13 +128,19 @@ export function WriteReviewPage() {
       return
     }
 
+    if (!selectedGroupId) {
+      toast.error('리뷰를 공유할 그룹을 선택해주세요')
+      return
+    }
+
     setIsLoading(true)
 
     try {
       await createReview(Number(restaurantId), {
+        groupId: selectedGroupId,
         content: reviewText,
         isRecommended: isRecommended,
-        keywordIds: selectedTags.map((tag) => TAGS.indexOf(tag) + 1),
+        keywordIds: selectedKeywordIds,
         imageIds: [],
       })
       toast.success('리뷰가 등록되었습니다')
@@ -153,18 +182,25 @@ export function WriteReviewPage() {
 
             {showCategoryDropdown && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {MOCK_GROUPS.map((cat, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setCategory(cat)
-                      setShowCategoryDropdown(false)
-                    }}
-                    className="w-full px-4 py-3.5 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0 border-border"
-                  >
-                    {cat}
-                  </button>
-                ))}
+                {groups.length === 0 ? (
+                  <div className="px-4 py-3.5 text-sm text-muted-foreground">
+                    선택 가능한 그룹이 없습니다
+                  </div>
+                ) : (
+                  groups.map((group) => (
+                    <button
+                      key={group.groupId}
+                      onClick={() => {
+                        setCategory(group.name)
+                        setSelectedGroupId(group.groupId)
+                        setShowCategoryDropdown(false)
+                      }}
+                      className="w-full px-4 py-3.5 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0 border-border"
+                    >
+                      {group.name}
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -222,23 +258,27 @@ export function WriteReviewPage() {
         <div className="space-y-2">
           <label className="text-sm font-semibold px-1">이 음식점의 특징 (1개 이상 필수)</label>
           <div className="border border-input rounded-xl p-4 bg-card shadow-sm">
-            <div className="flex flex-wrap gap-2">
-              {TAGS.map((tag) => (
-                <Badge
-                  key={tag}
-                  variant={selectedTags.includes(tag) ? 'default' : 'outline'}
-                  className={cn(
-                    'cursor-pointer py-2 px-4 text-xs transition-all',
-                    selectedTags.includes(tag)
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'hover:bg-accent',
-                  )}
-                  onClick={() => handleTagToggle(tag)}
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
+            {keywords.length === 0 ? (
+              <div className="text-sm text-muted-foreground">키워드를 불러올 수 없습니다</div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {keywords.map((keyword) => (
+                  <Badge
+                    key={keyword.id}
+                    variant={selectedKeywordIds.includes(keyword.id) ? 'default' : 'outline'}
+                    className={cn(
+                      'cursor-pointer py-2 px-4 text-xs transition-all',
+                      selectedKeywordIds.includes(keyword.id)
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'hover:bg-accent',
+                    )}
+                    onClick={() => handleKeywordToggle(keyword.id)}
+                  >
+                    {keyword.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

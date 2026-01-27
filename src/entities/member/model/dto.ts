@@ -80,6 +80,13 @@ export type MemberProfileUpdateRequestDto = {
   email?: string
 }
 
+export type MemberGroupSummaryItemDto = {
+  groupId: number
+  name: string
+}
+
+export type MemberGroupSummaryListResponseDto = SuccessResponse<MemberGroupSummaryItemDto[]>
+
 export type GroupEmailVerificationResponseDto = SuccessResponse<{
   id: number
   createdAt: IsoDateTimeString

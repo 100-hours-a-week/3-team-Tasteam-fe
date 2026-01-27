@@ -1,10 +1,13 @@
 import { mockRequest } from '@/shared/api/mockRequest'
 import { buildQuery } from '@/shared/api/query'
+import { request } from '@/shared/api/request'
 import type {
   MemberMeResponseDto,
   MemberProfileUpdateRequestDto,
   MemberGroupListResponseDto,
   MemberGroupOverviewListResponseDto,
+  MemberGroupSummaryItemDto,
+  MemberGroupSummaryListResponseDto,
   MemberGroupRequestListResponseDto,
   MemberReviewListResponseDto,
   GroupEmailVerificationResponseDto,
@@ -41,6 +44,14 @@ export const getMyGroupsOverview = (params?: { cursor?: string }) =>
     method: 'GET',
     url: `/api/v1/members/me/groups${buildQuery(params ?? {})}`,
   })
+
+export const getMyGroupSummaries = async (): Promise<MemberGroupSummaryItemDto[]> => {
+  const res = await request<MemberGroupSummaryListResponseDto>({
+    method: 'GET',
+    url: '/api/v1/members/me/groups/summary',
+  })
+  return res.data
+}
 
 export const getMyGroupRequests = (params?: { cursor?: string }) =>
   mockRequest<MemberGroupRequestListResponseDto>({
