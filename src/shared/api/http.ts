@@ -9,7 +9,7 @@ import {
   notifyLoginRequired,
   setAccessToken,
 } from '@/shared/lib/authToken'
-import { AUTH_DEBUG } from '@/shared/config/env'
+// import { AUTH_DEBUG } from '@/shared/config/env' // Removed import
 import type { SuccessResponse } from '@/shared/types/api'
 
 type RefreshResponse = SuccessResponse<{ accessToken?: string }>
@@ -40,25 +40,19 @@ let refreshPromise: Promise<string | null> | null = null
  */
 const refreshAccessToken = async (currentToken: string | null) => {
   if (!refreshPromise) {
-    if (AUTH_DEBUG) {
-      console.debug('[auth] refresh attempt (401)', { currentTokenExists: !!currentToken })
-    }
+    console.debug('[auth] refresh attempt (401)', { currentTokenExists: !!currentToken }) // Made unconditional
     refreshPromise = refreshClient
       .post<RefreshResponse>(API_ENDPOINTS.tokenRefresh, { accessToken: currentToken })
       .then((response) => {
-        if (AUTH_DEBUG) {
-          console.debug('[auth] refresh response (401)', response.data)
-        }
+        console.debug('[auth] refresh response (401)', response.data) // Made unconditional
         return response.data.data?.accessToken ?? null
       })
       .finally(() => {
         refreshPromise = null
-        if (AUTH_DEBUG) {
-          console.debug('[auth] refreshPromise cleared')
-        }
+        console.debug('[auth] refreshPromise cleared') // Made unconditional
       })
-  } else if (AUTH_DEBUG) {
-    console.debug('[auth] refreshPromise already exists, waiting...')
+  } else {
+    console.debug('[auth] refreshPromise already exists, waiting...') // Made unconditional
   }
 
   return refreshPromise
@@ -74,24 +68,22 @@ http.interceptors.request.use(
     if (token) {
       config.headers = config.headers ?? {}
       config.headers.Authorization = `Bearer ${token}`
-      if (AUTH_DEBUG) {
-        console.debug(`[http] Request sent to ${config.url}`, {
-          method: config.method,
-          tokenExists: !!token,
-          hasAuthHeader: !!config.headers.Authorization,
-        })
-      }
-    } else if (AUTH_DEBUG) {
+      console.debug(`[http] Request sent to ${config.url}`, {
+        // Made unconditional
+        method: config.method,
+        tokenExists: !!token,
+        hasAuthHeader: !!config.headers.Authorization,
+      })
+    } else {
       console.debug(`[http] Request sent to ${config.url} (no token)`, {
+        // Made unconditional
         method: config.method,
       })
     }
     return config
   },
   (error) => {
-    if (AUTH_DEBUG) {
-      console.error('[http] Request error:', error)
-    }
+    console.error('[http] Request error:', error) // Made unconditional
     return Promise.reject(error)
   },
 )
@@ -102,34 +94,31 @@ http.interceptors.request.use(
  */
 http.interceptors.response.use(
   (response) => {
-    if (AUTH_DEBUG) {
-      console.debug(`[http] Response received from ${response.config.url}`, {
-        status: response.status,
-        method: response.config.method,
-      })
-    }
+    console.debug(`[http] Response received from ${response.config.url}`, {
+      // Made unconditional
+      status: response.status,
+      method: response.config.method,
+    })
     return response
   },
   async (error) => {
-    if (AUTH_DEBUG) {
-      console.debug(`[http] Error response from ${error.config?.url}`, {
-        status: error.response?.status,
-        message: error.message,
-      })
-    }
+    console.debug(`[http] Error response from ${error.config?.url}`, {
+      // Made unconditional
+      status: error.response?.status,
+      message: error.message,
+    })
 
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
     const status = error.response?.status
     const isRefreshCall = originalRequest?.url?.includes(API_ENDPOINTS.tokenRefresh)
 
-    if (AUTH_DEBUG) {
-      console.debug('[auth] Interceptor 401 check:', {
-        status,
-        isRetry: originalRequest?._retry,
-        isRefreshCall,
-        getRefreshEnabled: getRefreshEnabled(),
-      })
-    }
+    console.debug('[auth] Interceptor 401 check:', {
+      // Made unconditional
+      status,
+      isRetry: originalRequest?._retry,
+      isRefreshCall,
+      getRefreshEnabled: getRefreshEnabled(),
+    })
 
     if (status !== 401 || originalRequest?._retry || isRefreshCall) {
       return Promise.reject(error)
@@ -139,41 +128,31 @@ http.interceptors.response.use(
 
     try {
       if (!getRefreshEnabled()) {
-        if (AUTH_DEBUG) {
-          console.debug('[auth] Refresh disabled, clearing token and notifying login required.')
-        }
+        console.debug('[auth] Refresh disabled, clearing token and notifying login required.') // Made unconditional
         clearAccessToken()
         notifyLoginRequired()
         return Promise.reject(error)
       }
 
-      if (AUTH_DEBUG) {
-        console.debug('[auth] Attempting to refresh token...')
-      }
+      console.debug('[auth] Attempting to refresh token...') // Made unconditional
       const newToken = await refreshAccessToken(getAccessToken())
       if (!newToken) {
-        if (AUTH_DEBUG) {
-          console.debug(
-            '[auth] Failed to get new token after refresh, clearing and notifying login required.',
-          )
-        }
+        console.debug(
+          '[auth] Failed to get new token after refresh, clearing and notifying login required.',
+        ) // Made unconditional
         clearAccessToken()
         notifyLoginRequired()
         return Promise.reject(error)
       }
 
-      if (AUTH_DEBUG) {
-        console.debug('[auth] New token received, setting and retrying original request.')
-      }
+      console.debug('[auth] New token received, setting and retrying original request.') // Made unconditional
       setAccessToken(newToken)
       originalRequest.headers = originalRequest.headers ?? {}
       originalRequest.headers.Authorization = `Bearer ${newToken}`
 
       return http.request(originalRequest)
     } catch (refreshError) {
-      if (AUTH_DEBUG) {
-        console.error('[auth] Token refresh failed unexpectedly:', refreshError)
-      }
+      console.error('[auth] Token refresh failed unexpectedly:', refreshError) // Made unconditional
       clearAccessToken()
       notifyLoginRequired()
       return Promise.reject(refreshError)

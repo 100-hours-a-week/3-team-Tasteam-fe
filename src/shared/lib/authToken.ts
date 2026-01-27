@@ -1,4 +1,4 @@
-import { AUTH_DEBUG } from '@/shared/config/env' // Import AUTH_DEBUG
+// import { AUTH_DEBUG } from '@/shared/config/env' // Removed import
 
 let accessToken: string | null = null
 let refreshEnabled = false
@@ -16,25 +16,19 @@ export const getAccessToken = () => {
 
 export const setAccessToken = (token: string | null) => {
   accessToken = token
-  if (AUTH_DEBUG) {
-    console.debug('[auth] Access Token set:', token ? 'exists' : 'null')
-  }
+  console.debug('[auth] Access Token set:', token ? 'exists' : 'null') // Made unconditional
   notify()
 }
 
 export const clearAccessToken = () => {
   accessToken = null
-  if (AUTH_DEBUG) {
-    console.debug('[auth] Access Token cleared')
-  }
+  console.debug('[auth] Access Token cleared') // Made unconditional
   notify()
 }
 
 export const setRefreshEnabled = (enabled: boolean) => {
   refreshEnabled = enabled
-  if (AUTH_DEBUG) {
-    console.debug('[auth] Refresh Enabled set to:', enabled)
-  }
+  console.debug('[auth] Refresh Enabled set to:', enabled) // Made unconditional
 }
 
 export const getRefreshEnabled = () => {
@@ -58,17 +52,13 @@ export const subscribeLoginRequired = (listener: () => void) => {
 export const notifyLoginRequired = () => {
   if (loginRequiredFired) return
   loginRequiredFired = true
-  if (AUTH_DEBUG) {
-    console.debug('[auth] Login Required triggered')
-  }
+  console.debug('[auth] Login Required triggered') // Made unconditional
   loginRequiredListeners.forEach((listener) => listener())
 }
 
 export const resetLoginRequired = () => {
   loginRequiredFired = false
-  if (AUTH_DEBUG) {
-    console.debug('[auth] Login Required reset')
-  }
+  console.debug('[auth] Login Required reset') // Made unconditional
 }
 
 const decodeJwtPayload = (token: string) => {
@@ -80,9 +70,7 @@ const decodeJwtPayload = (token: string) => {
     const json = atob(padded)
     return JSON.parse(json) as { exp?: number }
   } catch (e) {
-    if (AUTH_DEBUG) {
-      console.debug('[auth] JWT decoding error:', e)
-    }
+    console.debug('[auth] JWT decoding error:', e) // Made unconditional
     return null
   }
 }
