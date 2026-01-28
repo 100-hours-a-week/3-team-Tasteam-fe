@@ -1,6 +1,5 @@
 import { request } from '@/shared/api/request'
 import { buildQuery } from '@/shared/api/query'
-import { request } from '@/shared/api/request'
 import type {
   MemberMeResponseDto,
   MemberProfileUpdateRequestDto,

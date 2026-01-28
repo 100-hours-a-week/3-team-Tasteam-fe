@@ -1,6 +1,5 @@
 import { request } from '@/shared/api/request'
 import { buildQuery } from '@/shared/api/query'
-import { request } from '@/shared/api/request'
 import type { SuccessResponse } from '@/shared/types/api'
 import type { CursorPageResponse } from '@/shared/types/pagination'
 import type {
