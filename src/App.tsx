@@ -11,6 +11,8 @@ import { OnboardingPage } from '@/pages/onboarding'
 import { SearchPage } from '@/pages/search'
 import { GroupsPage } from '@/pages/group'
 import { CreateGroupPage } from '@/pages/create-group'
+import { GroupEmailJoinPage } from '@/pages/group-email-join'
+import { GroupPasswordJoinPage } from '@/pages/group-password-join'
 import { SubgroupListPage } from '@/pages/subgroup-list'
 import { SubgroupCreatePage } from '@/pages/subgroup-create'
 import { GroupDetailPage } from '@/pages/group-detail'
@@ -152,13 +154,33 @@ function App() {
         <Route
           path="/subgroups/create"
           element={
-            <SubgroupCreatePage
-              onBack={() => navigate(-1)}
-              onSubmit={() => navigate('/subgroup-list')}
-            />
+            <RequireAuth>
+              <SubgroupCreatePage
+                onBack={() => navigate(-1)}
+                onSubmit={() => navigate('/subgroup-list')}
+              />
+            </RequireAuth>
           }
         />
         <Route path="/groups/:id" element={<GroupDetailPage />} />
+        <Route
+          path="/groups/:id/email-join"
+          element={
+            <GroupEmailJoinPage
+              onBack={() => navigate(-1)}
+              onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+            />
+          }
+        />
+        <Route
+          path="/groups/:id/password-join"
+          element={
+            <GroupPasswordJoinPage
+              onBack={() => navigate(-1)}
+              onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+            />
+          }
+        />
         <Route path="/subgroups/:id" element={<SubgroupsPage />} />
 
         <Route

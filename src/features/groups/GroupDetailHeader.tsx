@@ -1,6 +1,12 @@
-import { ChevronLeft, Layers, UserPlus, Users } from 'lucide-react'
+import { ChevronLeft, Layers, MoreVertical, UserCheck, UserPlus, Users } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
 import { Container } from '@/widgets/container'
 
@@ -14,19 +20,28 @@ export type GroupDetailHeaderData = {
 
 type GroupDetailHeaderProps = {
   group: GroupDetailHeaderData
+  isJoined?: boolean
   onBack?: () => void
   onJoin?: () => void
   onMoreAction?: () => void
+  onNotificationSettings?: () => void
+  onLeaveGroup?: () => void
   className?: string
 }
 
 export function GroupDetailHeader({
   group,
+  isJoined = false,
   onBack,
   onJoin,
   onMoreAction,
+  onNotificationSettings,
+  onLeaveGroup,
   className,
 }: GroupDetailHeaderProps) {
+  const JoinIcon = isJoined ? UserCheck : UserPlus
+  const joinLabel = isJoined ? '이미 가입한 그룹' : '그룹 멤버 가입'
+
   return (
     <>
       <div className="sticky top-0 z-50 bg-background">
@@ -36,12 +51,31 @@ export function GroupDetailHeader({
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="icon" onClick={onJoin} aria-label="그룹 멤버 가입">
-                <UserPlus className="h-5 w-5" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onJoin}
+                aria-label={joinLabel}
+                disabled={isJoined}
+              >
+                <JoinIcon className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="icon" onClick={onMoreAction} aria-label="더보기 메뉴">
                 <Layers className="h-5 w-5" />
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="그룹 설정 더보기">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onNotificationSettings}>알림 설정</DropdownMenuItem>
+                  <DropdownMenuItem variant="destructive" onClick={onLeaveGroup}>
+                    그룹 탈퇴
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </Container>
