@@ -8,7 +8,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
-import { RestaurantCard } from '@/entities/restaurant/ui'
+// import { RestaurantCard } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import {
   getSubgroup,
@@ -73,15 +73,15 @@ export function SubgroupsPage() {
     subgroupId !== null &&
     !Number.isNaN(subgroupId) &&
     isSubgroupMember(subgroupId)
-  const restaurants: Array<{
-    id: string
-    name: string
-    category: string
-    rating: number
-    distance: string
-    image: string
-    tags: string[]
-  }> = []
+  // const restaurants: Array<{
+  //   id: string
+  //   name: string
+  //   category: string
+  //   rating: number
+  //   distance: string
+  //   image: string
+  //   tags: string[]
+  // }> = []
 
   useEffect(() => {
     if (!subgroupId || Number.isNaN(subgroupId)) return
@@ -335,13 +335,15 @@ export function SubgroupsPage() {
       {/* Tabs */}
       <Tabs defaultValue="restaurants" className="w-full">
         <Container>
-          <TabsList className="w-full grid grid-cols-2">
-            <TabsTrigger value="restaurants">맛집</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-1">
+            {/* V2에서 맛집 탭 추가 */}
+            {/* <TabsTrigger value="restaurants">맛집</TabsTrigger> */}
             <TabsTrigger value="reviews">리뷰</TabsTrigger>
           </TabsList>
         </Container>
 
-        <TabsContent value="restaurants" className="mt-4">
+        {/* V2에서 맛집 탭 추가 */}
+        {/* <TabsContent value="restaurants" className="mt-4">
           <Container className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg">하위 그룹 맛집 리스트</h3>
@@ -368,7 +370,7 @@ export function SubgroupsPage() {
               )}
             </div>
           </Container>
-        </TabsContent>
+        </TabsContent> */}
 
         <TabsContent value="reviews" className="mt-4">
           <Container className="space-y-4">
