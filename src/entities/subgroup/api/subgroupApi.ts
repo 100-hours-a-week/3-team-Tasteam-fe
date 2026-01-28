@@ -56,16 +56,7 @@ export const getSubgroupMembers = async (
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}/members${buildQuery(params ?? {})}`,
   })
-  const payload = res.data as unknown as {
-    data?: SubgroupMemberDto[] | { data?: SubgroupMemberDto[]; items?: SubgroupMemberDto[] }
-    items?: SubgroupMemberDto[]
-  }
-  const candidates =
-    (Array.isArray(payload?.data) && payload.data) ||
-    (Array.isArray(payload?.items) && payload.items) ||
-    (Array.isArray((payload?.data as any)?.data) && (payload?.data as any).data) ||
-    (Array.isArray((payload?.data as any)?.items) && (payload?.data as any).items)
-  return candidates ?? []
+  return res.data?.items ?? []
 }
 
 export const joinSubgroup = (groupId: number, subgroupId: number, password?: string) =>

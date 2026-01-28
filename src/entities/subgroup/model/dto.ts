@@ -47,11 +47,4 @@ export type SubgroupMemberDto = {
   createdAt?: IsoDateTimeString
 }
 
-export type SubgroupMemberListResponseDto = SuccessResponse<{
-  data: SubgroupMemberDto[]
-  page: {
-    nextCursor: string | null
-    size: number
-    hasNext: boolean
-  }
-}>
+export type SubgroupMemberListResponseDto = SuccessResponse<CursorPageResponse<SubgroupMemberDto>>
