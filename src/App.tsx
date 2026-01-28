@@ -12,6 +12,7 @@ import { SearchPage } from '@/pages/search'
 import { GroupsPage } from '@/pages/group'
 import { CreateGroupPage } from '@/pages/create-group'
 import { SubgroupListPage } from '@/pages/subgroup-list'
+import { SubgroupCreatePage } from '@/pages/subgroup-create'
 import { GroupDetailPage } from '@/pages/group-detail'
 import { ProfilePage } from '@/pages/profile'
 import { EditProfilePage } from '@/pages/edit-profile'
@@ -141,7 +142,18 @@ function App() {
           element={
             <SubgroupListPage
               onBack={() => navigate(-1)}
+              onCreateClick={() => navigate('/subgroups/create')}
+              onJoinSuccess={(id) => navigate(`/subgroups/${id}`)}
               onGroupClick={(id) => navigate(`/subgroups/${id}`)}
+            />
+          }
+        />
+        <Route
+          path="/subgroups/create"
+          element={
+            <SubgroupCreatePage
+              onBack={() => navigate(-1)}
+              onSubmit={() => navigate('/subgroup-list')}
             />
           }
         />

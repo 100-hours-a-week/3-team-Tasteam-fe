@@ -11,6 +11,7 @@ export const ROUTES = {
   groups: '/groups',
   createGroup: '/groups/create',
   subgroupList: '/subgroup-list',
+  subgroupCreate: '/subgroups/create',
   groupDetail: (id: string) => `/groups/${id}`,
   subgroupDetail: (id: string) => `/subgroups/${id}`,
   profile: '/profile',
