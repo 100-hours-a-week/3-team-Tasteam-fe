@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { UserPlus, MoreVertical, ArrowUpRight, MessageSquare } from 'lucide-react'
+import { UserPlus, MoreVertical, MessageSquare, Lock } from 'lucide-react'
+import { useAuth } from '@/entities/user/model/useAuth'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
@@ -10,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
+import { joinSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +39,7 @@ const subGroupsMock: Record<string, any> = {
   '1': {
     id: '1',
     name: '강남 지역팀',
-    description: '강남역 근처 맛집을 탐방하는 소그룹',
+    description: '강남역 근처 맛집을 탐방하는 하위 그룹',
     memberCount: 4,
     createdDate: '2024.01.15',
     isAdmin: true,
@@ -45,7 +49,7 @@ const subGroupsMock: Record<string, any> = {
         id: '1',
         name: '김철수',
         avatar: 'https://i.pravatar.cc/150?img=1',
-        role: '소그룹장',
+        role: '하위 그룹장',
         isAdmin: true,
       },
       {
@@ -124,7 +128,7 @@ const subGroupsMock: Record<string, any> = {
   '2': {
     id: '2',
     name: '일식 애호가',
-    description: '일식 맛집만 모아서 공유하는 소그룹',
+    description: '일식 맛집만 모아서 공유하는 하위 그룹',
     memberCount: 5,
     createdDate: '2024.01.10',
     isAdmin: false,
@@ -134,7 +138,7 @@ const subGroupsMock: Record<string, any> = {
         id: '5',
         name: '정수진',
         avatar: 'https://i.pravatar.cc/150?img=5',
-        role: '소그룹장',
+        role: '하위 그룹장',
         isAdmin: true,
       },
       {
@@ -191,7 +195,7 @@ const subGroupsMock: Record<string, any> = {
   '3': {
     id: '3',
     name: '주말 브런치',
-    description: '주말 브런치 카페 탐방 소그룹',
+    description: '주말 브런치 카페 탐방 하위 그룹',
     memberCount: 3,
     createdDate: '2024.01.20',
     isAdmin: false,
@@ -201,7 +205,7 @@ const subGroupsMock: Record<string, any> = {
         id: '9',
         name: '한지민',
         avatar: 'https://i.pravatar.cc/150?img=9',
-        role: '소그룹장',
+        role: '하위 그룹장',
         isAdmin: true,
       },
       {
@@ -255,20 +259,50 @@ const subGroupsMock: Record<string, any> = {
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
+  const { isAuthenticated, openLogin } = useAuth()
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
+  const [password, setPassword] = useState('')
+  // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subGroup = subGroupsMock[id || '1'] || subGroupsMock['1']
   const { members, restaurants, parentGroupName, reviews } = subGroup
 
-  const handleSaveToggle = (restaurantId: string) => {
-    setSavedRestaurants((prev) => ({
-      ...prev,
-      [restaurantId]: !prev[restaurantId],
-    }))
-  }
+  // const handleSaveToggle = (restaurantId: string) => {
+  //   setSavedRestaurants((prev) => ({
+  //     ...prev,
+  //     [restaurantId]: !prev[restaurantId],
+  //   }))
+  // }
 
   const handleInvite = () => {
-    // Invite functionality
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+    setIsJoinDialogOpen(true)
+  }
+
+  const handleJoinSubmit = async () => {
+    if (!id) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+
+    try {
+      // groupId는 subGroup 데이터에서 가져옴 (현재 목업 데이터 구조 활용)
+      const groupId = subGroup.groupId || 1 // 기본값 설정
+
+      await joinSubgroup(groupId, Number(id), password)
+
+      alert('가입되었습니다!')
+      setIsJoinDialogOpen(false)
+      setPassword('')
+      // 필요한 경우 페이지 새로고침 또는 상태 업데이트 로직 추가 가능
+    } catch (error: any) {
+      console.error('Failed to join subgroup:', error)
+      alert(error.response?.data?.message || '가입에 실패했습니다. 비밀번호를 확인해주세요.')
+    }
   }
 
   const handleLeaveSubGroup = () => {
@@ -278,6 +312,10 @@ export function SubgroupsPage() {
 
   const handleChatClick = () => {
     if (!id) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
     navigate(ROUTES.chatRoom(id))
   }
 
@@ -292,12 +330,12 @@ export function SubgroupsPage() {
       {/* SubGroup Header */}
       <Container className="pt-4 pb-6">
         {/* Parent Group Badge */}
-        <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1 mb-3 text-sm text-muted-foreground">
           <button onClick={handleGroupNameClick} className="hover:text-primary transition-colors">
             {parentGroupName}
           </button>
-          <ArrowUpRight className="h-3 w-3" />
-          <span className="text-foreground">하위 그룹</span>
+          <span className="mx-0.5 text-muted-foreground/50">&gt;</span>
+          <span className="font-medium text-foreground">{subGroup.name}</span>
         </div>
 
         <Card className="p-6 space-y-4">
@@ -305,7 +343,6 @@ export function SubgroupsPage() {
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold mb-2">{subGroup.name}</h1>
               <p className="text-sm text-muted-foreground mb-3">{subGroup.description}</p>
-              <Badge variant="secondary">활성 소그룹</Badge>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -316,7 +353,7 @@ export function SubgroupsPage() {
               <DropdownMenuContent align="end">
                 {subGroup.isAdmin && (
                   <>
-                    <DropdownMenuItem>소그룹 정보 수정</DropdownMenuItem>
+                    <DropdownMenuItem>하위 그룹 정보 수정</DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
@@ -328,15 +365,15 @@ export function SubgroupsPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-destructive focus:text-destructive"
                     >
-                      소그룹 나가기
+                      하위 그룹 나가기
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>소그룹을 나가시겠습니까?</AlertDialogTitle>
+                      <AlertDialogTitle>하위 그룹을 나가시겠습니까?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        소그룹을 나가면 이 소그룹의 모든 정보와 활동 내역을 볼 수 없습니다. 다시
-                        가입하려면 초대를 받아야 합니다.
+                        하위 그룹을 나가면 이 하위 그룹의 모든 정보와 활동 내역을 볼 수 없습니다.
+                        다시 가입하려면 초대를 받아야 합니다.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -385,7 +422,7 @@ export function SubgroupsPage() {
         <TabsContent value="restaurants" className="mt-4">
           <Container className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">소그룹 맛집 리스트</h3>
+              <h3 className="font-semibold text-lg">하위 그룹 맛집 리스트</h3>
               <Button variant="outline" size="sm">
                 맛집 추가
               </Button>
@@ -395,8 +432,8 @@ export function SubgroupsPage() {
                 <RestaurantCard
                   key={restaurant.id}
                   {...restaurant}
-                  isSaved={savedRestaurants[restaurant.id]}
-                  onSave={() => handleSaveToggle(restaurant.id)}
+                  // isSaved={savedRestaurants[restaurant.id]}
+                  // onSave={() => handleSaveToggle(restaurant.id)}
                   onClick={() => navigate(ROUTES.restaurantDetail(restaurant.id))}
                 />
               ))}
@@ -407,14 +444,14 @@ export function SubgroupsPage() {
         <TabsContent value="reviews" className="mt-4">
           <Container className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">소그룹 리뷰</h3>
+              <h3 className="font-semibold text-lg">하위 그룹 리뷰</h3>
             </div>
 
             <div className="space-y-3">
               {reviews.length > 0 ? (
                 reviews.map((review: any) => (
                   <div key={review.id} className="space-y-1">
-                    <p className="text-xs font-semibold text-primary px-1">
+                    <p className="text-sm font-semibold text-primary px-1">
                       {review.restaurantName}
                     </p>
                     <ReviewCard
@@ -446,6 +483,38 @@ export function SubgroupsPage() {
       >
         <MessageSquare className="h-6 w-6" />
       </Button>
+
+      {/* Join Password Dialog */}
+      <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>하위 그룹 가입하기</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4 py-4">
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="password"
+                placeholder="비밀번호 입력"
+                className="pl-9"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleJoinSubmit()
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="flex-1" onClick={() => setIsJoinDialogOpen(false)}>
+              취소
+            </Button>
+            <Button className="flex-1" onClick={handleJoinSubmit}>
+              확인
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

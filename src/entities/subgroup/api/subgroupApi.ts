@@ -41,6 +41,13 @@ export const getSubgroupReviews = (
     url: `/api/v1/subgroups/${subgroupId}/reviews${buildQuery(params ?? {})}`,
   })
 
+export const joinSubgroup = (groupId: number, subgroupId: number, password?: string) =>
+  request<void>({
+    method: 'POST',
+    url: `/api/v1/groups/${groupId}/subgroups/${subgroupId}/members`,
+    data: { groupPassword: password },
+  })
+
 export const createSubgroup = (groupId: number, payload: SubgroupCreateRequestDto) =>
   request<SubgroupCreateResponseDto>({
     method: 'POST',
