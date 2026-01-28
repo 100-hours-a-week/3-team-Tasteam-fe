@@ -1,4 +1,4 @@
-import { ThumbsUp, ThumbsDown, Star } from 'lucide-react'
+import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
@@ -14,7 +14,6 @@ type ReviewSimpleProps = {
   id: string
   userName: string
   userAvatar?: string
-  rating?: number
   date: string
   content: string
   images?: string[]
@@ -52,7 +51,7 @@ function getContent(review: ReviewListItemDto | ReviewDetailDto): string {
 
 export function ReviewCard(props: ReviewCardProps) {
   if (isSimpleProps(props)) {
-    const { userName, userAvatar, rating, date, content, images, className } = props
+    const { userName, userAvatar, date, content, images, className } = props
     return (
       <Card className={cn('p-4 gap-0', className)}>
         <div className="flex items-start gap-3 mb-3">
@@ -65,19 +64,6 @@ export function ReviewCard(props: ReviewCardProps) {
               <h4 className="truncate">{userName}</h4>
               <span className="text-xs text-muted-foreground shrink-0">{date}</span>
             </div>
-            {rating !== undefined && (
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, idx) => (
-                  <Star
-                    key={idx}
-                    className={cn(
-                      'h-3 w-3',
-                      idx < rating ? 'fill-primary text-primary' : 'text-muted-foreground',
-                    )}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </div>
         <p className="text-sm leading-relaxed mb-3">{content}</p>

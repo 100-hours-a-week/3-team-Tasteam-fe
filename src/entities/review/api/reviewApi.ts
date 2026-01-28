@@ -1,10 +1,13 @@
 import { request } from '@/shared/api/request'
 import { buildQuery } from '@/shared/api/query'
+import { request } from '@/shared/api/request'
 import type {
   ReviewListResponseDto,
   ReviewDetailResponseDto,
   ReviewCreateRequestDto,
   ReviewCreateResponseDto,
+  ReviewKeywordItemDto,
+  ReviewKeywordListResponseDto,
 } from '../model/dto'
 
 export const getRestaurantReviews = (
@@ -43,3 +46,11 @@ export const deleteReview = (reviewId: number) =>
     method: 'DELETE',
     url: `/api/v1/reviews/${reviewId}`,
   })
+
+export const getReviewKeywords = async (): Promise<ReviewKeywordItemDto[]> => {
+  const res = await request<ReviewKeywordListResponseDto>({
+    method: 'GET',
+    url: '/api/v1/reviews/keywords',
+  })
+  return res.data
+}

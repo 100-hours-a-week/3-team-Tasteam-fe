@@ -10,7 +10,7 @@ export type ReviewListItemDto = {
   contentPreview: string
   isRecommended: boolean
   keywords: string[]
-  thumbnailImage: ImageResource
+  thumbnailImage: ImageResource | null
   createdAt: IsoDateTimeString
 }
 
@@ -50,3 +50,11 @@ export type ReviewCreateResponseDto = SuccessResponse<{
   id: number
   createdAt: IsoDateTimeString
 }>
+
+export type ReviewKeywordItemDto = {
+  id: number
+  type: string
+  name: string
+}
+
+export type ReviewKeywordListResponseDto = SuccessResponse<ReviewKeywordItemDto[]>

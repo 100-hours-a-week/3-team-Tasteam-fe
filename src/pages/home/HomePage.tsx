@@ -8,8 +8,7 @@ import { Input } from '@/shared/ui/input'
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { GroupCard } from '@/entities/group/ui'
 import { ROUTES } from '@/shared/config/routes'
-import { getMainPage } from '@/entities/main/api/mainApi'
-import type { MainResponse } from '@/entities/main/model/types'
+import { getRestaurantsForHome } from '@/entities/restaurant/api/restaurantApi'
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -75,24 +74,27 @@ const defaultGroups = [
 export function HomePage({ onSearchClick, onRestaurantClick, onGroupClick }: HomePageProps) {
   const navigate = useNavigate()
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
-  const [mainData, setMainData] = useState<MainResponse | null>(null)
+  const [recommendedFromApi, setRecommendedFromApi] = useState(defaultRestaurants)
 
   useEffect(() => {
-    getMainPage({ latitude: 37.5, longitude: 127.0 })
-      .then(setMainData)
+    getRestaurantsForHome({ latitude: 37.5, longitude: 127.0, size: 10 })
+      .then((res) => {
+        if (!res.items || res.items.length === 0) return
+        const mapped = res.items.map((item) => ({
+          id: String(item.id),
+          name: item.name,
+          category: item.foodCategories[0] ?? '기타',
+          rating: 4.5,
+          distance: `${Math.round(item.distanceMeter)}m`,
+          image: item.thumbnailImage.url || defaultRestaurants[0].image,
+          tags: [],
+        }))
+        setRecommendedFromApi(mapped)
+      })
       .catch(() => {})
   }, [])
 
-  const recommendedRestaurants =
-    mainData?.data?.sections?.[0]?.items?.map((item) => ({
-      id: String(item.restaurantId),
-      name: item.name,
-      category: item.category,
-      rating: 4.5,
-      distance: `${item.distanceMeter}m`,
-      image: item.thumbnailImageUrl,
-      tags: [],
-    })) ?? defaultRestaurants
+  const recommendedRestaurants = recommendedFromApi
 
   const myGroups = defaultGroups
 
@@ -129,8 +131,8 @@ export function HomePage({ onSearchClick, onRestaurantClick, onGroupClick }: Hom
         <Container>
           <h2 className="text-lg font-semibold">추천 맛집</h2>
         </Container>
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-3 px-4">
+        <Container className="overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex w-max gap-3">
             {recommendedRestaurants.map((restaurant) => (
               <div key={restaurant.id} className="w-[280px] shrink-0">
                 <RestaurantCard
@@ -148,7 +150,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onGroupClick }: Hom
               </div>
             ))}
           </div>
-        </div>
+        </Container>
       </section>
 
       <section className="space-y-4 mb-8">

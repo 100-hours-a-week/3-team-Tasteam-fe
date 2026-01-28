@@ -12,6 +12,7 @@ import { SearchPage } from '@/pages/search'
 import { GroupsPage } from '@/pages/group'
 import { CreateGroupPage } from '@/pages/create-group'
 import { SubgroupListPage } from '@/pages/subgroup-list'
+import { JoinGroupPage } from '@/pages/join-group'
 import { GroupDetailPage } from '@/pages/group-detail'
 import { ProfilePage } from '@/pages/profile'
 import { EditProfilePage } from '@/pages/edit-profile'
@@ -21,6 +22,7 @@ import { NotificationsPage } from '@/pages/notifications'
 import { NotificationSettingsPage } from '@/pages/notification-settings'
 import { SettingsPage } from '@/pages/settings'
 import { RestaurantDetailPage } from '@/pages/restaurant-detail'
+import { RestaurantReviewsPage } from '@/pages/restaurant-reviews'
 import { WriteReviewPage } from '@/pages/write-review'
 import { ChatRoomPage } from '@/pages/chat-room'
 import { SubgroupsPage } from '@/pages/subgroups'
@@ -220,6 +222,10 @@ function App() {
             </RequireAuth>
           }
         />
+        <Route path="/restaurants/:id/reviews" element={<RestaurantReviewsPage />} />
+        <Route path="/restaurants/:id/review" element={<WriteReviewPage />} />
+
+        <Route path="/chat/:roomId" element={<ChatRoomPage />} />
 
         <Route
           path="/error"
