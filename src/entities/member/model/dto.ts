@@ -84,10 +84,16 @@ export type MemberProfileUpdateRequestDto = {
 
 export type MemberGroupSummaryItemDto = {
   groupId: number
-  name: string
+  groupName: string
+  subGroups: MemberSubgroupSummaryItemDto[]
 }
 
 export type MemberGroupSummaryListResponseDto = SuccessResponse<MemberGroupSummaryItemDto[]>
+
+export type MemberSubgroupSummaryItemDto = {
+  subGroupId: number
+  subGroupName: string
+}
 
 export type GroupEmailVerificationResponseDto = SuccessResponse<{
   id: number

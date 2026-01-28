@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
@@ -8,6 +8,8 @@ import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { GroupCard } from '@/entities/group/ui'
+import { useAuth } from '@/entities/user/model/useAuth'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 
 type GroupsPageProps = {
   onGroupClick?: (id: string) => void
@@ -15,42 +17,20 @@ type GroupsPageProps = {
 
 export function GroupsPage({ onGroupClick }: GroupsPageProps) {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+  const { summaries, isLoaded, error } = useMemberGroups()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const myGroups = [
-    {
-      id: '1',
-      name: '회사 점심 모임',
-      description: '매주 금요일 점심 메뉴 추천',
-      memberCount: 8,
-      memberAvatars: [
-        { src: 'https://i.pravatar.cc/150?img=1', name: '김철수' },
-        { src: 'https://i.pravatar.cc/150?img=2', name: '이영희' },
-        { src: 'https://i.pravatar.cc/150?img=3', name: '박민수' },
-      ],
-      status: '활성',
-    },
-    {
-      id: '2',
-      name: '강남 맛집 탐험대',
-      description: '강남 지역 숨은 맛집을 찾아서',
-      memberCount: 15,
-      memberAvatars: [
-        { src: 'https://i.pravatar.cc/150?img=4', name: '최지훈' },
-        { src: 'https://i.pravatar.cc/150?img=5', name: '정수연' },
-      ],
-    },
-    {
-      id: '3',
-      name: '주말 브런치 클럽',
-      description: '주말마다 새로운 브런치 카페 탐방',
-      memberCount: 6,
-      memberAvatars: [
-        { src: 'https://i.pravatar.cc/150?img=6', name: '강민지' },
-        { src: 'https://i.pravatar.cc/150?img=7', name: '한동훈' },
-      ],
-    },
-  ]
+  const myGroups = useMemo(
+    () =>
+      summaries.map((group) => ({
+        id: String(group.groupId),
+        name: group.groupName,
+        memberCount: 0,
+        memberAvatars: [],
+      })),
+    [summaries],
+  )
 
   const recommendedGroups = [
     {
@@ -97,7 +77,15 @@ export function GroupsPage({ onGroupClick }: GroupsPageProps) {
 
         <TabsContent value="my-groups" className="mt-4">
           <Container className="space-y-3">
-            {myGroups.length > 0 ? (
+            {isAuthenticated && !isLoaded ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">그룹 불러오는 중...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">그룹 불러오기에 실패했습니다</p>
+              </div>
+            ) : myGroups.length > 0 ? (
               myGroups.map((group) => (
                 <GroupCard key={group.id} {...group} onClick={() => onGroupClick?.(group.id)} />
               ))

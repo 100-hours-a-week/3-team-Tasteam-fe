@@ -9,6 +9,7 @@ import type {
   GroupUpdateRequestDto,
   GroupMemberListResponseDto,
   GroupReviewListResponseDto,
+  GroupDetailDto,
 } from '../model/dto'
 
 export const createGroupRequest = (payload: GroupRequestCreateDto) =>
@@ -25,11 +26,13 @@ export const createGroup = (payload: GroupCreateRequestDto) =>
     data: payload,
   })
 
-export const getGroup = (groupId: number) =>
-  request<GroupDetailResponseDto>({
+export const getGroup = async (groupId: number): Promise<GroupDetailDto> => {
+  const res = await request<GroupDetailResponseDto>({
     method: 'GET',
     url: `/api/v1/groups/${groupId}`,
   })
+  return res.data?.data ?? (res as unknown as { data: GroupDetailDto }).data
+}
 
 export const updateGroup = (groupId: number, payload: GroupUpdateRequestDto) =>
   request<void>({
@@ -62,8 +65,13 @@ export const deleteGroupMember = (groupId: number, userId: number) =>
     url: `/api/v1/groups/${groupId}/members/${userId}`,
   })
 
-export const getGroupReviews = (groupId: number, params?: { cursor?: string; size?: number }) =>
-  request<GroupReviewListResponseDto>({
+export const getGroupReviews = async (
+  groupId: number,
+  params?: { cursor?: string; size?: number },
+): Promise<GroupReviewListResponseDto> => {
+  const res = await request<{ data?: GroupReviewListResponseDto }>({
     method: 'GET',
     url: `/api/v1/groups/${groupId}/reviews${buildQuery(params ?? {})}`,
   })
+  return res.data ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
+}

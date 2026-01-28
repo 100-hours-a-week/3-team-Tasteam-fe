@@ -13,10 +13,12 @@ export const getRestaurantReviews = (
   restaurantId: number,
   params?: { cursor?: string; size?: number },
 ) =>
-  request<ReviewListResponseDto>({
+  request<{ data?: ReviewListResponseDto }>({
     method: 'GET',
     url: `/api/v1/restaurants/${restaurantId}/reviews${buildQuery(params ?? {})}`,
-  })
+  }).then(
+    (res) => res.data ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } },
+  )
 
 export const getReview = (
   reviewId: number,

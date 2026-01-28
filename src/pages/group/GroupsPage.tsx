@@ -1,9 +1,12 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { ROUTES } from '@/shared/config/routes'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { type GroupListItem, GroupListCard } from '@/features/groups'
+import { useAuth } from '@/entities/user/model/useAuth'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 
 type GroupsPageProps = {
   onGroupClick?: (groupId: string) => void
@@ -11,30 +14,25 @@ type GroupsPageProps = {
   onTabChange?: (tab: TabId) => void
 }
 
-const mockGroups: GroupListItem[] = [
-  {
-    id: 'group-1',
-    name: '카카오',
-    description: '그룹 주소를 적어주세요.',
-    memberCount: 15000,
-    subgroups: [
-      { id: 'sub-1', name: '평냉모임', memberCount: 5 },
-      { id: 'sub-2', name: '평냉모임', memberCount: 5 },
-      { id: 'sub-3', name: '평냉모임', memberCount: 5 },
-    ],
-  },
-  {
-    id: 'group-2',
-    name: '카카오',
-    description: '그룹 주소를 적어주세요.',
-    memberCount: 15000,
-    subgroups: [{ id: 'sub-4', name: '평냉모임', memberCount: 5 }],
-  },
-]
-
 export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: GroupsPageProps) {
   const navigate = useNavigate()
-  const groups = mockGroups
+  const { isAuthenticated } = useAuth()
+  const { summaries, isLoaded, error } = useMemberGroups()
+
+  const groups = useMemo<GroupListItem[]>(
+    () =>
+      summaries.map((group) => ({
+        id: String(group.groupId),
+        name: group.groupName,
+        memberCount: 0,
+        subgroups: (group.subGroups ?? []).map((subgroup) => ({
+          id: String(subgroup.subGroupId),
+          name: subgroup.subGroupName,
+          memberCount: 0,
+        })),
+      })),
+    [summaries],
+  )
 
   const handleTabChange = (tab: TabId) => {
     onTabChange?.(tab)
@@ -50,20 +48,30 @@ export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: Group
       <TopAppBar title="나의 그룹 목록" />
 
       <Container className="py-4 space-y-4">
-        {groups.map((group) => (
-          <GroupListCard
-            key={group.id}
-            group={group}
-            onGroupClick={(groupId) => {
-              if (onGroupClick) onGroupClick(groupId)
-              else navigate(ROUTES.groupDetail(groupId))
-            }}
-            onSubgroupClick={(groupId, subgroupId) => {
-              if (onSubgroupClick) onSubgroupClick(groupId, subgroupId)
-              else navigate(ROUTES.subgroupDetail(subgroupId))
-            }}
-          />
-        ))}
+        {isAuthenticated && !isLoaded ? (
+          <div className="text-center py-12 text-muted-foreground">그룹 불러오는 중...</div>
+        ) : error ? (
+          <div className="text-center py-12 text-muted-foreground">
+            그룹 불러오기에 실패했습니다
+          </div>
+        ) : groups.length > 0 ? (
+          groups.map((group) => (
+            <GroupListCard
+              key={group.id}
+              group={group}
+              onGroupClick={(groupId) => {
+                if (onGroupClick) onGroupClick(groupId)
+                else navigate(ROUTES.groupDetail(groupId))
+              }}
+              onSubgroupClick={(groupId, subgroupId) => {
+                if (onSubgroupClick) onSubgroupClick(groupId, subgroupId)
+                else navigate(ROUTES.subgroupDetail(subgroupId))
+              }}
+            />
+          ))
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">아직 가입한 그룹이 없습니다</div>
+        )}
       </Container>
 
       <BottomTabBar currentTab="groups" onTabChange={handleTabChange} />

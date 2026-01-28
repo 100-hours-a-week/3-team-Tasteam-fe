@@ -74,7 +74,7 @@ export function WriteReviewPage() {
         setGroups(list)
         if (list.length > 0) {
           setSelectedGroupId(list[0].groupId)
-          setCategory(list[0].name)
+          setCategory(list[0].groupName)
         } else {
           setSelectedGroupId(null)
           setCategory('소속 그룹 없음')
@@ -191,13 +191,13 @@ export function WriteReviewPage() {
                     <button
                       key={group.groupId}
                       onClick={() => {
-                        setCategory(group.name)
+                        setCategory(group.groupName)
                         setSelectedGroupId(group.groupId)
                         setShowCategoryDropdown(false)
                       }}
                       className="w-full px-4 py-3.5 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0 border-border"
                     >
-                      {group.name}
+                      {group.groupName}
                     </button>
                   ))
                 )}

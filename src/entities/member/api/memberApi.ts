@@ -45,11 +45,11 @@ export const getMyGroupsOverview = (params?: { cursor?: string }) =>
   })
 
 export const getMyGroupSummaries = async (): Promise<MemberGroupSummaryItemDto[]> => {
-  const res = await request<MemberGroupSummaryListResponseDto>({
+  const res = await request<MemberGroupSummaryListResponseDto | MemberGroupSummaryItemDto[]>({
     method: 'GET',
     url: '/api/v1/members/me/groups/summary',
   })
-  return res.data
+  return Array.isArray(res) ? res : res.data
 }
 
 export const getMyGroupRequests = (params?: { cursor?: string }) =>

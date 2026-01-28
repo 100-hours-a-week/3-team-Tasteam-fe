@@ -39,16 +39,18 @@ export type GroupRequestCreateResponseDto = SuccessResponse<{
 export type GroupDetailDto = {
   groupId: number
   name: string
-  logoImage: ImageResource
+  logoImageUrl: string | null
   address: string
-  detail_address: string
+  detailAddress: string | null
   emailDomain: string | null
   status: string
   createdAt: IsoDateTimeString
   updatedAt: IsoDateTimeString
 }
 
-export type GroupDetailResponseDto = SuccessResponse<GroupDetailDto>
+export type GroupDetailResponseDto = SuccessResponse<{
+  data: GroupDetailDto
+}>
 
 export type GroupUpdateRequestDto = {
   name?: string
