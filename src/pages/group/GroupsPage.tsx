@@ -60,7 +60,7 @@ export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: Group
             }}
             onSubgroupClick={(groupId, subgroupId) => {
               if (onSubgroupClick) onSubgroupClick(groupId, subgroupId)
-              else navigate(ROUTES.groupDetail(groupId))
+              else navigate(ROUTES.subgroupDetail(subgroupId))
             }}
           />
         ))}

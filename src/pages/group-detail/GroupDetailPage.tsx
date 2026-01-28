@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Container } from '@/widgets/container'
 import { ROUTES } from '@/shared/config/routes'
 import {
@@ -9,6 +10,16 @@ import {
   type GroupDetailHeaderData,
   type GroupReviewCardItem,
 } from '@/features/groups'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui/alert-dialog'
 
 const CATEGORY_OPTIONS = [
   '한식',
@@ -31,6 +42,8 @@ const mockGroup: GroupDetailHeaderData = {
   addressDetail: '유스페이스 1 A동 405호',
   memberCount: 123,
 }
+
+const MOCK_IS_JOINED = false
 
 const mockReviews: GroupReviewCardItem[] = [
   {
@@ -123,7 +136,26 @@ const mockReviews: GroupReviewCardItem[] = [
 
 export function GroupDetailPage() {
   const navigate = useNavigate()
+  const { id } = useParams()
+  const location = useLocation()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [isJoined, setIsJoined] = useState(MOCK_IS_JOINED)
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const groupId = id ?? 'group-1'
+
+  const joinedState =
+    location.state && typeof location.state === 'object'
+      ? (location.state as { joined?: boolean })
+      : undefined
+
+  const shouldMarkJoined = Boolean(joinedState?.joined)
+
+  useEffect(() => {
+    if (!shouldMarkJoined) return
+
+    toast.success('그룹 가입이 완료되었습니다')
+    navigate(location.pathname, { replace: true })
+  }, [navigate, location.pathname, shouldMarkJoined])
 
   const filteredReviews = useMemo(() => {
     if (!selectedCategory) return mockReviews
@@ -134,9 +166,12 @@ export function GroupDetailPage() {
     <div className="pb-10">
       <GroupDetailHeader
         group={mockGroup}
+        isJoined={isJoined || shouldMarkJoined}
         onBack={() => navigate(-1)}
-        onJoin={() => navigate(ROUTES.subgroupList)}
+        onJoin={() => navigate(ROUTES.groupPasswordJoin(groupId))}
         onMoreAction={() => navigate(ROUTES.subgroupList)}
+        onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
+        onLeaveGroup={() => setLeaveDialogOpen(true)}
       />
 
       <Container className="pt-3 pb-3 border-b border-border">
@@ -166,6 +201,31 @@ export function GroupDetailPage() {
           스크롤하면 다음 리뷰를 불러옵니다.
         </div>
       </Container>
+
+      <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>그룹 탈퇴</AlertDialogTitle>
+            <AlertDialogDescription>
+              그룹 및 해당 그룹의 하위그룹에서 모두 나가게 됩니다. 다시 참가하려면 인증이
+              필요합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              variant="default"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                setIsJoined(false)
+                toast.success('그룹에서 탈퇴했습니다')
+              }}
+            >
+              나가기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

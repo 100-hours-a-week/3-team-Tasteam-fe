@@ -38,17 +38,18 @@ const subGroupsMock: Record<string, any> = {
   '1': {
     id: '1',
     name: '강남 지역팀',
-    description: '강남역 근처 맛집을 탐방하는 하위 그룹',
+    description: '강남역 근처 맛집을 탐방하는 소그룹',
     memberCount: 4,
     createdDate: '2024.01.15',
     isAdmin: true,
+    parentGroupId: 'group-1',
     parentGroupName: '카카오 모빌리티',
     members: [
       {
         id: '1',
         name: '김철수',
         avatar: 'https://i.pravatar.cc/150?img=1',
-        role: '하위 그룹장',
+        role: '소그룹장',
         isAdmin: true,
       },
       {
@@ -127,17 +128,18 @@ const subGroupsMock: Record<string, any> = {
   '2': {
     id: '2',
     name: '일식 애호가',
-    description: '일식 맛집만 모아서 공유하는 하위 그룹',
+    description: '일식 맛집만 모아서 공유하는 하위그룹',
     memberCount: 5,
     createdDate: '2024.01.10',
     isAdmin: false,
+    parentGroupId: 'group-1',
     parentGroupName: '카카오 모빌리티',
     members: [
       {
         id: '5',
         name: '정수진',
         avatar: 'https://i.pravatar.cc/150?img=5',
-        role: '하위 그룹장',
+        role: '하위그룹장',
         isAdmin: true,
       },
       {
@@ -194,17 +196,18 @@ const subGroupsMock: Record<string, any> = {
   '3': {
     id: '3',
     name: '주말 브런치',
-    description: '주말 브런치 카페 탐방 하위 그룹',
+    description: '주말 브런치 카페 탐방 하위그룹',
     memberCount: 3,
     createdDate: '2024.01.20',
     isAdmin: false,
+    parentGroupId: 'group-1',
     parentGroupName: '카카오 모빌리티',
     members: [
       {
         id: '9',
         name: '한지민',
         avatar: 'https://i.pravatar.cc/150?img=9',
-        role: '하위 그룹장',
+        role: '하위그룹장',
         isAdmin: true,
       },
       {
@@ -264,7 +267,7 @@ export function SubgroupsPage() {
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subGroup = subGroupsMock[id || '1'] || subGroupsMock['1']
-  const { members, restaurants, parentGroupName, reviews } = subGroup
+  const { members, restaurants, parentGroupId, parentGroupName, reviews } = subGroup
 
   // const handleSaveToggle = (restaurantId: string) => {
   //   setSavedRestaurants((prev) => ({
@@ -319,7 +322,7 @@ export function SubgroupsPage() {
   }
 
   const handleGroupNameClick = () => {
-    navigate(ROUTES.groups)
+    navigate(ROUTES.groupDetail(parentGroupId || 'group-1'))
   }
 
   return (
@@ -342,6 +345,7 @@ export function SubgroupsPage() {
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold mb-2">{subGroup.name}</h1>
               <p className="text-sm text-muted-foreground mb-3">{subGroup.description}</p>
+              <Badge variant="secondary">활성 하위그룹</Badge>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -352,7 +356,7 @@ export function SubgroupsPage() {
               <DropdownMenuContent align="end">
                 {subGroup.isAdmin && (
                   <>
-                    <DropdownMenuItem>하위 그룹 정보 수정</DropdownMenuItem>
+                    <DropdownMenuItem>하위그룹 정보 수정</DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
@@ -364,22 +368,22 @@ export function SubgroupsPage() {
                       onSelect={(e) => e.preventDefault()}
                       className="text-destructive focus:text-destructive"
                     >
-                      하위 그룹 나가기
+                      하위그룹 나가기
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent size="sm">
                     <AlertDialogHeader>
-                      <AlertDialogTitle>하위 그룹을 나가시겠습니까?</AlertDialogTitle>
+                      <AlertDialogTitle>하위그룹을 나가시겠습니까?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        하위 그룹을 나가면 이 하위 그룹의 모든 정보와 활동 내역을 볼 수 없습니다.
-                        다시 가입하려면 초대를 받아야 합니다.
+                        하위그룹을 나가면 이 하위그룹의 모든 정보와 활동 내역을 볼 수 없습니다.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>취소</AlertDialogCancel>
                       <AlertDialogAction
+                        variant="default"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90"
                         onClick={handleLeaveSubGroup}
-                        className="bg-destructive hover:bg-destructive/90 text-white"
                       >
                         나가기
                       </AlertDialogAction>
@@ -421,7 +425,7 @@ export function SubgroupsPage() {
         <TabsContent value="restaurants" className="mt-4">
           <Container className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">하위 그룹 맛집 리스트</h3>
+              <h3 className="font-semibold text-lg">하위그룹 맛집 리스트</h3>
               <Button variant="outline" size="sm">
                 맛집 추가
               </Button>
@@ -443,7 +447,7 @@ export function SubgroupsPage() {
         <TabsContent value="reviews" className="mt-4">
           <Container className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">하위 그룹 리뷰</h3>
+              <h3 className="font-semibold text-lg">하위그룹 리뷰</h3>
             </div>
 
             <div className="space-y-3">
