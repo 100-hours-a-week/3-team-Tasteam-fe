@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import axios from 'axios'
 import { useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -11,6 +12,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { SubgroupImageUploader } from '@/features/subgroups/subgroup-create-image'
 import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-password'
 import { createSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import type { ErrorResponse } from '@/shared/types/api'
 
 const DESCRIPTION_LIMIT = 500
 
@@ -104,7 +106,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       toast.success('하위그룹을 생성했습니다.')
       onSubmit?.()
     } catch (error) {
-      const code = (error as any)?.response?.data?.code
+      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
       if (code === 'ALREADY_EXISTS') {
         setSubmitError('이미 존재하는 하위그룹명입니다.')
       } else if (code === 'NO_PERMISSION') {
