@@ -12,6 +12,17 @@ import { Separator } from '@/shared/ui/separator'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { getMe } from '@/entities/member/api/memberApi'
 import type { MemberMeResponseDto } from '@/entities/member/model/dto'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui/alert-dialog'
 
 type ProfilePageProps = {
   onSettingsClick?: () => void
@@ -36,6 +47,7 @@ export function ProfilePage({
   const location = useLocation()
   const { isAuthenticated } = useAuth()
   const [userData, setUserData] = useState<MemberMeResponseDto | null>(null)
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -82,8 +94,12 @@ export function ProfilePage({
   const menuItems = [
     { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites },
     { label: '내 리뷰', icon: Bell, onClick: onMyReviews },
-    { label: '알림', icon: Bell, onClick: onNotifications },
-    { label: '알림 설정', icon: Settings, onClick: onNotificationSettings },
+    ...(FEATURE_FLAGS.enableNotifications
+      ? [
+          { label: '알림', icon: Bell, onClick: onNotifications },
+          { label: '알림 설정', icon: Settings, onClick: onNotificationSettings },
+        ]
+      : []),
     { label: '설정', icon: Settings, onClick: onSettingsClick },
   ]
 
@@ -134,12 +150,27 @@ export function ProfilePage({
         <Button
           variant="outline"
           className="w-full text-destructive hover:bg-destructive/10"
-          onClick={onLogout}
+          onClick={() => setLogoutDialogOpen(true)}
         >
           <LogOut className="h-4 w-4 mr-2" />
           로그아웃
         </Button>
       </Container>
+
+      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>로그아웃</AlertDialogTitle>
+            <AlertDialogDescription>정말 로그아웃 하시겠어요?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={onLogout}>
+              로그아웃
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Container className="pt-8">
         <div className="text-center text-sm text-muted-foreground space-y-1">

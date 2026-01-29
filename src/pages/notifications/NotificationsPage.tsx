@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Separator } from '@/shared/ui/separator'
 import { getNotifications } from '@/entities/notification/api/notificationApi'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 type Notification = {
   id: string
@@ -69,9 +70,11 @@ const mapNotificationType = (type: string): Notification['type'] => {
 }
 
 export function NotificationsPage({ onNotificationClick, onBack }: NotificationsPageProps) {
+  const notificationsEnabled = FEATURE_FLAGS.enableNotifications
   const [notifications, setNotifications] = useState<Notification[]>([])
 
   useEffect(() => {
+    if (!notificationsEnabled) return
     getNotifications()
       .then((response) => {
         const apiData =
@@ -86,7 +89,7 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
         setNotifications(apiData)
       })
       .catch(() => setNotifications(defaultNotifications))
-  }, [])
+  }, [notificationsEnabled])
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
@@ -116,6 +119,23 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
   }
 
   const unreadCount = notifications.filter((n) => !n.isRead).length
+
+  if (!notificationsEnabled) {
+    return (
+      <div className="flex flex-col h-full bg-background min-h-screen">
+        <TopAppBar title="알림" showBackButton onBack={onBack} />
+        <Container className="flex-1 py-6 overflow-auto">
+          <EmptyState
+            icon={Bell}
+            title="알림 기능이 비활성화되어 있어요"
+            description="현재 서비스에서는 알림을 제공하지 않습니다."
+            actionLabel={onBack ? '뒤로가기' : undefined}
+            onAction={onBack}
+          />
+        </Container>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full bg-background min-h-screen">

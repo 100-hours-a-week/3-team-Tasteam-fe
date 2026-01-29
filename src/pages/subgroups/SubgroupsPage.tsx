@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { ROUTES } from '@/shared/config/routes'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup/model/dto'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
 
@@ -229,14 +230,16 @@ export function SubgroupsPage() {
             >
               {isMember ? <UserCheck className="h-5 w-5" /> : <UserPlus className="h-5 w-5" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(ROUTES.notificationSettings)}
-              aria-label="알림 설정"
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
+            {FEATURE_FLAGS.enableNotifications && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(ROUTES.notificationSettings)}
+                aria-label="알림 설정"
+              >
+                <Bell className="h-5 w-5" />
+              </Button>
+            )}
           </>
         }
       />
