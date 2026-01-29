@@ -43,6 +43,7 @@ export type GroupDetailDto = {
   address: string
   detailAddress: string | null
   emailDomain: string | null
+  memberCount: number
   status: string
   createdAt: IsoDateTimeString
   updatedAt: IsoDateTimeString

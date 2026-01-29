@@ -11,6 +11,8 @@ import type {
   GroupReviewListResponseDto,
   GroupDetailDto,
 } from '../model/dto'
+import type { CursorPageResponse } from '@/shared/types/pagination'
+import type { RestaurantListItemDto } from '@/entities/restaurant/model/dto'
 
 export const createGroupRequest = (payload: GroupRequestCreateDto) =>
   request<GroupRequestCreateResponseDto>({
@@ -74,4 +76,48 @@ export const getGroupReviews = async (
     url: `/api/v1/groups/${groupId}/reviews${buildQuery(params ?? {})}`,
   })
   return res.data ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
+}
+
+export const getGroupReviewRestaurants = async (
+  groupId: number,
+  params: {
+    latitude: number
+    longitude: number
+    cursor?: string
+    size?: number
+    categories?: string
+  },
+): Promise<CursorPageResponse<RestaurantListItemDto>> => {
+  type BackendRestaurantListItem = {
+    id: number
+    name: string
+    address: string
+    distanceMeter: number
+    foodCategories: string[]
+    thumbnailImages: { id: number | string; url: string }[] | null
+    reviewSummary?: string
+  }
+
+  const res = await request<CursorPageResponse<BackendRestaurantListItem>>({
+    method: 'GET',
+    url: `/api/v1/groups/${groupId}/reviews/restaurants${buildQuery(params ?? {})}`,
+  })
+  const items = (res.items ?? []).map<RestaurantListItemDto>((item) => {
+    const firstImage = item.thumbnailImages?.[0]
+    return {
+      id: item.id,
+      name: item.name,
+      address: item.address,
+      distanceMeter: item.distanceMeter,
+      foodCategories: item.foodCategories,
+      thumbnailImage: firstImage
+        ? { id: String(firstImage.id), url: firstImage.url }
+        : { id: String(item.id), url: '' },
+      reviewSummary: item.reviewSummary,
+    }
+  })
+  return {
+    items,
+    pagination: res.pagination ?? { nextCursor: null, size: 0, hasNext: false },
+  }
 }

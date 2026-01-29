@@ -1,4 +1,4 @@
-import { MapPin, Star, Heart } from 'lucide-react'
+import { MapPin, Star, Heart, Sparkles } from 'lucide-react'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -10,6 +10,7 @@ type RestaurantDtoProps = {
   restaurant: RestaurantListItemDto | RestaurantDetailDto
   isFavorite?: boolean
   onFavoriteToggle?: () => void
+  reviewSummary?: string
   onClick?: () => void
   className?: string
 }
@@ -28,6 +29,7 @@ type RestaurantSimpleProps = {
   tags?: string[]
   isSaved?: boolean
   onSave?: () => void
+  reviewSummary?: string
   onClick?: () => void
   className?: string
 }
@@ -115,10 +117,12 @@ export function RestaurantCard(props: RestaurantCardProps) {
       tags,
       isSaved,
       onSave,
+      reviewSummary,
       onClick,
       className,
     } = props
     const locationText = distance || address || ''
+    const summary = reviewSummary?.trim()
 
     return (
       <Card
@@ -193,13 +197,32 @@ export function RestaurantCard(props: RestaurantCardProps) {
               ))}
             </div>
           )}
+          {summary && (
+            <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-primary/80 uppercase tracking-wider">
+                <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
+                <span>AI 리뷰 요약</span>
+              </div>
+              <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
+                "{summary}"
+              </p>
+            </div>
+          )}
         </div>
       </Card>
     )
   }
 
-  const { restaurant, isFavorite = false, onFavoriteToggle, onClick, className } = props
+  const {
+    restaurant,
+    isFavorite = false,
+    onFavoriteToggle,
+    reviewSummary,
+    onClick,
+    className,
+  } = props
   const ratio = getRecommendRatio(restaurant)
+  const summary = reviewSummary?.trim()
 
   return (
     <Card
@@ -253,6 +276,17 @@ export function RestaurantCard(props: RestaurantCardProps) {
                 {cat}
               </Badge>
             ))}
+          </div>
+        )}
+        {summary && (
+          <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-primary/80 uppercase tracking-wider">
+              <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
+              <span>AI 리뷰 요약</span>
+            </div>
+            <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
+              "{summary}"
+            </p>
           </div>
         )}
       </div>

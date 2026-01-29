@@ -6,6 +6,7 @@ import type {
   RestaurantDetailResponseDto,
   RestaurantListResponseDto,
   RestaurantListItemDto,
+  FoodCategoryDto,
   RestaurantCreateRequestDto,
   RestaurantCreateResponseDto,
   RestaurantUpdateRequestDto,
@@ -29,6 +30,14 @@ export const getRestaurants = (params: {
     method: 'GET',
     url: `/api/v1/restaurants${buildQuery(params)}`,
   })
+
+export const getFoodCategories = async (): Promise<FoodCategoryDto[]> => {
+  const res = await request<SuccessResponse<FoodCategoryDto[]> | FoodCategoryDto[]>({
+    method: 'GET',
+    url: '/api/v1/food-categories',
+  })
+  return Array.isArray(res) ? res : res.data
+}
 
 /**
  * 백엔드 mock 응답(`data.items[].thumbnailImages`)을
