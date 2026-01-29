@@ -43,6 +43,12 @@ export type RestaurantListItemDto = {
   distanceMeter: number
   foodCategories: string[]
   thumbnailImage: ImageResource
+  reviewSummary?: string
+}
+
+export type FoodCategoryDto = {
+  id: number
+  name: string
 }
 
 export type RestaurantListResponseDto = CursorPageResponse<RestaurantListItemDto>

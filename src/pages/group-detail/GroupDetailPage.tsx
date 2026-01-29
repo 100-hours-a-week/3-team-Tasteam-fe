@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Container } from '@/widgets/container'
@@ -8,9 +8,10 @@ import {
   GroupDetailHeader,
   type GroupDetailHeaderData,
 } from '@/features/groups'
-import { ReviewCard } from '@/entities/review/ui'
-import { getGroup, getGroupReviews, leaveGroup } from '@/entities/group/api/groupApi'
-import type { ReviewListItemDto } from '@/entities/review/model/dto'
+import { RestaurantCard } from '@/entities/restaurant/ui'
+import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group/api/groupApi'
+import type { RestaurantListItemDto } from '@/entities/restaurant/model/dto'
+import { getFoodCategories } from '@/entities/restaurant/api/restaurantApi'
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import {
   AlertDialog,
@@ -43,16 +44,24 @@ const EMPTY_GROUP: GroupDetailHeaderData = {
   memberCount: 0,
 }
 
+const MOCK_LOCATION = {
+  latitude: 37.5,
+  longitude: 127.0,
+}
+
 export function GroupDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const location = useLocation()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [categories, setCategories] = useState<string[]>([])
+  const [isCategoryLoading, setIsCategoryLoading] = useState(false)
   const [group, setGroup] = useState<GroupDetailHeaderData>(EMPTY_GROUP)
-  const [reviews, setReviews] = useState<ReviewListItemDto[]>([])
+  const [restaurants, setRestaurants] = useState<RestaurantListItemDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const [isGroupLoaded, setIsGroupLoaded] = useState(false)
   const groupId = id ? Number(id) : null
   const { summaries, isLoaded } = useMemberGroups()
 
@@ -71,40 +80,55 @@ export function GroupDetailPage() {
   }, [navigate, location.pathname, shouldMarkJoined])
 
   useEffect(() => {
+    let cancelled = false
+    const fetchCategories = async () => {
+      setIsCategoryLoading(true)
+      try {
+        const list = await getFoodCategories()
+        if (cancelled) return
+        const names = list.map((item) => item.name)
+        setCategories(names)
+        setSelectedCategory((prev) => prev ?? names[0] ?? null)
+      } catch {
+        if (cancelled) return
+        setCategories(CATEGORY_OPTIONS)
+        setSelectedCategory((prev) => prev ?? CATEGORY_OPTIONS[0] ?? null)
+      } finally {
+        if (!cancelled) {
+          setIsCategoryLoading(false)
+        }
+      }
+    }
+    fetchCategories()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     if (!groupId || Number.isNaN(groupId)) return
     let cancelled = false
     const fetchGroup = async () => {
       setIsLoading(true)
       setError(null)
+      setIsGroupLoaded(false)
       try {
-        const [groupRes, reviewRes] = await Promise.all([
-          getGroup(groupId),
-          getGroupReviews(groupId, { size: 10 }),
-        ])
+        const groupRes = await getGroup(groupId)
         if (cancelled) return
         setGroup({
           name: groupRes.name,
           profileImage: groupRes.logoImageUrl ?? undefined,
           addressLine: groupRes.address,
           addressDetail: groupRes.detailAddress ?? undefined,
-          memberCount: 0,
+          memberCount: groupRes.memberCount ?? 0,
         })
-        setReviews(
-          (reviewRes.items ?? []).map((item) => ({
-            id: item.id,
-            author: item.author,
-            contentPreview: item.contentPreview,
-            isRecommended: item.isRecommended,
-            keywords: item.keywords,
-            thumbnailImage: item.thumbnailImage,
-            createdAt: item.createdAt,
-          })),
-        )
+        setIsGroupLoaded(true)
       } catch {
         if (!cancelled) {
           setError('그룹 정보를 불러오지 못했습니다')
           setGroup(EMPTY_GROUP)
-          setReviews([])
+          setRestaurants([])
+          setIsGroupLoaded(false)
         }
       } finally {
         if (!cancelled) {
@@ -118,15 +142,42 @@ export function GroupDetailPage() {
     }
   }, [groupId])
 
+  useEffect(() => {
+    if (!groupId || Number.isNaN(groupId)) return
+    if (!selectedCategory || !isGroupLoaded) return
+    let cancelled = false
+    const fetchRestaurants = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const restaurantRes = await getGroupReviewRestaurants(groupId, {
+          ...MOCK_LOCATION,
+          size: 10,
+          categories: selectedCategory,
+        })
+        if (cancelled) return
+        setRestaurants(restaurantRes.items ?? [])
+      } catch {
+        if (!cancelled) {
+          setError('음식점 정보를 불러오지 못했습니다')
+          setRestaurants([])
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+    fetchRestaurants()
+    return () => {
+      cancelled = true
+    }
+  }, [groupId, isGroupLoaded, selectedCategory])
+
   const isJoined =
     isLoaded && groupId !== null && !Number.isNaN(groupId)
       ? summaries.some((item) => item.groupId === groupId)
       : false
-
-  const filteredReviews = useMemo(() => {
-    if (!selectedCategory) return reviews
-    return reviews.filter((review) => review.keywords.includes(selectedCategory))
-  }, [selectedCategory, reviews])
 
   return (
     <div className="pb-10">
@@ -142,32 +193,38 @@ export function GroupDetailPage() {
 
       <Container className="pt-3 pb-3 border-b border-border">
         <GroupCategoryFilter
-          categories={CATEGORY_OPTIONS}
+          categories={categories.length ? categories : CATEGORY_OPTIONS}
           value={selectedCategory}
-          onChange={setSelectedCategory}
+          onChange={(value) => {
+            const fallback = categories[0] ?? CATEGORY_OPTIONS[0] ?? null
+            setSelectedCategory(value ?? fallback)
+          }}
         />
       </Container>
 
       <Container className="mt-4 space-y-4">
-        {isLoading ? (
+        {isLoading || isCategoryLoading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">
             그룹 정보를 불러오는 중입니다.
           </div>
         ) : error ? (
           <div className="py-12 text-center text-sm text-muted-foreground">{error}</div>
         ) : (
-          filteredReviews.map((review) => <ReviewCard key={review.id} review={review} />)
+          restaurants.map((restaurant) => (
+            <RestaurantCard
+              key={restaurant.id}
+              restaurant={restaurant}
+              reviewSummary={restaurant.reviewSummary ?? '리뷰 요약을 준비 중입니다.'}
+              onClick={() => navigate(ROUTES.restaurantDetail(String(restaurant.id)))}
+            />
+          ))
         )}
 
-        {!isLoading && !error && filteredReviews.length === 0 && (
+        {!isLoading && !error && restaurants.length === 0 && (
           <div className="py-12 text-center text-sm text-muted-foreground">
-            선택한 카테고리에 해당하는 리뷰가 없습니다.
+            선택한 카테고리에 해당하는 음식점이 없습니다.
           </div>
         )}
-
-        <div className="py-4 text-center text-xs text-muted-foreground">
-          스크롤하면 다음 리뷰를 불러옵니다.
-        </div>
       </Container>
 
       <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
