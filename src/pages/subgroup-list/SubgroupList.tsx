@@ -266,8 +266,12 @@ export function SubgroupListPage({
             ) : (
               <EmptyState
                 icon={Search}
-                title="검색 결과가 없어요"
-                description="다른 키워드로 검색해보세요"
+                title={searchQuery.trim() ? '검색 결과가 없어요' : '아직 하위그룹이 없어요'}
+                description={
+                  searchQuery.trim()
+                    ? '다른 키워드로 검색해보세요'
+                    : '첫 번째 하위그룹을 만들어보세요'
+                }
               />
             )}
           </div>
