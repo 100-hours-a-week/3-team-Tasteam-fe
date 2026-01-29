@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import axios from 'axios'
+import { useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
@@ -8,21 +11,20 @@ import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
 import { SubgroupImageUploader } from '@/features/subgroups/subgroup-create-image'
 import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-password'
+import { createSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import type { ErrorResponse } from '@/shared/types/api'
 
 const DESCRIPTION_LIMIT = 500
 
 type SubgroupCreatePageProps = {
-  onSubmit?: (data: {
-    name: string
-    description: string
-    isPrivate: boolean
-    password?: string
-    image?: File | null
-  }) => void
+  onSubmit?: () => void
   onBack?: () => void
 }
 
 export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps) {
+  const [searchParams] = useSearchParams()
+  const groupIdParam = searchParams.get('groupId')
+  const groupId = groupIdParam ? Number(groupIdParam) : null
   const [imageFile, setImageFile] = useState<File | null>(null)
   const imagePreviewUrl = useMemo(
     () => (imageFile ? URL.createObjectURL(imageFile) : null),
@@ -36,6 +38,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
   const [touched, setTouched] = useState({ name: false, password: false, confirm: false })
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!imagePreviewUrl) return
@@ -64,9 +67,10 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
 
   const isFormValid = useMemo(() => {
     if (!name.trim()) return false
+    if (!groupId || Number.isNaN(groupId)) return false
     if (!isPasswordEnabled) return true
     return Boolean(password.trim()) && confirmPassword === password
-  }, [confirmPassword, isPasswordEnabled, name, password])
+  }, [confirmPassword, groupId, isPasswordEnabled, name, password])
 
   const shouldShowNameError = (touched.name || hasSubmitted) && Boolean(nameError)
   const shouldShowPasswordError = (touched.password || hasSubmitted) && Boolean(passwordError)
@@ -86,15 +90,44 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
     if (!isFormValid) return
 
     setIsSubmitting(true)
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    onSubmit?.({
-      name: name.trim(),
-      description: description.trim(),
-      isPrivate: isPasswordEnabled,
-      password: isPasswordEnabled ? password : undefined,
-      image: imageFile,
-    })
-    setIsSubmitting(false)
+    setSubmitError(null)
+    try {
+      if (!groupId || Number.isNaN(groupId)) {
+        setSubmitError('그룹 정보를 찾을 수 없습니다.')
+        return
+      }
+      await createSubgroup(groupId, {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        profileImageUrl: undefined,
+        joinType: isPasswordEnabled ? 'PASSWORD' : 'OPEN',
+        password: isPasswordEnabled ? password.trim() : null,
+      })
+      toast.success('하위그룹을 생성했습니다.')
+      onSubmit?.()
+    } catch (error: unknown) {
+      let code: ErrorResponse['code'] | undefined
+      if (axios.isAxiosError<ErrorResponse>(error)) {
+        code = error.response?.data?.code
+      } else {
+        console.error(error)
+      }
+      if (code === 'ALREADY_EXISTS') {
+        setSubmitError('이미 존재하는 하위그룹명입니다.')
+      } else if (code === 'NO_PERMISSION') {
+        setSubmitError('그룹 멤버만 하위그룹을 생성할 수 있습니다.')
+      } else if (code === 'GROUP_NOT_FOUND') {
+        setSubmitError('그룹 정보를 찾을 수 없습니다.')
+      } else if (code === 'INVALID_REQUEST') {
+        setSubmitError('요청 값이 올바르지 않습니다.')
+      } else if (code === 'AUTHENTICATION_REQUIRED') {
+        setSubmitError('로그인이 필요합니다.')
+      } else {
+        setSubmitError('하위그룹 생성에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -103,6 +136,9 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
 
       <Container className="flex-1 py-6 overflow-auto">
         <div className="space-y-6">
+          {!groupId || Number.isNaN(groupId) ? (
+            <p className="text-sm text-destructive">그룹 정보를 찾을 수 없습니다.</p>
+          ) : null}
           <SubgroupImageUploader previewUrl={imagePreviewUrl} onImageChange={setImageFile} />
 
           <div className="space-y-2">
@@ -150,6 +186,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
             <Plus className="w-4 h-4 mr-2" />
             {isSubmitting ? '생성 중...' : '생성하기'}
           </Button>
+          {submitError ? <p className="text-xs text-destructive">{submitError}</p> : null}
         </div>
       </Container>
     </div>

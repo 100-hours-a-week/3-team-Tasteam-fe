@@ -11,8 +11,10 @@ export default defineConfig({
     react(),
     VitePWA({
       disable: disablePwa,
+      minify: false,
       registerType: 'autoUpdate',
       workbox: {
+        mode: 'development',
         navigateFallbackDenylist: [/^\/api\//],
       },
       manifest: {

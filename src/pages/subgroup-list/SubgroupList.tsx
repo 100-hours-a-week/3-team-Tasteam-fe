@@ -33,7 +33,7 @@ type Group = {
 type SubgroupListPageProps = {
   onGroupClick?: (groupId: string) => void
   onJoinSuccess?: (groupId: string) => void
-  onCreateClick?: () => void
+  onCreateClick?: (groupId: string) => void
   onBack?: () => void
 }
 
@@ -172,7 +172,18 @@ export function SubgroupListPage({
           showBackButton
           onBack={onBack}
           actions={
-            <Button variant="ghost" size="icon" aria-label="하위그룹 추가" onClick={onCreateClick}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="하위그룹 추가"
+              onClick={() => {
+                if (!groupId || Number.isNaN(groupId)) {
+                  toast.error('그룹 정보를 찾을 수 없습니다.')
+                  return
+                }
+                onCreateClick?.(String(groupId))
+              }}
+            >
               <Plus className="h-5 w-5" />
             </Button>
           }

@@ -29,11 +29,11 @@ export type SubgroupDetailResponseDto = SuccessResponse<{
 }>
 
 export type SubgroupCreateRequestDto = {
-  name?: string
+  name: string
   description?: string
-  profileImageId?: string
-  joinType?: string
-  groupPassword?: string
+  profileImageUrl?: string
+  joinType: 'OPEN' | 'PASSWORD'
+  password?: string | null
 }
 
 export type SubgroupCreateResponseDto = SuccessResponse<{

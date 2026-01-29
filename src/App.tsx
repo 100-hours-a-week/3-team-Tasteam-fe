@@ -145,7 +145,7 @@ function App() {
           element={
             <SubgroupListPage
               onBack={() => navigate(-1)}
-              onCreateClick={() => navigate('/subgroups/create')}
+              onCreateClick={(groupId) => navigate(`/subgroups/create?groupId=${groupId}`)}
               onJoinSuccess={(id) => navigate(`/subgroups/${id}`)}
               onGroupClick={(id) => navigate(`/subgroups/${id}`)}
             />
