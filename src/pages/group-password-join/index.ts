@@ -1,0 +1,1 @@
+export { GroupPasswordJoinPage } from './GroupPasswordJoinPage'

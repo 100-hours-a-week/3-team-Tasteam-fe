@@ -9,9 +9,12 @@ import { SignupPage } from '@/pages/signup'
 import { OtpVerificationPage } from '@/pages/otp-verification'
 import { OnboardingPage } from '@/pages/onboarding'
 import { SearchPage } from '@/pages/search'
-import { GroupsPage } from '@/pages/groups'
+import { GroupsPage } from '@/pages/group'
 import { CreateGroupPage } from '@/pages/create-group'
-import { JoinGroupPage } from '@/pages/join-group'
+import { GroupEmailJoinPage } from '@/pages/group-email-join'
+import { GroupPasswordJoinPage } from '@/pages/group-password-join'
+import { SubgroupListPage } from '@/pages/subgroup-list'
+import { SubgroupCreatePage } from '@/pages/subgroup-create'
 import { GroupDetailPage } from '@/pages/group-detail'
 import { ProfilePage } from '@/pages/profile'
 import { EditProfilePage } from '@/pages/edit-profile'
@@ -26,11 +29,22 @@ import { WriteReviewPage } from '@/pages/write-review'
 import { ChatRoomPage } from '@/pages/chat-room'
 import { SubgroupsPage } from '@/pages/subgroups'
 import { ErrorPage } from '@/pages/error-page'
+import { RequireAuth } from '@/features/auth/require-auth'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
 import { resetLoginRequired } from '@/shared/lib/authToken'
 import { Route, Routes } from 'react-router-dom'
+
+function ScrollToTop() {
+  const location = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [location.pathname])
+
+  return null
+}
 
 function App() {
   const isReady = useBootstrap()
@@ -56,6 +70,7 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
       <Toaster position="top-center" />
       <LoginRequiredModal
         open={showLogin}
@@ -115,29 +130,57 @@ function App() {
 
         <Route
           path="/groups"
-          element={
-            <GroupsPage
-              onCreateGroup={() => navigate('/groups/create')}
-              onGroupClick={(id) => navigate(`/groups/${id}`)}
-            />
-          }
+          element={<GroupsPage onGroupClick={(id) => navigate(`/groups/${id}`)} />}
         />
         <Route
           path="/groups/create"
           element={
-            <CreateGroupPage onBack={() => navigate(-1)} onSubmit={() => navigate('/groups')} />
+            <RequireAuth>
+              <CreateGroupPage onBack={() => navigate(-1)} onSubmit={() => navigate('/groups')} />
+            </RequireAuth>
           }
         />
         <Route
-          path="/groups/join"
+          path="/subgroup-list"
           element={
-            <JoinGroupPage
+            <SubgroupListPage
               onBack={() => navigate(-1)}
-              onGroupClick={(id) => navigate(`/groups/${id}`)}
+              onCreateClick={() => navigate('/subgroups/create')}
+              onJoinSuccess={(id) => navigate(`/subgroups/${id}`)}
+              onGroupClick={(id) => navigate(`/subgroups/${id}`)}
             />
           }
         />
+        <Route
+          path="/subgroups/create"
+          element={
+            <RequireAuth>
+              <SubgroupCreatePage
+                onBack={() => navigate(-1)}
+                onSubmit={() => navigate('/subgroup-list')}
+              />
+            </RequireAuth>
+          }
+        />
         <Route path="/groups/:id" element={<GroupDetailPage />} />
+        <Route
+          path="/groups/:id/email-join"
+          element={
+            <GroupEmailJoinPage
+              onBack={() => navigate(-1)}
+              onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+            />
+          }
+        />
+        <Route
+          path="/groups/:id/password-join"
+          element={
+            <GroupPasswordJoinPage
+              onBack={() => navigate(-1)}
+              onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+            />
+          }
+        />
         <Route path="/subgroups/:id" element={<SubgroupsPage />} />
 
         <Route
@@ -148,32 +191,43 @@ function App() {
               onSettingsClick={() => navigate('/settings')}
               onNotifications={() => navigate('/notifications')}
               onNotificationSettings={() => navigate('/notifications/settings')}
+              onMyFavorites={() => navigate('/my-page/favorites')}
+              onMyReviews={() => navigate('/my-page/reviews')}
               onLogout={async () => {
                 const ok = await logout()
                 if (ok) {
                   navigate('/')
                 }
               }}
-              onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
             />
           }
         />
         <Route
           path="/my-page/edit"
-          element={<EditProfilePage onBack={() => navigate(-1)} onSave={() => navigate(-1)} />}
+          element={
+            <RequireAuth>
+              <EditProfilePage onBack={() => navigate(-1)} />
+            </RequireAuth>
+          }
         />
         <Route
           path="/my-page/favorites"
           element={
-            <MyFavoritesPage
-              onBack={() => navigate(-1)}
-              onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
-            />
+            <RequireAuth>
+              <MyFavoritesPage
+                onBack={() => navigate(-1)}
+                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
+              />
+            </RequireAuth>
           }
         />
         <Route
           path="/my-page/reviews"
-          element={<MyReviewsPage onBack={() => navigate(-1)} onEditReview={() => {}} />}
+          element={
+            <RequireAuth>
+              <MyReviewsPage onBack={() => navigate(-1)} onEditReview={() => {}} />
+            </RequireAuth>
+          }
         />
 
         <Route path="/notifications" element={<NotificationsPage onBack={() => navigate(-1)} />} />
@@ -184,6 +238,23 @@ function App() {
         <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
 
         <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
+        <Route
+          path="/restaurants/:id/review"
+          element={
+            <RequireAuth>
+              <WriteReviewPage />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/chat/:roomId"
+          element={
+            <RequireAuth>
+              <ChatRoomPage />
+            </RequireAuth>
+          }
+        />
         <Route path="/restaurants/:id/reviews" element={<RestaurantReviewsPage />} />
         <Route path="/restaurants/:id/review" element={<WriteReviewPage />} />
 
@@ -199,15 +270,11 @@ function App() {
         <Route
           path="/"
           element={
-            showLogin ? (
-              <LoginPage />
-            ) : (
-              <HomePage
-                onSearchClick={() => navigate('/search')}
-                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
-                onGroupClick={(id) => navigate(`/groups/${id}`)}
-              />
-            )
+            <HomePage
+              onSearchClick={() => navigate('/search')}
+              onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
+              onGroupClick={(id) => navigate(`/groups/${id}`)}
+            />
           }
         />
         <Route

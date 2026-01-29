@@ -47,7 +47,9 @@ export const SocialLoginButtons = () => {
           className={`${styles.button} ${styles[provider.key]}`}
           type="button"
           onClick={() => {
-            storeReturnPath(window.location.pathname)
+            if (!sessionStorage.getItem('auth:return_to')) {
+              storeReturnPath(window.location.pathname)
+            }
             window.location.href = getOAuthStartUrl(provider.key, redirectUri)
           }}
         >

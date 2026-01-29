@@ -23,7 +23,9 @@ export type SubgroupDetailDto = {
   createdAt: IsoDateTimeString
 }
 
-export type SubgroupDetailResponseDto = SuccessResponse<SubgroupDetailDto>
+export type SubgroupDetailResponseDto = SuccessResponse<{
+  data: SubgroupDetailDto
+}>
 
 export type SubgroupCreateRequestDto = {
   name?: string
@@ -37,3 +39,12 @@ export type SubgroupCreateResponseDto = SuccessResponse<{
   id: number
   createdAt: IsoDateTimeString
 }>
+
+export type SubgroupMemberDto = {
+  memberId: number
+  nickname: string
+  profileImageUrl: string | null
+  createdAt?: IsoDateTimeString
+}
+
+export type SubgroupMemberListResponseDto = SuccessResponse<CursorPageResponse<SubgroupMemberDto>>

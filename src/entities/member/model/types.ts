@@ -24,6 +24,12 @@ export type MemberGroupSummary = {
   id: number
   groupName: string
   groupAddress: string
+  subGroups: MemberSubgroupSummary[]
+}
+
+export type MemberSubgroupSummary = {
+  subGroupId: number
+  subGroupName: string
 }
 
 export type MemberMeOverview = {

@@ -1,4 +1,4 @@
-import { mockRequest } from '@/shared/api/mockRequest'
+import { request } from '@/shared/api/request'
 import type {
   FavoriteRestaurantListResponseDto,
   FavoriteCreateRequestDto,
@@ -8,51 +8,51 @@ import type {
 } from '../model/dto'
 
 export const addRestaurantFavorite = (restaurantId: number) =>
-  mockRequest<FavoriteCreateResponseDto>({
+  request<FavoriteCreateResponseDto>({
     method: 'POST',
     url: `/api/v1/restaurants/${restaurantId}/favorite`,
   })
 
 export const getMyFavoriteRestaurants = () =>
-  mockRequest<FavoriteRestaurantListResponseDto>({
+  request<FavoriteRestaurantListResponseDto>({
     method: 'GET',
     url: '/api/v1/members/me/favorites/restaurants',
   })
 
 export const addMyFavoriteRestaurant = (payload: FavoriteCreateRequestDto) =>
-  mockRequest<FavoriteCreateResponseDto>({
+  request<FavoriteCreateResponseDto>({
     method: 'POST',
     url: '/api/v1/members/me/favorites/restaurants',
     data: payload,
   })
 
 export const deleteMyFavoriteRestaurant = (restaurantId: number) =>
-  mockRequest<void>({
+  request<void>({
     method: 'DELETE',
     url: `/api/v1/members/me/favorites/restaurants/${restaurantId}`,
   })
 
 export const getRestaurantFavoriteStatus = (restaurantId: number) =>
-  mockRequest<RestaurantFavoriteStatusResponseDto>({
+  request<RestaurantFavoriteStatusResponseDto>({
     method: 'GET',
     url: `/api/v1/restaurants/${restaurantId}/favorite-status`,
   })
 
 export const getSubgroupFavorites = (subgroupId: number) =>
-  mockRequest<SubgroupFavoriteListResponseDto>({
+  request<SubgroupFavoriteListResponseDto>({
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}/favorites`,
   })
 
 export const addSubgroupFavorite = (subgroupId: number, payload: FavoriteCreateRequestDto) =>
-  mockRequest<FavoriteCreateResponseDto>({
+  request<FavoriteCreateResponseDto>({
     method: 'POST',
     url: `/api/v1/subgroups/${subgroupId}/favorites`,
     data: payload,
   })
 
 export const deleteSubgroupFavorite = (subgroupId: number, restaurantId: number) =>
-  mockRequest<void>({
+  request<void>({
     method: 'DELETE',
     url: `/api/v1/subgroups/${subgroupId}/favorites/${restaurantId}`,
   })

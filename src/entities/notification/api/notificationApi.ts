@@ -1,4 +1,4 @@
-import { mockRequest } from '@/shared/api/mockRequest'
+import { request } from '@/shared/api/request'
 import type {
   NotificationListResponseDto,
   NotificationReadRequestDto,
@@ -9,46 +9,46 @@ import type {
 } from '../model/dto'
 
 export const getNotifications = () =>
-  mockRequest<NotificationListResponseDto>({
+  request<NotificationListResponseDto>({
     method: 'GET',
     url: '/api/v1/members/me/notifications',
   })
 
 export const markNotificationRead = (id: number, payload: NotificationReadRequestDto) =>
-  mockRequest<void>({
+  request<void>({
     method: 'PATCH',
     url: `/api/v1/members/me/notifications/${id}`,
     data: payload,
   })
 
 export const markAllNotificationsRead = (payload: NotificationReadRequestDto) =>
-  mockRequest<void>({
+  request<void>({
     method: 'PATCH',
     url: '/api/v1/members/me/notifications',
     data: payload,
   })
 
 export const getUnreadNotificationCount = () =>
-  mockRequest<UnreadNotificationCountResponseDto>({
+  request<UnreadNotificationCountResponseDto>({
     method: 'GET',
     url: '/api/v1/members/me/notifications/unread',
   })
 
 export const getNotificationPreferences = () =>
-  mockRequest<NotificationPreferencesResponseDto>({
+  request<NotificationPreferencesResponseDto>({
     method: 'GET',
     url: '/api/v1/members/me/notification-preferences',
   })
 
 export const updateNotificationPreferences = (payload: NotificationPreferencesUpdateRequestDto) =>
-  mockRequest<void>({
+  request<void>({
     method: 'PUT',
     url: '/api/v1/members/me/notification-preferences',
     data: payload,
   })
 
 export const registerPushNotificationTarget = (payload: PushNotificationTargetRequestDto) =>
-  mockRequest<void>({
+  request<void>({
     method: 'POST',
     url: '/api/v1/members/me/push-notification-targets',
     data: payload,

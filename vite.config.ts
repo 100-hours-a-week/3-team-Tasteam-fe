@@ -4,10 +4,13 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
+const disablePwa = process.env.DISABLE_PWA === 'true'
+
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      disable: disablePwa,
       registerType: 'autoUpdate',
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],

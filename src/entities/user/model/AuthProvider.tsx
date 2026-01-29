@@ -12,7 +12,7 @@ import {
   subscribeLoginRequired,
 } from '@/shared/lib/authToken'
 import { logout as logoutApi, refreshAccessToken } from '@/entities/auth/api/authApi'
-import { AUTH_DEBUG } from '@/shared/config/env'
+import { logger } from '@/shared/lib/logger'
 
 const extractAccessToken = (data: { data: { accessToken?: string } }) =>
   data.data.accessToken ?? null
@@ -39,40 +39,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!getRefreshEnabled()) return
 
     const expiresAt = getTokenExpiry(accessToken)
-    if (AUTH_DEBUG) {
-      console.debug('[auth] accessToken exp(ms):', expiresAt)
-    }
+    logger.debug('[auth] accessToken exp(ms):', expiresAt)
     if (!expiresAt) return
 
     const refreshAt = expiresAt - 60_000
-    if (AUTH_DEBUG) {
-      console.debug('[auth] refresh scheduled at:', new Date(refreshAt).toISOString())
-    }
+    logger.debug('[auth] refresh scheduled at:', new Date(refreshAt).toISOString())
     const delay = Math.max(refreshAt - Date.now(), 1000)
-    if (AUTH_DEBUG) {
-      console.debug('[auth] refresh timer registered')
-    }
+    logger.debug('[auth] refresh timer registered')
     const timeoutId = window.setTimeout(async () => {
-      if (AUTH_DEBUG) {
-        console.debug('[auth] refresh attempt (timer)')
-      }
+      logger.debug('[auth] refresh attempt (timer)')
       try {
         const data = await refreshAccessToken(accessToken)
         const newToken = extractAccessToken(data)
         if (newToken) {
-          if (AUTH_DEBUG) {
-            console.debug('[auth] refresh success (timer)')
-          }
+          logger.debug('[auth] refresh success (timer)')
           setAccessToken(newToken)
           setTokenState(newToken)
           setShowLogin(false)
           return
         }
       } catch {
-        if (AUTH_DEBUG) {
-          console.debug('[auth] refresh failed (timer)')
-        }
-        // fall through to show login
+        logger.debug('[auth] refresh failed (timer)')
       }
       clearAccessToken()
       setTokenState(null)
@@ -104,9 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           await logoutApi()
         } catch {
-          if (AUTH_DEBUG) {
-            console.debug('[auth] logout failed')
-          }
+          logger.debug('[auth] logout failed')
           return false
         }
         clearAccessToken()

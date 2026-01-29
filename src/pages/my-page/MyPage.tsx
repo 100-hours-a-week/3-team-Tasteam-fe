@@ -73,7 +73,7 @@ export function MyPage({
         nickname: userData.data.member.nickname,
         email: 'user@example.com',
         profileImageUrl: userData.data.member.profileImageUrl ?? '',
-        reviewCount: userData.data.reviews?.data?.length ?? 0,
+        reviewCount: userData.data.reviews?.items?.length ?? 0,
         favoriteCount: 0,
       }
     : defaultUser

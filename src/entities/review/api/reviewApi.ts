@@ -1,6 +1,5 @@
-import { mockRequest } from '@/shared/api/mockRequest'
-import { buildQuery } from '@/shared/api/query'
 import { request } from '@/shared/api/request'
+import { buildQuery } from '@/shared/api/query'
 import type {
   ReviewListResponseDto,
   ReviewDetailResponseDto,
@@ -14,10 +13,12 @@ export const getRestaurantReviews = (
   restaurantId: number,
   params?: { cursor?: string; size?: number },
 ) =>
-  mockRequest<ReviewListResponseDto>({
+  request<{ data?: ReviewListResponseDto }>({
     method: 'GET',
     url: `/api/v1/restaurants/${restaurantId}/reviews${buildQuery(params ?? {})}`,
-  })
+  }).then(
+    (res) => res.data ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } },
+  )
 
 export const getReview = (
   reviewId: number,
@@ -29,20 +30,20 @@ export const getReview = (
     category?: string
   },
 ) =>
-  mockRequest<ReviewDetailResponseDto>({
+  request<ReviewDetailResponseDto>({
     method: 'GET',
     url: `/api/v1/reviews/${reviewId}${buildQuery(params)}`,
   })
 
 export const createReview = (restaurantId: number, payload: ReviewCreateRequestDto) =>
-  mockRequest<ReviewCreateResponseDto>({
+  request<ReviewCreateResponseDto>({
     method: 'POST',
     url: `/api/v1/restaurants/${restaurantId}/reviews`,
     data: payload,
   })
 
 export const deleteReview = (reviewId: number) =>
-  mockRequest<void>({
+  request<void>({
     method: 'DELETE',
     url: `/api/v1/reviews/${reviewId}`,
   })

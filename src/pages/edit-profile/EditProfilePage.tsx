@@ -1,32 +1,44 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Camera, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { getMe, updateMeProfile } from '@/entities/member/api/memberApi'
+import type { MemberMeResponseDto } from '@/entities/member/model/dto'
 
 type EditProfilePageProps = {
-  user?: {
-    nickname: string
-    email: string
-    profileImageUrl?: string
-    bio?: string
-  }
-  onSave?: (data: { nickname: string; bio: string }) => void
   onBack?: () => void
 }
 
-export function EditProfilePage({
-  user = { nickname: '사용자', email: 'user@example.com' },
-  onSave,
-  onBack,
-}: EditProfilePageProps) {
-  const [nickname, setNickname] = useState(user.nickname)
-  const [bio, setBio] = useState(user.bio || '')
+export function EditProfilePage({ onBack }: EditProfilePageProps) {
+  const navigate = useNavigate()
+  const [userData, setUserData] = useState<MemberMeResponseDto | null>(null)
+  const [nickname, setNickname] = useState('')
+  const [bio, setBio] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [initialNickname, setInitialNickname] = useState('')
+  const [initialBio, setInitialBio] = useState('')
+
+  useEffect(() => {
+    getMe()
+      .then((data) => {
+        setUserData(data)
+        const userNickname = data.data?.member?.nickname ?? '사용자'
+        const userBio = ''
+        setNickname(userNickname)
+        setBio(userBio)
+        setInitialNickname(userNickname)
+        setInitialBio(userBio)
+      })
+      .catch(() => {
+        toast.error('프로필을 불러올 수 없습니다')
+      })
+  }, [])
 
   const handleSave = async () => {
     if (!nickname.trim()) {
@@ -35,13 +47,24 @@ export function EditProfilePage({
     }
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    toast.success('프로필이 수정되었습니다')
-    onSave?.({ nickname, bio })
-    setIsLoading(false)
+    try {
+      await updateMeProfile({ nickname, bio })
+      toast.success('프로필이 수정되었습니다')
+      navigate('/profile', { replace: true })
+    } catch {
+      toast.error('프로필 수정에 실패했습니다')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const isChanged = nickname !== user.nickname || bio !== (user.bio || '')
+  const isChanged = nickname !== initialNickname || bio !== initialBio
+  const user = {
+    nickname: userData?.data?.member?.nickname ?? '사용자',
+    email: 'chulsoo@example.com',
+    profileImageUrl: userData?.data?.member?.profileImageUrl,
+    bio: '',
+  }
 
   return (
     <div className="flex flex-col h-full bg-background min-h-screen">
@@ -77,6 +100,11 @@ export function EditProfilePage({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="email">이메일</Label>
+            <Input id="email" value={user.email} disabled className="bg-muted" />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="nickname">닉네임</Label>
             <Input
               id="nickname"
@@ -89,19 +117,15 @@ export function EditProfilePage({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
-            <Input id="email" value={user.email} disabled className="bg-muted" />
-            <p className="text-xs text-muted-foreground">이메일은 변경할 수 없습니다</p>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="bio">자기소개</Label>
-            <Input
+            <textarea
               id="bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="자기소개를 입력하세요"
               maxLength={100}
+              rows={2}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
             />
             <p className="text-xs text-muted-foreground text-right">{bio.length}/100</p>
           </div>
