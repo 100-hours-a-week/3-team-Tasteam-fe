@@ -22,12 +22,9 @@ import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { RestaurantCard } from '@/entities/restaurant/ui'
 import { GroupCard } from '@/entities/group/ui'
-import { deleteRecentSearch, getRecentSearches, searchAll } from '@/entities/search/api/searchApi'
-import type {
-  RecentSearch,
-  SearchGroupItem,
-  SearchRestaurantItem,
-} from '@/entities/search/model/types'
+import { searchAll } from '@/entities/search/api/searchApi'
+import { useRecentSearches } from '@/entities/search/model/useRecentSearches'
+import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search/model/types'
 
 type SearchPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -37,7 +34,7 @@ type SearchPageProps = {
 export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
+  const { recentSearches, remove: removeRecentSearch, add: addRecentSearch } = useRecentSearches()
   const [restaurantResults, setRestaurantResults] = useState<SearchRestaurantItem[]>([])
   const [groupResults, setGroupResults] = useState<SearchGroupItem[]>([])
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
@@ -49,37 +46,12 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
   const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
 
-  const removeRecentSearch = async (id: number) => {
-    try {
-      await deleteRecentSearch(id)
-      setRecentSearches((prev) => prev.filter((item) => item.id !== id))
-    } catch {
-      // ignore
-    }
-  }
-
   const handleSaveToggle = (id: string) => {
     setSavedRestaurants((prev) => ({
       ...prev,
       [id]: !prev[id],
     }))
   }
-
-  useEffect(() => {
-    let active = true
-    getRecentSearches()
-      .then((response) => {
-        if (!active) return
-        setRecentSearches(response.data)
-      })
-      .catch(() => {
-        if (!active) return
-        setRecentSearches([])
-      })
-    return () => {
-      active = false
-    }
-  }, [])
 
   useEffect(() => {
     const keyword = searchQuery.trim()
@@ -92,6 +64,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
     const timeoutId = window.setTimeout(() => {
       setIsSearching(true)
       setSearchError(null)
+      addRecentSearch(keyword)
       searchAll({ keyword })
         .then((response) => {
           if (searchRequestId.current !== requestId) return
@@ -183,11 +156,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
       {!searchQuery && (
         <Container className="space-y-4 pt-4">
-          <div>
-            <h3 className="mb-3 font-medium">최근 검색어</h3>
-            <div className="flex flex-wrap gap-2">
-              {Array.isArray(recentSearches) &&
-                recentSearches.map((item) => (
+          {recentSearches.length > 0 && (
+            <div>
+              <h3 className="mb-3 font-medium">최근 검색어</h3>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map((item) => (
                   <Badge
                     key={item.id}
                     variant="secondary"
@@ -208,11 +181,9 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     </Button>
                   </Badge>
                 ))}
-              {recentSearches.length === 0 && (
-                <p className="text-sm text-muted-foreground">최근 검색어가 없습니다.</p>
-              )}
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <h3 className="mb-3 font-medium">추천 키워드</h3>
             <div className="flex flex-wrap gap-2">
