@@ -21,14 +21,6 @@ type MyPageProps = {
   onLogout?: () => void
 }
 
-const defaultUser = {
-  nickname: '사용자',
-  email: 'user@example.com',
-  profileImageUrl: '',
-  reviewCount: 0,
-  favoriteCount: 0,
-}
-
 export function MyPage({
   onEditProfile,
   onMyFavorites,
@@ -68,17 +60,14 @@ export function MyPage({
     )
   }
 
-  const user = userData?.data?.member
-    ? {
-        nickname: userData.data.member.nickname,
-        email: 'user@example.com',
-        profileImageUrl: userData.data.member.profileImageUrl ?? '',
-        reviewCount: userData.data.reviews?.items?.length ?? 0,
-        favoriteCount: 0,
-      }
-    : defaultUser
+  const member = userData?.data?.member
+  const user = {
+    nickname: member?.nickname ?? '',
+    profileImageUrl: member?.profileImageUrl ?? '',
+    reviewCount: userData?.data?.reviews?.items?.length ?? 0,
+  }
   const menuItems = [
-    { icon: Heart, label: '찜한 맛집', onClick: onMyFavorites, count: user.favoriteCount },
+    { icon: Heart, label: '찜한 맛집', onClick: onMyFavorites },
     { icon: FileText, label: '내 리뷰', onClick: onMyReviews, count: user.reviewCount },
     { icon: Bell, label: '알림 설정', onClick: onNotificationSettings },
     { icon: Settings, label: '설정', onClick: onSettings },
@@ -99,7 +88,6 @@ export function MyPage({
               </Avatar>
               <div className="flex-1">
                 <h2 className="font-semibold text-lg">{user.nickname}</h2>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </div>

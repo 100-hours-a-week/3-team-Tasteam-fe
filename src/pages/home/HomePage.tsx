@@ -41,24 +41,30 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
       </Container>
       */}
 
-      {mainData?.data?.sections?.map(
-        (section) =>
-          section.items?.length > 0 && (
-            <section key={section.type} className="space-y-4 mb-8">
-              <Container>
-                <h2 className="text-lg font-semibold">{section.title}</h2>
-              </Container>
-              <Container className="overflow-x-auto pb-2 scrollbar-hide">
-                <div className="flex w-max gap-3">
-                  {section.items.map((item) => (
-                    <div key={item.restaurantId} className="w-[280px] shrink-0">
-                      <MainRestaurantCard item={item} onClick={onRestaurantClick} />
-                    </div>
-                  ))}
-                </div>
-              </Container>
-            </section>
-          ),
+      {mainData?.data?.sections && mainData.data.sections.length > 0 ? (
+        mainData.data.sections.map(
+          (section) =>
+            section.items?.length > 0 && (
+              <section key={section.type} className="space-y-4 mb-8">
+                <Container>
+                  <h2 className="text-lg font-semibold">{section.title}</h2>
+                </Container>
+                <Container className="overflow-x-auto pb-2 scrollbar-hide">
+                  <div className="flex w-max gap-3">
+                    {section.items.map((item) => (
+                      <div key={item.restaurantId} className="w-[280px] shrink-0">
+                        <MainRestaurantCard item={item} onClick={onRestaurantClick} />
+                      </div>
+                    ))}
+                  </div>
+                </Container>
+              </section>
+            ),
+        )
+      ) : (
+        <Container className="py-16 text-center text-sm text-muted-foreground">
+          추천 맛집이 없습니다.
+        </Container>
       )}
 
       {/* 내 그룹 숨김

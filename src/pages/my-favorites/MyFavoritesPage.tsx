@@ -22,33 +22,6 @@ type MyFavoritesPageProps = {
   onBack?: () => void
 }
 
-const defaultFavorites: FavoriteRestaurant[] = [
-  {
-    id: '1',
-    name: '한옥마을 순두부',
-    category: '한식',
-    rating: 4.5,
-    reviewCount: 128,
-    address: '서울시 종로구',
-  },
-  {
-    id: '2',
-    name: '우동 카덴',
-    category: '일식',
-    rating: 4.3,
-    reviewCount: 89,
-    address: '서울시 마포구',
-  },
-  {
-    id: '3',
-    name: '브런치 카페',
-    category: '카페',
-    rating: 4.7,
-    reviewCount: 256,
-    address: '서울시 강남구',
-  },
-]
-
 export function MyFavoritesPage({ onRestaurantClick, onBack }: MyFavoritesPageProps) {
   const [favorites, setFavorites] = useState<FavoriteRestaurant[]>([])
 
@@ -64,10 +37,10 @@ export function MyFavoritesPage({ onRestaurantClick, onBack }: MyFavoritesPagePr
             reviewCount: 0,
             address: '',
             imageUrl: item.thumbnailUrl,
-          })) ?? defaultFavorites
+          })) ?? []
         setFavorites(apiData)
       })
-      .catch(() => setFavorites(defaultFavorites))
+      .catch(() => setFavorites([]))
   }, [])
 
   const handleRemove = (id: string) => {

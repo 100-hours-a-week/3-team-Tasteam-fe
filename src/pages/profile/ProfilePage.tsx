@@ -74,9 +74,8 @@ export function ProfilePage({
 
   const member = userData?.data?.member
   const user = {
-    name: member?.nickname ?? '김철수',
-    email: 'chulsoo@example.com',
-    avatar: member?.profileImageUrl ?? 'https://i.pravatar.cc/150?img=1',
+    name: member?.nickname ?? '',
+    avatar: member?.profileImageUrl ?? '',
   }
 
   const menuItems = [
@@ -100,7 +99,6 @@ export function ProfilePage({
             </Avatar>
             <div className="flex-1 min-w-0">
               <h2 className="truncate">{user.name}</h2>
-              <p className="text-sm text-muted-foreground truncate mt-1">{user.email}</p>
               <Button variant="outline" size="sm" className="mt-3" onClick={onEditProfile}>
                 프로필 수정
               </Button>

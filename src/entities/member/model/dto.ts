@@ -95,6 +95,18 @@ export type MemberSubgroupSummaryItemDto = {
   subGroupName: string
 }
 
+export type MemberFavoriteRestaurantDto = {
+  restaurantId: number
+  name: string
+  category: string
+  address: string
+  thumbnailImageUrl: string
+  favoritedAt: IsoDateTimeString
+}
+
+export type MemberFavoriteRestaurantListResponseDto =
+  CursorPageResponse<MemberFavoriteRestaurantDto>
+
 export type GroupEmailVerificationResponseDto = SuccessResponse<{
   id: number
   createdAt: IsoDateTimeString

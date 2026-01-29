@@ -9,6 +9,7 @@ import type {
   MemberGroupSummaryListResponseDto,
   MemberGroupRequestListResponseDto,
   MemberReviewListResponseDto,
+  MemberFavoriteRestaurantListResponseDto,
   GroupEmailVerificationResponseDto,
   GroupJoinVerificationResponseDto,
 } from '../model/dto'
@@ -62,6 +63,12 @@ export const getMyReviews = (params?: { cursor?: string }) =>
   request<MemberReviewListResponseDto>({
     method: 'GET',
     url: `/api/v1/members/me/reviews${buildQuery(params ?? {})}`,
+  })
+
+export const getMyFavoriteRestaurants = (params?: { cursor?: string }) =>
+  request<MemberFavoriteRestaurantListResponseDto>({
+    method: 'GET',
+    url: `/api/v1/members/me/favorites/restaurants${buildQuery(params ?? {})}`,
   })
 
 export const sendGroupEmailVerification = (groupId: number, payload: { email: string }) =>

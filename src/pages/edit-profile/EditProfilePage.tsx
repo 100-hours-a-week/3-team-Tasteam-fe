@@ -60,10 +60,8 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
 
   const isChanged = nickname !== initialNickname || bio !== initialBio
   const user = {
-    nickname: userData?.data?.member?.nickname ?? '사용자',
-    email: 'chulsoo@example.com',
+    nickname: userData?.data?.member?.nickname ?? '',
     profileImageUrl: userData?.data?.member?.profileImageUrl,
-    bio: '',
   }
 
   return (
@@ -97,11 +95,6 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
               </button>
             </div>
             <p className="text-sm text-muted-foreground mt-2">프로필 사진 변경</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
-            <Input id="email" value={user.email} disabled className="bg-muted" />
           </div>
 
           <div className="space-y-2">
