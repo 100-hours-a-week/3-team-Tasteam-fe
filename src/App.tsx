@@ -166,19 +166,23 @@ function App() {
         <Route
           path="/groups/:id/email-join"
           element={
-            <GroupEmailJoinPage
-              onBack={() => navigate(-1)}
-              onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
-            />
+            <RequireAuth>
+              <GroupEmailJoinPage
+                onBack={() => navigate(-1)}
+                onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+              />
+            </RequireAuth>
           }
         />
         <Route
           path="/groups/:id/password-join"
           element={
-            <GroupPasswordJoinPage
-              onBack={() => navigate(-1)}
-              onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
-            />
+            <RequireAuth>
+              <GroupPasswordJoinPage
+                onBack={() => navigate(-1)}
+                onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+              />
+            </RequireAuth>
           }
         />
         <Route path="/subgroups/:id" element={<SubgroupsPage />} />

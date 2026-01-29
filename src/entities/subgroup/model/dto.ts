@@ -7,6 +7,7 @@ export type SubgroupListItemDto = {
   name: string
   description: string
   memberCount: number
+  joinType: 'OPEN' | 'PASSWORD'
   thumnailImage?: ImageResource
   createdAt: IsoDateTimeString
 }

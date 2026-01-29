@@ -49,6 +49,7 @@ export function GroupDetailPage() {
   const location = useLocation()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [group, setGroup] = useState<GroupDetailHeaderData>(EMPTY_GROUP)
+  const [emailDomain, setEmailDomain] = useState<string | null>(null)
   const [reviews, setReviews] = useState<ReviewListItemDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,6 +90,7 @@ export function GroupDetailPage() {
           addressDetail: groupRes.detailAddress ?? undefined,
           memberCount: 0,
         })
+        setEmailDomain(groupRes.emailDomain ?? null)
         setReviews(
           (reviewRes.items ?? []).map((item) => ({
             id: item.id,
@@ -104,6 +106,7 @@ export function GroupDetailPage() {
         if (!cancelled) {
           setError('그룹 정보를 불러오지 못했습니다')
           setGroup(EMPTY_GROUP)
+          setEmailDomain(null)
           setReviews([])
         }
       } finally {
@@ -134,8 +137,18 @@ export function GroupDetailPage() {
         group={group}
         isJoined={isJoined || shouldMarkJoined}
         onBack={() => navigate(-1)}
-        onJoin={() => groupId && navigate(ROUTES.groupPasswordJoin(String(groupId)))}
-        onMoreAction={() => navigate(ROUTES.subgroupList)}
+        onJoin={() => {
+          if (!groupId) return
+          const targetRoute =
+            emailDomain === null
+              ? ROUTES.groupPasswordJoin(String(groupId))
+              : ROUTES.groupEmailJoin(String(groupId))
+          navigate(targetRoute)
+        }}
+        onMoreAction={() => {
+          if (!groupId) return
+          navigate(`${ROUTES.subgroupList}?groupId=${groupId}`)
+        }}
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
         onLeaveGroup={() => setLeaveDialogOpen(true)}
       />
