@@ -137,6 +137,11 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
 
       <Container className="flex-1 py-6 space-y-6">
         <GroupEmailJoinGroupInfo name={groupInfo.name} imageUrl={groupInfo.imageUrl} />
+        {isGroupLoading ? (
+          <p className="text-sm text-muted-foreground">그룹 정보를 불러오는 중입니다.</p>
+        ) : groupError ? (
+          <p className="text-sm text-destructive">{groupError}</p>
+        ) : null}
 
         <div className="space-y-2">
           <h2 className="text-base font-semibold">비밀번호 인증</h2>

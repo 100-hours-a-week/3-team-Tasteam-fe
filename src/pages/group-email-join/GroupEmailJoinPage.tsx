@@ -5,6 +5,7 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupEmailVerificationForm } from '@/features/groups'
 import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member/api/memberApi'
+import { getGroup } from '@/entities/group/api/groupApi'
 
 type GroupEmailJoinPageProps = {
   onBack?: () => void
@@ -14,15 +15,9 @@ type GroupEmailJoinPageProps = {
 type HelperStatus = 'idle' | 'sent' | 'success' | 'error' | 'expired'
 
 type GroupInfo = {
-  id: string
+  id: number
   name: string
   imageUrl?: string
-}
-
-const MOCK_GROUP: GroupInfo = {
-  id: 'group-1',
-  name: '카카오 부트캠프',
-  imageUrl: undefined,
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -42,6 +37,47 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
 
   const isEmailValid = useMemo(() => EMAIL_REGEX.test(email.trim()), [email])
   const showEmailError = email.trim().length > 0 && !isEmailValid
+  const [groupInfo, setGroupInfo] = useState<GroupInfo>({
+    id: 0,
+    name: '그룹 정보를 불러오는 중...',
+    imageUrl: undefined,
+  })
+  const [isGroupLoading, setIsGroupLoading] = useState(false)
+  const [groupError, setGroupError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!groupId || Number.isNaN(groupId)) return
+    let cancelled = false
+    const fetchGroup = async () => {
+      setIsGroupLoading(true)
+      setGroupError(null)
+      try {
+        const data = await getGroup(groupId)
+        if (cancelled) return
+        setGroupInfo({
+          id: data.groupId,
+          name: data.name,
+          imageUrl: data.logoImageUrl ?? undefined,
+        })
+      } catch {
+        if (cancelled) return
+        setGroupError('그룹 정보를 불러오지 못했습니다.')
+        setGroupInfo({
+          id: groupId,
+          name: '그룹 정보를 불러오지 못했습니다.',
+          imageUrl: undefined,
+        })
+      } finally {
+        if (!cancelled) {
+          setIsGroupLoading(false)
+        }
+      }
+    }
+    fetchGroup()
+    return () => {
+      cancelled = true
+    }
+  }, [groupId])
 
   useEffect(() => {
     if (!hasRequestedCode || timeLeft <= 0 || helperStatus === 'success') return
@@ -70,9 +106,9 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
   }
 
   const handleSend = () => {
-    if (!groupId || Number.isNaN(groupId)) {
+    if (!groupId || Number.isNaN(groupId) || isGroupLoading || groupError) {
       setHelperStatus('error')
-      setHelperText('그룹 정보를 찾을 수 없습니다.')
+      setHelperText('그룹 정보를 불러온 뒤 다시 시도해주세요.')
       return
     }
     const normalizedEmail = email.trim()
@@ -138,9 +174,9 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
   }
 
   const handleJoin = () => {
-    if (!groupId || Number.isNaN(groupId)) {
+    if (!groupId || Number.isNaN(groupId) || isGroupLoading || groupError) {
       setHelperStatus('error')
-      setHelperText('그룹 정보를 찾을 수 없습니다.')
+      setHelperText('그룹 정보를 불러온 뒤 다시 시도해주세요.')
       return
     }
     if (!hasRequestedCode) {
@@ -219,7 +255,12 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
       <TopAppBar title="그룹 이메일 인증 가입" showBackButton onBack={onBack} />
 
       <Container className="flex-1 py-6 space-y-6">
-        <GroupEmailJoinGroupInfo name={MOCK_GROUP.name} imageUrl={MOCK_GROUP.imageUrl} />
+        <GroupEmailJoinGroupInfo name={groupInfo.name} imageUrl={groupInfo.imageUrl} />
+        {isGroupLoading ? (
+          <p className="text-sm text-muted-foreground">그룹 정보를 불러오는 중입니다.</p>
+        ) : groupError ? (
+          <p className="text-sm text-destructive">{groupError}</p>
+        ) : null}
 
         <div className="space-y-2">
           <h2 className="text-base font-semibold">이메일 인증</h2>

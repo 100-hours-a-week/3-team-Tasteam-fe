@@ -68,12 +68,7 @@ export function SubgroupListPage({
       try {
         const response = await getSubgroups(groupId, { size: 20 })
         if (cancelled) return
-        const raw = response as unknown
-        const items = Array.isArray((raw as { items?: unknown[] }).items)
-          ? (raw as { items: unknown[] }).items
-          : Array.isArray((raw as { data?: unknown[] }).data)
-            ? (raw as { data: unknown[] }).data
-            : []
+        const items = response.items ?? []
         const mapped = items.map((item) => {
           const record = item as {
             subgroupId: number
