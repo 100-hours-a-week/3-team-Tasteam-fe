@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Search, Users, Check, Plus, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -17,6 +18,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
+import { getSubgroups } from '@/entities/subgroup/api/subgroupApi'
 
 type Group = {
   id: string
@@ -41,37 +43,69 @@ export function SubgroupListPage({
   onCreateClick,
   onBack,
 }: SubgroupListPageProps) {
+  const [searchParams] = useSearchParams()
+  const groupIdParam = searchParams.get('groupId')
+  const groupId = groupIdParam ? Number(groupIdParam) : null
   const [searchQuery, setSearchQuery] = useState('')
-  const [groups, setGroups] = useState<Group[]>([
-    {
-      id: '1',
-      name: '맛집 탐험대',
-      description: '서울 숨은 맛집을 찾아다니는 모임입니다',
-      memberCount: 24,
-      isJoined: false,
-      isPrivate: false,
-    },
-    {
-      id: '2',
-      name: '브런치 러버스',
-      description: '주말 브런치를 즐기는 모임',
-      memberCount: 18,
-      isJoined: true,
-      isPrivate: false,
-    },
-    {
-      id: '3',
-      name: '야식 클럽',
-      description: '야식 맛집 탐방 모임',
-      memberCount: 45,
-      isJoined: false,
-      isPrivate: true,
-    },
-  ])
+  const [groups, setGroups] = useState<Group[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [passwordModalOpen, setPasswordModalOpen] = useState(false)
   const [passwordValue, setPasswordValue] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [pendingJoinGroup, setPendingJoinGroup] = useState<Group | null>(null)
+
+  useEffect(() => {
+    if (!groupId || Number.isNaN(groupId)) {
+      setLoadError('그룹 정보를 찾을 수 없습니다.')
+      setGroups([])
+      return
+    }
+    let cancelled = false
+    const fetchSubgroups = async () => {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        const response = await getSubgroups(groupId, { size: 20 })
+        if (cancelled) return
+        const items = response.items ?? []
+        const mapped = items.map((item) => {
+          const record = item as {
+            subgroupId: number
+            name: string
+            description: string
+            memberCount: number
+            profileImageUrl?: string
+            thumnailImage?: { url?: string }
+            joinType?: 'OPEN' | 'PASSWORD'
+          }
+          return {
+            id: String(record.subgroupId),
+            name: record.name,
+            description: record.description,
+            memberCount: record.memberCount,
+            imageUrl: record.profileImageUrl ?? record.thumnailImage?.url,
+            isJoined: false,
+            isPrivate: record.joinType === 'PASSWORD',
+          }
+        })
+        setGroups(mapped)
+      } catch {
+        if (!cancelled) {
+          setLoadError('하위그룹 목록을 불러오지 못했습니다.')
+          setGroups([])
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+    fetchSubgroups()
+    return () => {
+      cancelled = true
+    }
+  }, [groupId])
 
   const handleJoin = (groupId: string) => {
     const target = groups.find((group) => group.id === groupId)
@@ -156,7 +190,13 @@ export function SubgroupListPage({
               />
             </div>
 
-            {filteredGroups.length > 0 ? (
+            {isLoading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                하위그룹 목록을 불러오는 중입니다.
+              </div>
+            ) : loadError ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">{loadError}</div>
+            ) : filteredGroups.length > 0 ? (
               <div className="space-y-3">
                 {filteredGroups.map((group) => (
                   <Card

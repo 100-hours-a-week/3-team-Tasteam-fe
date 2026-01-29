@@ -5,6 +5,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/lib/utils'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 type OnboardingPageProps = {
   onComplete?: () => void
@@ -21,12 +22,16 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
       icon: MapPin,
       action: '위치 권한 허용',
     },
-    {
-      title: '알림 권한',
-      description: '그룹 활동과 새로운 추천을 놓치지 마세요',
-      icon: Bell,
-      action: '알림 권한 허용',
-    },
+    ...(FEATURE_FLAGS.enableNotifications
+      ? [
+          {
+            title: '알림 권한',
+            description: '그룹 활동과 새로운 추천을 놓치지 마세요',
+            icon: Bell,
+            action: '알림 권한 허용',
+          },
+        ]
+      : []),
     {
       title: '관심사 설정',
       description: '선호하는 음식 종류를 선택해주세요',
@@ -94,7 +99,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
             <p className="text-muted-foreground text-lg">{currentStepData.description}</p>
           </div>
 
-          {currentStep === 2 && (
+          {currentStep === steps.length - 1 && (
             <div className="mb-8">
               <Card className="p-6">
                 <div className="flex flex-wrap gap-2">

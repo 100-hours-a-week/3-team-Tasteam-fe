@@ -10,6 +10,7 @@ import { Button } from '@/shared/ui/button'
 import { getMe } from '@/entities/member/api/memberApi'
 import type { MemberMeResponseDto } from '@/entities/member/model/dto'
 import { useAuth } from '@/entities/user/model/useAuth'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 type MyPageProps = {
   onEditProfile?: () => void
@@ -80,7 +81,9 @@ export function MyPage({
   const menuItems = [
     { icon: Heart, label: '찜한 맛집', onClick: onMyFavorites, count: user.favoriteCount },
     { icon: FileText, label: '내 리뷰', onClick: onMyReviews, count: user.reviewCount },
-    { icon: Bell, label: '알림 설정', onClick: onNotificationSettings },
+    ...(FEATURE_FLAGS.enableNotifications
+      ? [{ icon: Bell, label: '알림 설정', onClick: onNotificationSettings }]
+      : []),
     { icon: Settings, label: '설정', onClick: onSettings },
     { icon: HelpCircle, label: '고객센터', onClick: onHelp },
   ]

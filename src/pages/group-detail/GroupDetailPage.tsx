@@ -185,8 +185,18 @@ export function GroupDetailPage() {
         group={group}
         isJoined={isJoined || shouldMarkJoined}
         onBack={() => navigate(-1)}
-        onJoin={() => groupId && navigate(ROUTES.groupPasswordJoin(String(groupId)))}
-        onMoreAction={() => navigate(ROUTES.subgroupList)}
+        onJoin={() => {
+          if (!groupId) return
+          const targetRoute =
+            emailDomain === null
+              ? ROUTES.groupPasswordJoin(String(groupId))
+              : ROUTES.groupEmailJoin(String(groupId))
+          navigate(targetRoute)
+        }}
+        onMoreAction={() => {
+          if (!groupId) return
+          navigate(`${ROUTES.subgroupList}?groupId=${groupId}`)
+        }}
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
         onLeaveGroup={() => setLeaveDialogOpen(true)}
       />

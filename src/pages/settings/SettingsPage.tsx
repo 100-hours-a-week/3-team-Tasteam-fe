@@ -5,6 +5,12 @@ import { Container } from '@/widgets/container'
 import { Card } from '@/shared/ui/card'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
+import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/button'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { deleteMe } from '@/entities/member/api/memberApi'
+import { useAuth } from '@/entities/user/model/useAuth'
+import { useNavigate } from 'react-router-dom'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +28,9 @@ type SettingsPageProps = {
 }
 
 export function SettingsPage({ onBack }: SettingsPageProps) {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+  const settingsInteractionsEnabled = FEATURE_FLAGS.enableSettingsInteractions
   const [settings, setSettings] = useState({
     notifications: true,
     locationServices: true,
@@ -30,6 +39,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
   })
 
   const handleToggle = (key: keyof typeof settings) => {
+    if (!settingsInteractionsEnabled) return
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
@@ -38,50 +48,86 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
       <TopAppBar title="설정" showBackButton onBack={onBack} />
 
       <Container className="pt-6 space-y-6">
-        <section className="space-y-3">
-          <h2 className="px-1 font-semibold">알림</h2>
-          <Card className="divide-y">
-            <div className="p-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <Label htmlFor="notifications" className="cursor-pointer">
-                    푸시 알림
-                  </Label>
-                  <p className="text-sm text-muted-foreground">새로운 활동 알림 받기</p>
-                </div>
-              </div>
-              <Switch
-                id="notifications"
-                checked={settings.notifications}
-                onCheckedChange={() => handleToggle('notifications')}
-              />
-            </div>
-
-            <div className="p-4 flex items-center justify-between gap-3">
-              <div className="flex-1">
-                <Label htmlFor="marketing" className="cursor-pointer">
-                  마케팅 알림
-                </Label>
-                <p className="text-sm text-muted-foreground">이벤트 및 프로모션 정보</p>
-              </div>
-              <Switch
-                id="marketing"
-                checked={settings.marketingEmails}
-                onCheckedChange={() => handleToggle('marketingEmails')}
-              />
-            </div>
+        {!settingsInteractionsEnabled && (
+          <Card className="p-4 bg-muted/50">
+            <p className="text-sm text-muted-foreground">
+              현재 일부 설정 기능은 준비 중이라 변경할 수 없습니다.
+            </p>
           </Card>
-        </section>
+        )}
+
+        {FEATURE_FLAGS.enableNotifications && (
+          <section className="space-y-3">
+            <h2 className="px-1 font-semibold">알림</h2>
+            <Card className="divide-y">
+              <div
+                className={cn(
+                  'p-4 flex items-center justify-between gap-3',
+                  !settingsInteractionsEnabled && 'opacity-50',
+                )}
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  <Bell className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <Label
+                      htmlFor="notifications"
+                      className={cn(settingsInteractionsEnabled ? 'cursor-pointer' : 'opacity-70')}
+                    >
+                      푸시 알림
+                    </Label>
+                    <p className="text-sm text-muted-foreground">새로운 활동 알림 받기</p>
+                  </div>
+                </div>
+                <Switch
+                  id="notifications"
+                  checked={settings.notifications}
+                  onCheckedChange={() => handleToggle('notifications')}
+                  disabled={!settingsInteractionsEnabled}
+                />
+              </div>
+
+              <div
+                className={cn(
+                  'p-4 flex items-center justify-between gap-3',
+                  !settingsInteractionsEnabled && 'opacity-50',
+                )}
+              >
+                <div className="flex-1">
+                  <Label
+                    htmlFor="marketing"
+                    className={cn(settingsInteractionsEnabled ? 'cursor-pointer' : 'opacity-70')}
+                  >
+                    마케팅 알림
+                  </Label>
+                  <p className="text-sm text-muted-foreground">이벤트 및 프로모션 정보</p>
+                </div>
+                <Switch
+                  id="marketing"
+                  checked={settings.marketingEmails}
+                  onCheckedChange={() => handleToggle('marketingEmails')}
+                  disabled={!settingsInteractionsEnabled}
+                />
+              </div>
+            </Card>
+          </section>
+        )}
 
         <section className="space-y-3">
           <h2 className="px-1 font-semibold">개인정보 및 권한</h2>
           <Card className="divide-y">
-            <div className="p-4 flex items-center justify-between gap-3">
+            <div
+              className={cn(
+                'p-4 flex items-center justify-between gap-3',
+                !settingsInteractionsEnabled && 'opacity-50',
+              )}
+            >
               <div className="flex items-center gap-3 flex-1">
                 <MapPin className="h-5 w-5 text-muted-foreground" />
                 <div className="flex-1">
-                  <Label htmlFor="location" className="cursor-pointer">
+                  <Label
+                    htmlFor="location"
+                    className={cn(settingsInteractionsEnabled ? 'cursor-pointer' : 'opacity-70')}
+                  >
                     위치 서비스
                   </Label>
                   <p className="text-sm text-muted-foreground">주변 맛집 추천</p>
@@ -91,10 +137,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                 id="location"
                 checked={settings.locationServices}
                 onCheckedChange={() => handleToggle('locationServices')}
+                disabled={!settingsInteractionsEnabled}
               />
             </div>
 
-            <button className="w-full p-4 flex items-center justify-between hover:bg-accent transition-colors">
+            <button
+              className={cn(
+                'w-full p-4 flex items-center justify-between transition-colors',
+                settingsInteractionsEnabled ? 'hover:bg-accent' : 'opacity-50 cursor-not-allowed',
+              )}
+              disabled={!settingsInteractionsEnabled}
+              aria-disabled={!settingsInteractionsEnabled}
+            >
               <div className="flex items-center gap-3">
                 <Shield className="h-5 w-5 text-muted-foreground" />
                 <span>개인정보 관리</span>
@@ -107,10 +161,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
         <section className="space-y-3">
           <h2 className="px-1 font-semibold">화면 설정</h2>
           <Card className="divide-y">
-            <div className="p-4 flex items-center justify-between gap-3">
+            <div
+              className={cn(
+                'p-4 flex items-center justify-between gap-3',
+                !settingsInteractionsEnabled && 'opacity-50',
+              )}
+            >
               <div className="flex items-center gap-3 flex-1">
                 <Moon className="h-5 w-5 text-muted-foreground" />
-                <Label htmlFor="darkMode" className="cursor-pointer">
+                <Label
+                  htmlFor="darkMode"
+                  className={cn(settingsInteractionsEnabled ? 'cursor-pointer' : 'opacity-70')}
+                >
                   다크 모드
                 </Label>
               </div>
@@ -118,10 +180,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                 id="darkMode"
                 checked={settings.darkMode}
                 onCheckedChange={() => handleToggle('darkMode')}
+                disabled={!settingsInteractionsEnabled}
               />
             </div>
 
-            <button className="w-full p-4 flex items-center justify-between hover:bg-accent transition-colors">
+            <button
+              className={cn(
+                'w-full p-4 flex items-center justify-between transition-colors',
+                settingsInteractionsEnabled ? 'hover:bg-accent' : 'opacity-50 cursor-not-allowed',
+              )}
+              disabled={!settingsInteractionsEnabled}
+              aria-disabled={!settingsInteractionsEnabled}
+            >
               <div className="flex items-center gap-3">
                 <Globe className="h-5 w-5 text-muted-foreground" />
                 <span>언어</span>
@@ -137,7 +207,14 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
         <section className="space-y-3">
           <h2 className="px-1 font-semibold">지원 및 정보</h2>
           <Card className="divide-y">
-            <button className="w-full p-4 flex items-center justify-between hover:bg-accent transition-colors">
+            <button
+              className={cn(
+                'w-full p-4 flex items-center justify-between transition-colors',
+                settingsInteractionsEnabled ? 'hover:bg-accent' : 'opacity-50 cursor-not-allowed',
+              )}
+              disabled={!settingsInteractionsEnabled}
+              aria-disabled={!settingsInteractionsEnabled}
+            >
               <div className="flex items-center gap-3">
                 <HelpCircle className="h-5 w-5 text-muted-foreground" />
                 <span>고객 지원</span>
@@ -145,7 +222,14 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </button>
 
-            <button className="w-full p-4 flex items-center justify-between hover:bg-accent transition-colors">
+            <button
+              className={cn(
+                'w-full p-4 flex items-center justify-between transition-colors',
+                settingsInteractionsEnabled ? 'hover:bg-accent' : 'opacity-50 cursor-not-allowed',
+              )}
+              disabled={!settingsInteractionsEnabled}
+              aria-disabled={!settingsInteractionsEnabled}
+            >
               <div className="flex items-center gap-3">
                 <Info className="h-5 w-5 text-muted-foreground" />
                 <span>앱 정보</span>
@@ -159,29 +243,37 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
         </section>
 
         <section className="space-y-3">
-          <Card className="border-destructive/50">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="w-full p-4 text-destructive hover:bg-destructive/10 transition-colors">
-                  회원 탈퇴
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
-                    탈퇴하기
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </Card>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full text-destructive border-destructive/50 hover:bg-destructive/10"
+              >
+                회원 탈퇴
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive hover:bg-destructive/90"
+                  onClick={async () => {
+                    await deleteMe()
+                    await logout()
+                    navigate('/')
+                  }}
+                >
+                  탈퇴하기
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </section>
       </Container>
     </div>
