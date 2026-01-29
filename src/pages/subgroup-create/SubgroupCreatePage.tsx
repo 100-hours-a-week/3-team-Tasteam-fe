@@ -104,7 +104,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       toast.success('하위그룹을 생성했습니다.')
       onSubmit?.()
     } catch (error) {
-      const code = error?.response?.data?.code
+      const code = (error as { response?: { data?: { code?: string } } })?.response?.data?.code
       if (code === 'ALREADY_EXISTS') {
         setSubmitError('이미 존재하는 하위그룹명입니다.')
       } else if (code === 'NO_PERMISSION') {
