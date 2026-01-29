@@ -4,12 +4,16 @@ import { Container } from '@/widgets/container'
 import { Card } from '@/shared/ui/card'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
+import { EmptyState } from '@/widgets/empty-state'
+import { Bell } from 'lucide-react'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 type NotificationSettingsPageProps = {
   onBack?: () => void
 }
 
 export function NotificationSettingsPage({ onBack }: NotificationSettingsPageProps) {
+  const notificationsEnabled = FEATURE_FLAGS.enableNotifications
   const [settings, setSettings] = useState({
     pushEnabled: true,
     groupActivity: true,
@@ -21,7 +25,25 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
   })
 
   const handleToggle = (key: keyof typeof settings) => {
+    if (!notificationsEnabled) return
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  if (!notificationsEnabled) {
+    return (
+      <div className="flex flex-col h-full bg-background min-h-screen">
+        <TopAppBar title="알림 설정" showBackButton onBack={onBack} />
+        <Container className="flex-1 py-6 space-y-6 overflow-auto">
+          <EmptyState
+            icon={Bell}
+            title="알림 설정이 비활성화되어 있어요"
+            description="현재 서비스에서는 알림 설정을 변경할 수 없습니다."
+            actionLabel={onBack ? '뒤로가기' : undefined}
+            onAction={onBack}
+          />
+        </Container>
+      </div>
+    )
   }
 
   return (

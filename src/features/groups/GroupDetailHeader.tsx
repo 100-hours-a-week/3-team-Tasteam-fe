@@ -9,6 +9,7 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
 import { Container } from '@/widgets/container'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 export type GroupDetailHeaderData = {
   name: string
@@ -70,7 +71,9 @@ export function GroupDetailHeader({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={onNotificationSettings}>알림 설정</DropdownMenuItem>
+                  {FEATURE_FLAGS.enableNotifications && (
+                    <DropdownMenuItem onClick={onNotificationSettings}>알림 설정</DropdownMenuItem>
+                  )}
                   <DropdownMenuItem variant="destructive" onClick={onLeaveGroup}>
                     그룹 탈퇴
                   </DropdownMenuItem>

@@ -12,6 +12,7 @@ import { Separator } from '@/shared/ui/separator'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { getMe } from '@/entities/member/api/memberApi'
 import type { MemberMeResponseDto } from '@/entities/member/model/dto'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 type ProfilePageProps = {
   onSettingsClick?: () => void
@@ -82,8 +83,12 @@ export function ProfilePage({
   const menuItems = [
     { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites },
     { label: '내 리뷰', icon: Bell, onClick: onMyReviews },
-    { label: '알림', icon: Bell, onClick: onNotifications },
-    { label: '알림 설정', icon: Settings, onClick: onNotificationSettings },
+    ...(FEATURE_FLAGS.enableNotifications
+      ? [
+          { label: '알림', icon: Bell, onClick: onNotifications },
+          { label: '알림 설정', icon: Settings, onClick: onNotificationSettings },
+        ]
+      : []),
     { label: '설정', icon: Settings, onClick: onSettingsClick },
   ]
 
