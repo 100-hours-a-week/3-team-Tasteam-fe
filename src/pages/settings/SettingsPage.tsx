@@ -6,7 +6,11 @@ import { Card } from '@/shared/ui/card'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/button'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { deleteMe } from '@/entities/member/api/memberApi'
+import { useAuth } from '@/entities/user/model/useAuth'
+import { useNavigate } from 'react-router-dom'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +28,8 @@ type SettingsPageProps = {
 }
 
 export function SettingsPage({ onBack }: SettingsPageProps) {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
   const settingsInteractionsEnabled = FEATURE_FLAGS.enableSettingsInteractions
   const [settings, setSettings] = useState({
     notifications: true,
@@ -237,38 +243,37 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
         </section>
 
         <section className="space-y-3">
-          <Card className="border-destructive/50">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button
-                  className={cn(
-                    'w-full p-4 text-destructive transition-colors',
-                    settingsInteractionsEnabled
-                      ? 'hover:bg-destructive/10'
-                      : 'opacity-50 cursor-not-allowed',
-                  )}
-                  disabled={!settingsInteractionsEnabled}
-                  aria-disabled={!settingsInteractionsEnabled}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full text-destructive border-destructive/50 hover:bg-destructive/10"
+              >
+                회원 탈퇴
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive hover:bg-destructive/90"
+                  onClick={async () => {
+                    await deleteMe()
+                    await logout()
+                    navigate('/')
+                  }}
                 >
-                  회원 탈퇴
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
-                    탈퇴하기
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </Card>
+                  탈퇴하기
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </section>
       </Container>
     </div>
