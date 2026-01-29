@@ -57,6 +57,7 @@ export function GroupDetailPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [isCategoryLoading, setIsCategoryLoading] = useState(false)
   const [group, setGroup] = useState<GroupDetailHeaderData>(EMPTY_GROUP)
+  const [emailDomain, setEmailDomain] = useState<string | null>(null)
   const [restaurants, setRestaurants] = useState<RestaurantListItemDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -122,12 +123,14 @@ export function GroupDetailPage() {
           addressDetail: groupRes.detailAddress ?? undefined,
           memberCount: groupRes.memberCount ?? 0,
         })
+        setEmailDomain(groupRes.emailDomain ?? null)
         setIsGroupLoaded(true)
       } catch {
         if (!cancelled) {
           setError('그룹 정보를 불러오지 못했습니다')
           setGroup(EMPTY_GROUP)
           setRestaurants([])
+          setEmailDomain(null)
           setIsGroupLoaded(false)
         }
       } finally {
