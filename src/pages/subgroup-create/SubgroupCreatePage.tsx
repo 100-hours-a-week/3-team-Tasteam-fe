@@ -105,8 +105,13 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       })
       toast.success('하위그룹을 생성했습니다.')
       onSubmit?.()
-    } catch (error) {
-      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
+    } catch (error: unknown) {
+      let code: ErrorResponse['code'] | undefined
+      if (axios.isAxiosError<ErrorResponse>(error)) {
+        code = error.response?.data?.code
+      } else {
+        console.error(error)
+      }
       if (code === 'ALREADY_EXISTS') {
         setSubmitError('이미 존재하는 하위그룹명입니다.')
       } else if (code === 'NO_PERMISSION') {
