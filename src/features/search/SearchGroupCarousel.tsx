@@ -52,7 +52,7 @@ export function SearchGroupCarousel({ groups, onGroupClick }: SearchGroupCarouse
                     key={group.groupId}
                     groupId={group.groupId}
                     name={group.name}
-                    logoImageUrl={group.logoImageUrl}
+                    logoImage={group.logoImage}
                     onClick={() => onGroupClick?.(String(group.groupId))}
                   />
                 ))}

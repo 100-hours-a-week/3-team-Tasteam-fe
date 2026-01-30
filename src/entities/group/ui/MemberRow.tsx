@@ -74,7 +74,7 @@ export function MemberRow(props: MemberRowProps) {
   return (
     <div className={cn('flex items-center gap-3 py-3', className)}>
       <Avatar className="h-10 w-10">
-        <AvatarImage src={member.profileImage} alt={member.nickname} />
+        <AvatarImage src={member.profileImage.url} alt={member.nickname} />
         <AvatarFallback>{member.nickname.slice(0, 2)}</AvatarFallback>
       </Avatar>
 

@@ -1,9 +1,9 @@
-import type { IsoDateTimeString } from '@/shared/types/common'
+import type { IsoDateTimeString, ImageResource } from '@/shared/types/common'
 import type { CursorPagination } from '@/shared/types/pagination'
 
 export type MemberProfile = {
   nickname: string
-  profileImageUrl: string
+  profileImage: ImageResource
 }
 
 export type MemberGroupRequestSummary = {
@@ -60,7 +60,7 @@ export type MemberReviewList = {
 }
 
 export type MemberProfileUpdate = {
-  profileImageUrl?: string
+  profileImageId?: string
   email?: string
 }
 

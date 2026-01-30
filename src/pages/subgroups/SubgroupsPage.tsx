@@ -352,8 +352,8 @@ export function SubgroupsPage() {
                 {members.length > 0
                   ? members.slice(0, 5).map((member) => (
                       <Avatar key={member.memberId} className="h-8 w-8 border-2 border-background">
-                        {member.profileImageUrl ? (
-                          <AvatarImage src={member.profileImageUrl} alt={member.nickname} />
+                        {member.profileImage?.url ? (
+                          <AvatarImage src={member.profileImage.url} alt={member.nickname} />
                         ) : null}
                         <AvatarFallback className="text-xs">
                           {member.nickname?.slice(0, 2) ?? '멤버'}

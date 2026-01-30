@@ -4,7 +4,7 @@ import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type GroupCreateRequestDto = {
   name: string
-  imageIds: string
+  logoImageId?: string
   address: string
   detailAddress: string | null
   location: Coordinates
@@ -39,7 +39,7 @@ export type GroupRequestCreateResponseDto = SuccessResponse<{
 export type GroupDetailDto = {
   groupId: number
   name: string
-  logoImageUrl: string | null
+  logoImage: ImageResource | null
   address: string
   detailAddress: string | null
   emailDomain: string | null
@@ -55,7 +55,7 @@ export type GroupDetailResponseDto = SuccessResponse<{
 
 export type GroupUpdateRequestDto = {
   name?: string
-  imageIds?: string
+  logoImageId?: string | null
   address?: string
   detail_address?: string
   emailDomain?: string | null
@@ -65,7 +65,7 @@ export type GroupUpdateRequestDto = {
 export type GroupMemberDto = {
   memberId: number
   nickname: string
-  profileImage: string
+  profileImage: ImageResource
   createdAt: IsoDateTimeString
 }
 

@@ -118,7 +118,7 @@ export function GroupDetailPage() {
         if (cancelled) return
         setGroup({
           name: groupRes.name,
-          profileImage: groupRes.logoImageUrl ?? undefined,
+          profileImage: groupRes.logoImage?.url ?? undefined,
           addressLine: groupRes.address,
           addressDetail: groupRes.detailAddress ?? undefined,
           memberCount: groupRes.memberCount ?? 0,

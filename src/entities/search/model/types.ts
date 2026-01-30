@@ -1,11 +1,11 @@
 import type { SuccessResponse } from '@/shared/types/api'
-import type { IsoDateTimeString } from '@/shared/types/common'
+import type { ImageResource, IsoDateTimeString } from '@/shared/types/common'
 import type { ItemsPageResponse } from '@/shared/types/pagination'
 
 export type SearchGroupItem = {
   groupId: number
   name: string
-  logoImageUrl: string | null
+  logoImage: ImageResource | null
   memberCount: number
 }
 

@@ -70,16 +70,14 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
 
     setIsLoading(true)
     try {
-      let profileImageUrl: string | undefined
       let profileImageId: string | undefined
 
       if (profileImages.length > 0) {
         const results = await uploadAll()
-        profileImageUrl = results[0].url
         profileImageId = results[0].fileUuid
       }
 
-      await updateMeProfile({ nickname, bio, profileImageUrl, profileImageId })
+      await updateMeProfile({ nickname, bio, profileImageId })
       toast.success('프로필이 수정되었습니다')
       navigate('/profile', { replace: true })
     } catch {
@@ -94,7 +92,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
   const user = {
     nickname: userData?.data?.member?.nickname ?? '사용자',
     email: 'chulsoo@example.com',
-    profileImageUrl: userData?.data?.member?.profileImageUrl,
+    profileImageUrl: userData?.data?.member?.profileImage?.url,
     bio: '',
   }
 

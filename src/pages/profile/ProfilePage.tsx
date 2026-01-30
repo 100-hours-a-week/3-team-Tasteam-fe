@@ -88,7 +88,7 @@ export function ProfilePage({
   const user = {
     name: member?.nickname ?? '김철수',
     email: 'chulsoo@example.com',
-    avatar: member?.profileImageUrl ?? 'https://i.pravatar.cc/150?img=1',
+    avatar: member?.profileImage?.url ?? 'https://i.pravatar.cc/150?img=1',
   }
 
   const menuItems = [
