@@ -10,7 +10,7 @@ import { Label } from '@/shared/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { getMe, updateMeProfile } from '@/entities/member/api/memberApi'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
-import type { MemberMeResponseDto } from '@/entities/member/model/dto'
+import type { MemberProfileDto } from '@/entities/member/model/dto'
 
 type EditProfilePageProps = {
   onBack?: () => void
@@ -18,10 +18,11 @@ type EditProfilePageProps = {
 
 export function EditProfilePage({ onBack }: EditProfilePageProps) {
   const navigate = useNavigate()
-  const [userData, setUserData] = useState<MemberMeResponseDto | null>(null)
+  const [member, setMember] = useState<MemberProfileDto | null>(null)
   const [nickname, setNickname] = useState('')
   const [bio, setBio] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(true)
   const [initialNickname, setInitialNickname] = useState('')
   const [initialBio, setInitialBio] = useState('')
 
@@ -40,18 +41,23 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
   const profilePreviewUrl = profileImages.length > 0 ? profileImages[0].previewUrl : undefined
 
   useEffect(() => {
+    setIsFetching(true)
     getMe()
       .then((data) => {
-        setUserData(data)
-        const userNickname = data.data?.member?.nickname ?? '사용자'
-        const userBio = ''
-        setNickname(userNickname)
-        setBio(userBio)
-        setInitialNickname(userNickname)
-        setInitialBio(userBio)
+        const memberData = data.data?.member
+        if (memberData) {
+          setMember(memberData)
+          setNickname(memberData.nickname)
+          setBio('')
+          setInitialNickname(memberData.nickname)
+          setInitialBio('')
+        }
       })
       .catch(() => {
         toast.error('프로필을 불러올 수 없습니다')
+      })
+      .finally(() => {
+        setIsFetching(false)
       })
   }, [])
 
@@ -89,11 +95,27 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
 
   const hasImageChange = profileImages.length > 0
   const isChanged = nickname !== initialNickname || bio !== initialBio || hasImageChange
-  const user = {
-    nickname: userData?.data?.member?.nickname ?? '사용자',
-    email: 'chulsoo@example.com',
-    profileImageUrl: userData?.data?.member?.profileImage?.url,
-    bio: '',
+
+  if (isFetching) {
+    return (
+      <div className="flex flex-col h-full bg-background min-h-screen">
+        <TopAppBar title="프로필 수정" showBackButton onBack={onBack} />
+        <Container className="flex-1 py-6 flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">프로필을 불러오는 중...</p>
+        </Container>
+      </div>
+    )
+  }
+
+  if (!member) {
+    return (
+      <div className="flex flex-col h-full bg-background min-h-screen">
+        <TopAppBar title="프로필 수정" showBackButton onBack={onBack} />
+        <Container className="flex-1 py-6 flex items-center justify-center">
+          <p className="text-sm text-destructive">프로필을 불러올 수 없습니다</p>
+        </Container>
+      </div>
+    )
   }
 
   return (
@@ -119,8 +141,11 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
           <div className="flex flex-col items-center">
             <div className="relative">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={profilePreviewUrl ?? user.profileImageUrl} alt={user.nickname} />
-                <AvatarFallback className="text-2xl">{user.nickname[0]}</AvatarFallback>
+                <AvatarImage
+                  src={profilePreviewUrl ?? member.profileImage?.url}
+                  alt={member.nickname}
+                />
+                <AvatarFallback className="text-2xl">{member.nickname[0]}</AvatarFallback>
               </Avatar>
               <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
                 <Camera className="w-4 h-4" />
@@ -133,11 +158,6 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
               </button>
             </div>
             <p className="text-sm text-muted-foreground mt-2">프로필 사진 변경</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
-            <Input id="email" value={user.email} disabled className="bg-muted" />
           </div>
 
           <div className="space-y-2">
@@ -167,6 +187,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
           </div>
 
           <Button
+            variant="outline"
             className="w-full"
             onClick={handleSave}
             disabled={!isChanged || isLoading || isUploading}

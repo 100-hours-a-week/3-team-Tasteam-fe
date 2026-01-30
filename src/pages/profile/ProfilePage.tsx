@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight, Heart, Bell, Settings, LogOut } from 'lucide-react'
+import { ChevronRight, Heart, Bell, Settings, LogOut, User } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -11,7 +11,7 @@ import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { getMe } from '@/entities/member/api/memberApi'
-import type { MemberMeResponseDto } from '@/entities/member/model/dto'
+import type { MemberProfileDto } from '@/entities/member/model/dto'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import {
   AlertDialog,
@@ -46,13 +46,17 @@ export function ProfilePage({
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated } = useAuth()
-  const [userData, setUserData] = useState<MemberMeResponseDto | null>(null)
+  const [member, setMember] = useState<MemberProfileDto | null>(null)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) return
     getMe()
-      .then(setUserData)
+      .then((data) => {
+        if (data.data?.member) {
+          setMember(data.data.member)
+        }
+      })
       .catch(() => {})
   }, [isAuthenticated, location.key])
 
@@ -84,13 +88,6 @@ export function ProfilePage({
     )
   }
 
-  const member = userData?.data?.member
-  const user = {
-    name: member?.nickname ?? '김철수',
-    email: 'chulsoo@example.com',
-    avatar: member?.profileImage?.url ?? 'https://i.pravatar.cc/150?img=1',
-  }
-
   const menuItems = [
     { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites },
     { label: '내 리뷰', icon: Bell, onClick: onMyReviews },
@@ -107,23 +104,37 @@ export function ProfilePage({
     <div className="pb-20 min-h-screen bg-background">
       <TopAppBar title="프로필" />
 
-      <Container className="pt-6 pb-6">
-        <Card className="p-6">
-          <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.name.slice(0, 2)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h2 className="truncate">{user.name}</h2>
-              <p className="text-sm text-muted-foreground truncate mt-1">{user.email}</p>
-              <Button variant="outline" size="sm" className="mt-3" onClick={onEditProfile}>
-                프로필 수정
-              </Button>
+      {member ? (
+        <>
+          <Container className="pt-6 pb-6">
+            <div className="p-6">
+              <div className="flex flex-col items-center gap-4">
+                <Avatar className="w-24 h-24">
+                  {member.profileImage?.url ? (
+                    <AvatarImage src={member.profileImage.url} alt={member.nickname} />
+                  ) : (
+                    <AvatarFallback className="flex items-center justify-center">
+                      <User className="w-12 h-12 text-muted-foreground" strokeWidth={1} />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <h2 className="text-xl font-semibold mb-2.5">{member.nickname} 님</h2>
+                  <Button size="sm" onClick={onEditProfile} className="w-1/2">
+                    프로필 수정
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </Card>
-      </Container>
+          </Container>
+        </>
+      ) : (
+        <Container className="pt-6 pb-6">
+          <Card className="p-6">
+            <p className="text-sm text-muted-foreground">프로필을 불러오는 중...</p>
+          </Card>
+        </Container>
+      )}
 
       <Container>
         <Card className="divide-y">

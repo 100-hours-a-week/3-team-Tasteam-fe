@@ -4,7 +4,7 @@ import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type MemberProfileDto = {
   nickname: string
-  profileImage: ImageResource
+  profileImage: ImageResource | null
 }
 
 export type MemberMeResponseDto = SuccessResponse<{

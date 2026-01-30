@@ -8,7 +8,7 @@ import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { ProfileImage } from '@/shared/ui/profile-image'
 // import { RestaurantCard } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import {
@@ -350,16 +350,17 @@ export function SubgroupsPage() {
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
                 {members.length > 0
-                  ? members.slice(0, 5).map((member) => (
-                      <Avatar key={member.memberId} className="h-8 w-8 border-2 border-background">
-                        {member.profileImage?.url ? (
-                          <AvatarImage src={member.profileImage.url} alt={member.nickname} />
-                        ) : null}
-                        <AvatarFallback className="text-xs">
-                          {member.nickname?.slice(0, 2) ?? '멤버'}
-                        </AvatarFallback>
-                      </Avatar>
-                    ))
+                  ? members
+                      .slice(0, 5)
+                      .map((member) => (
+                        <ProfileImage
+                          key={member.memberId}
+                          image={member.profileImage}
+                          name={member.nickname}
+                          size="sm"
+                          className="h-8 w-8 border-2 border-background"
+                        />
+                      ))
                   : Array.from({ length: Math.min(5, subgroup.memberCount || 0) }).map((_, idx) => (
                       <Avatar key={`member-${idx}`} className="h-8 w-8 border-2 border-background">
                         <AvatarFallback className="text-xs">멤버</AvatarFallback>
