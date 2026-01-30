@@ -9,7 +9,6 @@ import type {
   SubgroupMemberListResponseDto,
   SubgroupMemberDto,
   SubgroupSearchResponseDto,
-  SubgroupSearchItemDto,
 } from '../model/dto'
 import type { ReviewListResponseDto } from '@/entities/review/model/dto'
 import type { SuccessResponse } from '@/shared/types/api'

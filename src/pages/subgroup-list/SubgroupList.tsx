@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
-import { getSubgroups, joinSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup/api/subgroupApi'
 import type { ErrorResponse } from '@/shared/types/api'
 
 type Group = {
@@ -69,7 +69,10 @@ export function SubgroupListPage({
       setIsLoading(true)
       setLoadError(null)
       try {
-        const response = await getSubgroups(groupId, { size: 20 })
+        const trimmedKeyword = searchQuery.trim()
+        const response = trimmedKeyword
+          ? await searchSubgroups(groupId, { size: 20, keyword: trimmedKeyword })
+          : await getSubgroups(groupId, { size: 20 })
         if (cancelled) return
         const items = response.items ?? []
         const mapped = items.map((item) => {
@@ -80,12 +83,13 @@ export function SubgroupListPage({
             memberCount: number
             profileImageUrl?: string
             thumnailImage?: { url?: string }
-            joinType?: 'OPEN' | 'PASSWORD'
+            joinType?: 'OPEN' | 'PASSWORD' | null
+            createdAt?: string
           }
           return {
             id: String(record.subgroupId),
             name: record.name,
-            description: record.description,
+            description: record.description ?? '',
             memberCount: record.memberCount,
             imageUrl: record.profileImageUrl ?? record.thumnailImage?.url,
             isJoined: false,
@@ -108,7 +112,7 @@ export function SubgroupListPage({
     return () => {
       cancelled = true
     }
-  }, [groupId])
+  }, [groupId, searchQuery])
 
   const resolveJoinErrorCode = (error: unknown) => {
     if (axios.isAxiosError<ErrorResponse>(error)) {
@@ -221,9 +225,7 @@ export function SubgroupListPage({
     }
   }
 
-  const filteredGroups = groups.filter((g) =>
-    g.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const filteredGroups = groups
 
   const handlePasswordModalChange = (open: boolean) => {
     setPasswordModalOpen(open)
