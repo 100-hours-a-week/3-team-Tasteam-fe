@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { ProfileImage } from '@/shared/ui/profile-image'
+import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 // import { RestaurantCard } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import {

@@ -1,5 +1,6 @@
 import { MoreVertical } from 'lucide-react'
 import { ProfileImage } from '@/shared/ui/profile-image'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/lib/utils'
