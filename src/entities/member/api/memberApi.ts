@@ -7,6 +7,8 @@ import type {
   MemberGroupOverviewListResponseDto,
   MemberGroupSummaryItemDto,
   MemberGroupSummaryListResponseDto,
+  MemberGroupDetailSummaryItemDto,
+  MemberGroupDetailSummaryListResponseDto,
   MemberGroupRequestListResponseDto,
   MemberReviewListResponseDto,
   GroupEmailVerificationResponseDto,
@@ -48,6 +50,16 @@ export const getMyGroupSummaries = async (): Promise<MemberGroupSummaryItemDto[]
   const res = await request<MemberGroupSummaryListResponseDto | MemberGroupSummaryItemDto[]>({
     method: 'GET',
     url: '/api/v1/members/me/groups/summary',
+  })
+  return Array.isArray(res) ? res : res.data
+}
+
+export const getMyGroupDetails = async (): Promise<MemberGroupDetailSummaryItemDto[]> => {
+  const res = await request<
+    MemberGroupDetailSummaryListResponseDto | MemberGroupDetailSummaryItemDto[]
+  >({
+    method: 'GET',
+    url: '/api/v1/members/me/groups',
   })
   return Array.isArray(res) ? res : res.data
 }

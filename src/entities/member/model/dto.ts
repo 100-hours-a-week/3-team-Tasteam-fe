@@ -96,6 +96,27 @@ export type MemberSubgroupSummaryItemDto = {
   subGroupName: string
 }
 
+export type MemberSubgroupDetailSummaryItemDto = {
+  subGroupId: number
+  subGroupName: string
+  memberCount: number
+  logoImageUrl?: string | null
+}
+
+export type MemberGroupDetailSummaryItemDto = {
+  groupId: number
+  groupName: string
+  groupAddress: string
+  groupDetailAddress?: string | null
+  groupLogoImageUrl?: string | null
+  groupMemberCount: number
+  subGroups: MemberSubgroupDetailSummaryItemDto[]
+}
+
+export type MemberGroupDetailSummaryListResponseDto = SuccessResponse<
+  MemberGroupDetailSummaryItemDto[]
+>
+
 export type GroupEmailVerificationResponseDto = SuccessResponse<{
   id: number
   createdAt: IsoDateTimeString
