@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, UserCheck, MoreVertical, MessageSquare, Lock, Bell } from 'lucide-react'
 import { useAuth } from '@/entities/user/model/useAuth'
@@ -15,6 +16,7 @@ import {
   getSubgroupMembers,
   getSubgroupReviews,
   joinSubgroup,
+  leaveSubgroup,
 } from '@/entities/subgroup/api/subgroupApi'
 import { getGroup } from '@/entities/group/api/groupApi'
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
@@ -41,6 +43,7 @@ import { ROUTES } from '@/shared/config/routes'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup/model/dto'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
+import type { ErrorResponse } from '@/shared/types/api'
 
 const EMPTY_SUBGROUP: SubgroupDetailDto = {
   groupId: 0,
@@ -65,6 +68,7 @@ export function SubgroupsPage() {
   const [members, setMembers] = useState<SubgroupMemberDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isLeaving, setIsLeaving] = useState(false)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = id ? Number(id) : null
@@ -188,14 +192,49 @@ export function SubgroupsPage() {
       setIsJoinDialogOpen(false)
       setPassword('')
       // 필요한 경우 페이지 새로고침 또는 상태 업데이트 로직 추가 가능
-    } catch (error: any) {
-      alert(error.response?.data?.message || '가입에 실패했습니다. 비밀번호를 확인해주세요.')
+    } catch (error: unknown) {
+      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
+      if (code === 'PASSWORD_MISMATCH') {
+        alert('가입에 실패했습니다. 비밀번호를 확인해주세요.')
+      } else if (code === 'SUBGROUP_ALREADY_JOINED') {
+        alert('이미 가입된 하위그룹입니다.')
+      } else if (code === 'AUTHENTICATION_REQUIRED') {
+        alert('로그인이 필요합니다.')
+      } else if (code === 'NO_PERMISSION') {
+        alert('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
+      } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
+        alert('하위그룹 정보를 찾을 수 없습니다.')
+      } else {
+        alert('가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
     }
   }
 
-  const handleLeaveSubGroup = () => {
-    // Leave sub-group functionality
-    navigate(-1)
+  const handleLeaveSubGroup = async () => {
+    if (!subgroupId || Number.isNaN(subgroupId)) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+    setIsLeaving(true)
+    try {
+      await leaveSubgroup(subgroupId)
+      alert('하위 그룹에서 나왔습니다.')
+      navigate(-1)
+    } catch (error: unknown) {
+      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
+      if (code === 'AUTHENTICATION_REQUIRED') {
+        alert('로그인이 필요합니다.')
+      } else if (code === 'NO_PERMISSION') {
+        alert('이미 탈퇴했거나 권한이 없습니다.')
+      } else if (code === 'SUBGROUP_NOT_FOUND') {
+        alert('하위그룹 정보를 찾을 수 없습니다.')
+      } else {
+        alert('탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsLeaving(false)
+    }
   }
 
   const handleChatClick = () => {
@@ -295,6 +334,7 @@ export function SubgroupsPage() {
                           variant="default"
                           className="bg-primary text-primary-foreground hover:bg-primary/90"
                           onClick={handleLeaveSubGroup}
+                          disabled={isLeaving}
                         >
                           나가기
                         </AlertDialogAction>

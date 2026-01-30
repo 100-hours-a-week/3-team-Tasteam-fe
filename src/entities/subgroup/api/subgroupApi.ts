@@ -8,8 +8,11 @@ import type {
   SubgroupDetailDto,
   SubgroupMemberListResponseDto,
   SubgroupMemberDto,
+  SubgroupSearchResponseDto,
+  SubgroupSearchItemDto,
 } from '../model/dto'
 import type { ReviewListResponseDto } from '@/entities/review/model/dto'
+import type { SuccessResponse } from '@/shared/types/api'
 
 export const getMySubgroups = (groupId: number, params?: { cursor?: string; size?: number }) =>
   request<SubgroupListResponseDto>({
@@ -22,6 +25,27 @@ export const getSubgroups = (groupId: number, params?: { cursor?: string; size?:
     method: 'GET',
     url: `/api/v1/groups/${groupId}/subgroups${buildQuery(params ?? {})}`,
   })
+
+export const searchSubgroups = async (
+  groupId: number,
+  params?: { keyword?: string; cursor?: string; size?: number },
+): Promise<SubgroupSearchResponseDto> => {
+  const trimmedKeyword = params?.keyword?.trim()
+  const response = await request<
+    SuccessResponse<SubgroupSearchResponseDto> | SubgroupSearchResponseDto
+  >({
+    method: 'GET',
+    url: `/api/v1/groups/${groupId}/subgroups/search${buildQuery({
+      ...params,
+      keyword: trimmedKeyword ? trimmedKeyword : undefined,
+    })}`,
+  })
+
+  if ('data' in response) {
+    return response.data
+  }
+  return response as SubgroupSearchResponseDto
+}
 
 export const getSubgroup = async (subgroupId: number): Promise<SubgroupDetailDto> => {
   const res = await request<SubgroupDetailResponseDto>({

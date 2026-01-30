@@ -14,6 +14,18 @@ export type SubgroupListItemDto = {
 
 export type SubgroupListResponseDto = CursorPageResponse<SubgroupListItemDto>
 
+export type SubgroupSearchItemDto = {
+  subgroupId: number
+  name: string
+  description: string | null
+  memberCount: number
+  profileImageUrl?: string | null
+  joinType: null
+  createdAt: IsoDateTimeString
+}
+
+export type SubgroupSearchResponseDto = CursorPageResponse<SubgroupSearchItemDto>
+
 export type SubgroupDetailDto = {
   groupId: number
   subgroupId: number
