@@ -35,6 +35,16 @@ import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
 
 export function RestaurantDetailPage() {
+  type BusinessHoursWeekItem = {
+    date: string
+    dayOfWeek: string
+    isClosed: boolean | null
+    openTime: string | null
+    closeTime: string | null
+    source: string
+    reason: string | null
+  }
+
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [isSaved, setIsSaved] = React.useState(false)
@@ -43,6 +53,7 @@ export function RestaurantDetailPage() {
     name: string
     address: string
     foodCategories: string[]
+    businessHoursWeek?: BusinessHoursWeekItem[]
     images?: { id: string; url: string }[]
     image?: { id: number | string; url: string } | null
     recommendStat?: {
@@ -100,6 +111,7 @@ export function RestaurantDetailPage() {
       positive: 92,
       negative: 8,
     },
+    businessHoursWeek: null as BusinessHoursWeekItem[] | null,
   }
 
   const mockPreviewReviews: ReviewListItemDto[] = [
@@ -195,8 +207,44 @@ export function RestaurantDetailPage() {
       aiSummary: restaurantData.aiSummary ?? mockRestaurant.aiSummary,
       feature: restaurantData.aiFeatures ?? mockRestaurant.feature,
       sentiment,
+      businessHoursWeek: restaurantData.businessHoursWeek ?? null,
     }
   })()
+
+  const dayOfWeekLabel: Record<string, string> = {
+    MON: '월',
+    TUE: '화',
+    WED: '수',
+    THU: '목',
+    FRI: '금',
+    SAT: '토',
+    SUN: '일',
+  }
+
+  const todayString = (() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  })()
+
+  const formatBusinessHour = (
+    item: Pick<BusinessHoursWeekItem, 'isClosed' | 'openTime' | 'closeTime' | 'source' | 'reason'>,
+  ) => {
+    if (item.isClosed) {
+      if (item.source === 'WEEKLY') return '정기 휴무'
+      const reasonText = item.reason ? ` (${item.reason})` : ''
+      return `임시 휴무${reasonText}`
+    }
+    if (!item.openTime || !item.closeTime) return '정보 없음'
+    return `${item.openTime} - ${item.closeTime}`
+  }
+
+  const isTodayRow = (item: BusinessHoursWeekItem, index: number) => {
+    if (item.date) return item.date === todayString
+    return index === 0
+  }
 
   const handleSave = () => {
     setIsSaved(!isSaved)
@@ -280,22 +328,65 @@ export function RestaurantDetailPage() {
                 영업 시간
               </h3>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">영업시간</span>
-                  <span>{restaurant.hours}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">브레이크타임</span>
-                  <span>{restaurant.breakTime}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">라스트오더</span>
-                  <span>{restaurant.lastOrder}</span>
-                </div>
-                <div className="flex justify-between border-t pt-3 mt-1">
-                  <span className="text-muted-foreground">정기휴무</span>
-                  <span className="text-destructive font-medium">{restaurant.closedDays}</span>
-                </div>
+                {restaurant.businessHoursWeek && restaurant.businessHoursWeek.length > 0 ? (
+                  restaurant.businessHoursWeek.map((item: BusinessHoursWeekItem, index: number) => {
+                    const isToday = isTodayRow(item, index)
+                    const dayLabel = dayOfWeekLabel[item.dayOfWeek] ?? item.dayOfWeek
+                    const hourText = formatBusinessHour({
+                      isClosed: item.isClosed,
+                      openTime: item.openTime,
+                      closeTime: item.closeTime,
+                      source: item.source,
+                      reason: item.reason,
+                    })
+                    const isClosed = item.isClosed === true
+                    return (
+                      <div
+                        key={`${item.date}-${index}`}
+                        className={cn(
+                          'flex justify-between rounded-md px-2 py-1',
+                          isToday && 'bg-primary/10 border-l-4 border-primary',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'text-muted-foreground flex items-center gap-2',
+                            isToday && 'font-bold text-foreground',
+                          )}
+                        >
+                          {dayLabel}요일
+                        </span>
+                        <span
+                          className={cn(
+                            'max-w-[60%] text-right break-words',
+                            isClosed && 'text-destructive font-medium',
+                          )}
+                        >
+                          {hourText}
+                        </span>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">영업시간</span>
+                      <span>{restaurant.hours}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">브레이크타임</span>
+                      <span>{restaurant.breakTime}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">라스트오더</span>
+                      <span>{restaurant.lastOrder}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-3 mt-1">
+                      <span className="text-muted-foreground">정기휴무</span>
+                      <span className="text-destructive font-medium">{restaurant.closedDays}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
 
