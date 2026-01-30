@@ -33,6 +33,8 @@ import { RequireAuth } from '@/features/auth/require-auth'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
+import { LocationPermissionModal } from '@/widgets/location/LocationPermissionModal'
+import { getLocationPermission, requestLocationPermission } from '@/shared/lib/geolocation'
 import { resetLoginRequired } from '@/shared/lib/authToken'
 import { Route, Routes } from 'react-router-dom'
 
@@ -54,6 +56,11 @@ function App() {
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
     if (typeof window === 'undefined') return true
     return window.localStorage.getItem('hasSeenOnboarding') === 'true'
+  })
+  const [showLocationModal, setShowLocationModal] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const seen = window.localStorage.getItem('hasSeenOnboarding') === 'true'
+    return seen && !getLocationPermission()
   })
 
   useEffect(() => {
@@ -82,6 +89,16 @@ function App() {
           resetLoginRequired()
           closeLogin()
           navigate('/login')
+        }}
+      />
+      <LocationPermissionModal
+        open={showLocationModal}
+        onAllow={async () => {
+          await requestLocationPermission()
+          setShowLocationModal(false)
+        }}
+        onDeny={() => {
+          setShowLocationModal(false)
         }}
       />
       <Routes>

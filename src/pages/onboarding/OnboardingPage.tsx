@@ -6,6 +6,7 @@ import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/lib/utils'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { requestLocationPermission } from '@/shared/lib/geolocation'
 
 type OnboardingPageProps = {
   onComplete?: () => void
@@ -65,7 +66,11 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
     )
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (currentStepData.icon === MapPin) {
+      await requestLocationPermission()
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep((prev) => prev + 1)
     } else {
