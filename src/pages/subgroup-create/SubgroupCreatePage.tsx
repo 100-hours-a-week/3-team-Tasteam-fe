@@ -17,7 +17,7 @@ import type { ErrorResponse } from '@/shared/types/api'
 const DESCRIPTION_LIMIT = 500
 
 type SubgroupCreatePageProps = {
-  onSubmit?: () => void
+  onSubmit?: (result: { subgroupId?: number; groupId: number }) => void
   onBack?: () => void
 }
 
@@ -96,15 +96,16 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
         setSubmitError('그룹 정보를 찾을 수 없습니다.')
         return
       }
-      await createSubgroup(groupId, {
+      const response = await createSubgroup(groupId, {
         name: name.trim(),
         description: description.trim() || undefined,
         profileImageId: undefined,
         joinType: isPasswordEnabled ? 'PASSWORD' : 'OPEN',
         password: isPasswordEnabled ? password.trim() : null,
       })
+      const createdId = response.data?.id
       toast.success('하위그룹을 생성했습니다.')
-      onSubmit?.()
+      onSubmit?.({ subgroupId: createdId, groupId })
     } catch (error: unknown) {
       let code: ErrorResponse['code'] | undefined
       if (axios.isAxiosError<ErrorResponse>(error)) {

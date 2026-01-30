@@ -174,7 +174,13 @@ function App() {
             <RequireAuth>
               <SubgroupCreatePage
                 onBack={() => navigate(-1)}
-                onSubmit={() => navigate('/subgroup-list')}
+                onSubmit={({ subgroupId, groupId }) => {
+                  if (subgroupId) {
+                    navigate(`/subgroups/${subgroupId}`)
+                  } else {
+                    navigate(`/subgroup-list?groupId=${groupId}`)
+                  }
+                }}
               />
             </RequireAuth>
           }
