@@ -59,12 +59,14 @@ export const getSubgroupMembers = async (
   return res.data?.items ?? []
 }
 
-export const joinSubgroup = (groupId: number, subgroupId: number, password?: string) =>
-  request<void>({
+export const joinSubgroup = (groupId: number, subgroupId: number, password?: string) => {
+  const payload = password?.trim() ? { password } : undefined
+  return request<void>({
     method: 'POST',
     url: `/api/v1/groups/${groupId}/subgroups/${subgroupId}/members`,
-    data: { groupPassword: password },
+    data: payload,
   })
+}
 
 export const createSubgroup = (groupId: number, payload: SubgroupCreateRequestDto) =>
   request<SubgroupCreateResponseDto>({

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import axios from 'axios'
 import { useSearchParams } from 'react-router-dom'
 import { Search, Users, Check, Plus, Lock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -18,7 +19,8 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
-import { getSubgroups } from '@/entities/subgroup/api/subgroupApi'
+import { getSubgroups, joinSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import type { ErrorResponse } from '@/shared/types/api'
 
 type Group = {
   id: string
@@ -54,6 +56,7 @@ export function SubgroupListPage({
   const [passwordValue, setPasswordValue] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [pendingJoinGroup, setPendingJoinGroup] = useState<Group | null>(null)
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!groupId || Number.isNaN(groupId)) {
@@ -107,27 +110,57 @@ export function SubgroupListPage({
     }
   }, [groupId])
 
-  const handleJoin = (groupId: string) => {
-    const target = groups.find((group) => group.id === groupId)
-    if (!target) return
+  const resolveJoinErrorCode = (error: unknown) => {
+    if (axios.isAxiosError<ErrorResponse>(error)) {
+      return error.response?.data?.code
+    }
+    console.error(error)
+    return undefined
+  }
 
-    const isJoining = !target.isJoined
+  const markJoined = (subgroupId: string, incrementCount = true) => {
     setGroups((prev) =>
       prev.map((g) => {
-        if (g.id === groupId) {
-          toast.success(g.isJoined ? '그룹에서 탈퇴했습니다' : '그룹에 가입했습니다')
-          return {
-            ...g,
-            isJoined: !g.isJoined,
-            memberCount: g.isJoined ? g.memberCount - 1 : g.memberCount + 1,
-          }
+        if (g.id !== subgroupId) return g
+        return {
+          ...g,
+          isJoined: true,
+          memberCount: incrementCount ? g.memberCount + 1 : g.memberCount,
         }
-        return g
       }),
     )
+  }
 
-    if (isJoining) {
-      onJoinSuccess?.(groupId)
+  const handleJoin = async (subgroupId: string) => {
+    const target = groups.find((group) => group.id === subgroupId)
+    if (!target || target.isJoined) return
+    if (!groupId || Number.isNaN(groupId)) {
+      toast.error('그룹 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    setJoiningGroupId(subgroupId)
+    try {
+      await joinSubgroup(groupId, Number(subgroupId))
+      markJoined(subgroupId)
+      toast.success('하위그룹에 가입했습니다.')
+      onJoinSuccess?.(subgroupId)
+    } catch (error: unknown) {
+      const code = resolveJoinErrorCode(error)
+      if (code === 'SUBGROUP_ALREADY_JOINED') {
+        markJoined(subgroupId, false)
+        toast.error('이미 가입된 하위그룹입니다.')
+      } else if (code === 'AUTHENTICATION_REQUIRED') {
+        toast.error('로그인이 필요합니다.')
+      } else if (code === 'NO_PERMISSION') {
+        toast.error('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
+      } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
+        toast.error('하위그룹 정보를 찾을 수 없습니다.')
+      } else {
+        toast.error('하위그룹 가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setJoiningGroupId(null)
     }
   }
 
@@ -138,17 +171,54 @@ export function SubgroupListPage({
     setPasswordModalOpen(true)
   }
 
-  const handlePasswordJoin = () => {
+  const handlePasswordJoin = async () => {
     if (!pendingJoinGroup) return
     if (!passwordValue.trim()) {
       setPasswordError('비밀번호를 입력해주세요')
       return
     }
-    handleJoin(pendingJoinGroup.id)
-    setPasswordModalOpen(false)
-    setPendingJoinGroup(null)
-    setPasswordValue('')
-    setPasswordError('')
+    if (!groupId || Number.isNaN(groupId)) {
+      toast.error('그룹 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    setJoiningGroupId(pendingJoinGroup.id)
+    try {
+      await joinSubgroup(groupId, Number(pendingJoinGroup.id), passwordValue.trim())
+      markJoined(pendingJoinGroup.id)
+      toast.success('하위그룹에 가입했습니다.')
+      onJoinSuccess?.(pendingJoinGroup.id)
+      setPasswordModalOpen(false)
+      setPendingJoinGroup(null)
+      setPasswordValue('')
+      setPasswordError('')
+    } catch (error: unknown) {
+      const code = resolveJoinErrorCode(error)
+      if (code === 'PASSWORD_MISMATCH') {
+        setPasswordError('비밀번호가 일치하지 않습니다.')
+        return
+      }
+      if (code === 'SUBGROUP_ALREADY_JOINED') {
+        markJoined(pendingJoinGroup.id, false)
+        toast.error('이미 가입된 하위그룹입니다.')
+        setPasswordModalOpen(false)
+        setPendingJoinGroup(null)
+        setPasswordValue('')
+        setPasswordError('')
+        return
+      }
+      if (code === 'AUTHENTICATION_REQUIRED') {
+        toast.error('로그인이 필요합니다.')
+      } else if (code === 'NO_PERMISSION') {
+        toast.error('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
+      } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
+        toast.error('하위그룹 정보를 찾을 수 없습니다.')
+      } else {
+        toast.error('하위그룹 가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setJoiningGroupId(null)
+    }
   }
 
   const filteredGroups = groups.filter((g) =>
@@ -243,6 +313,7 @@ export function SubgroupListPage({
                             <Button
                               size="sm"
                               variant={group.isJoined ? 'outline' : 'default'}
+                              disabled={group.isJoined || joiningGroupId === group.id}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 if (!group.isJoined && group.isPrivate) {
