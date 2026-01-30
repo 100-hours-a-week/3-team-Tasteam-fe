@@ -43,7 +43,7 @@ export type SubgroupDetailResponseDto = SuccessResponse<{
 export type SubgroupCreateRequestDto = {
   name: string
   description?: string
-  profileImageUrl?: string
+  profileImageId?: string
   joinType: 'OPEN' | 'PASSWORD'
   password?: string | null
 }
@@ -56,7 +56,7 @@ export type SubgroupCreateResponseDto = SuccessResponse<{
 export type SubgroupMemberDto = {
   memberId: number
   nickname: string
-  profileImageUrl: string | null
+  profileImage: ImageResource | null
   createdAt?: IsoDateTimeString
 }
 

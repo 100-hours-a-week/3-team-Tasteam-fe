@@ -1,10 +1,10 @@
 import type { SuccessResponse } from '@/shared/types/api'
-import type { IsoDateTimeString } from '@/shared/types/common'
+import type { IsoDateTimeString, ImageResource } from '@/shared/types/common'
 import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type MemberProfileDto = {
   nickname: string
-  profileImageUrl: string
+  profileImage: ImageResource | null
 }
 
 export type MemberMeResponseDto = SuccessResponse<{
@@ -77,7 +77,6 @@ export type MemberReviewListResponseDto = CursorPageResponse<{
 
 export type MemberProfileUpdateRequestDto = {
   nickname?: string
-  profileImageUrl?: string
   profileImageId?: string
   email?: string
   bio?: string

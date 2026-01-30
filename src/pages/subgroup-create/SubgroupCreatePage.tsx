@@ -99,7 +99,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       await createSubgroup(groupId, {
         name: name.trim(),
         description: description.trim() || undefined,
-        profileImageUrl: undefined,
+        profileImageId: undefined,
         joinType: isPasswordEnabled ? 'PASSWORD' : 'OPEN',
         password: isPasswordEnabled ? password.trim() : null,
       })

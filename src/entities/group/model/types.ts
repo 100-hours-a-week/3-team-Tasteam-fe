@@ -18,14 +18,14 @@ export type Group = {
 export type GroupSummary = {
   groupId: number
   name: string
-  logoImageUrl: string | null
+  logoImage: ImageResource | null
   memberCount: number
 }
 
 export type GroupMember = {
   memberId: number
   nickname: string
-  profileImageUrl: string
+  profileImage: ImageResource
   createdAt: IsoDateTimeString
 }
 
@@ -37,7 +37,7 @@ export type GroupRequest = {
 
 export type GroupCreatePayload = {
   name: string
-  imageIds?: string
+  logoImageId?: string
   address: string
   detailAddress?: string | null
   location: Coordinates

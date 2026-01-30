@@ -1,4 +1,5 @@
 import { MoreVertical } from 'lucide-react'
+import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -73,10 +74,7 @@ export function MemberRow(props: MemberRowProps) {
   const { member, role, isAdmin = false, showActions = false, onActionClick, className } = props
   return (
     <div className={cn('flex items-center gap-3 py-3', className)}>
-      <Avatar className="h-10 w-10">
-        <AvatarImage src={member.profileImage} alt={member.nickname} />
-        <AvatarFallback>{member.nickname.slice(0, 2)}</AvatarFallback>
-      </Avatar>
+      <ProfileImage image={member.profileImage} name={member.nickname} className="h-10 w-10" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
