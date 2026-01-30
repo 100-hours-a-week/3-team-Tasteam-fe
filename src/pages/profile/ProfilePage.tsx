@@ -9,6 +9,7 @@ import { Card } from '@/shared/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { getMe } from '@/entities/member/api/memberApi'
 import type { MemberProfileDto } from '@/entities/member/model/dto'
@@ -47,46 +48,51 @@ export function ProfilePage({
   const location = useLocation()
   const { isAuthenticated } = useAuth()
   const [member, setMember] = useState<MemberProfileDto | null>(null)
+  const [profileError, setProfileError] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated) return
-    getMe()
-      .then((data) => {
-        if (data.data?.member) {
-          setMember(data.data.member)
+    let cancelled = false
+    if (!isAuthenticated) {
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setMember(null)
+          setProfileError(false)
         }
       })
-      .catch(() => {})
+      return () => {
+        cancelled = true
+      }
+    }
+    Promise.resolve().then(() => {
+      if (!cancelled) {
+        setMember(null)
+        setProfileError(false)
+      }
+    })
+    getMe()
+      .then((data) => {
+        if (cancelled) return
+        const nextMember = data.data?.member ?? null
+        if (nextMember) {
+          setMember(nextMember)
+          setProfileError(false)
+          return
+        }
+        setMember(null)
+        setProfileError(true)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProfileError(true)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
   }, [isAuthenticated, location.key])
 
-  if (!isAuthenticated) {
-    return (
-      <div className="pb-20 min-h-screen bg-background">
-        <TopAppBar title="프로필" />
-        <Container className="flex items-center justify-center py-16">
-          <div className="w-full max-w-sm text-center space-y-3">
-            <h3>로그인이 필요해요</h3>
-            <p className="text-sm text-muted-foreground">
-              로그인하면 내 정보와 활동 내역을 확인할 수 있어요.
-            </p>
-            <Button className="w-full" onClick={() => navigate('/login')}>
-              로그인하기
-            </Button>
-          </div>
-        </Container>
-        <BottomTabBar
-          currentTab="profile"
-          onTabChange={(tab: TabId) => {
-            if (tab === 'home') navigate(ROUTES.home)
-            else if (tab === 'search') navigate(ROUTES.search)
-            else if (tab === 'groups') navigate(ROUTES.groups)
-            else if (tab === 'profile') navigate(ROUTES.profile)
-          }}
-        />
-      </div>
-    )
-  }
+  const isLoading = isAuthenticated && member === null && !profileError
 
   const menuItems = [
     { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites },
@@ -104,11 +110,26 @@ export function ProfilePage({
     <div className="pb-20 min-h-screen bg-background">
       <TopAppBar title="프로필" />
 
-      {member ? (
-        <>
-          <Container className="pt-6 pb-6">
-            <div className="p-6">
-              <div className="flex flex-col items-center gap-4">
+      <Container className="pt-6 pb-6">
+        <div className="p-6 h-[200px] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            {isLoading ? (
+              <>
+                <Skeleton className="w-24 h-24 rounded-full" />
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <Skeleton className="h-7 w-32 mb-2.5" />
+                  <Skeleton className="h-8 w-1/2" />
+                </div>
+              </>
+            ) : !isAuthenticated ? (
+              <div className="flex flex-col items-center gap-2">
+                <Button size="sm" onClick={() => navigate('/login')} className="w-[150px] mb-2.5">
+                  로그인
+                </Button>
+                <p className="text-sm text-muted-foreground">로그인이 필요합니다.</p>
+              </div>
+            ) : member ? (
+              <>
                 <Avatar className="w-24 h-24">
                   {member.profileImage?.url ? (
                     <AvatarImage src={member.profileImage.url} alt={member.nickname} />
@@ -124,17 +145,30 @@ export function ProfilePage({
                     프로필 수정
                   </Button>
                 </div>
-              </div>
-            </div>
-          </Container>
-        </>
-      ) : (
-        <Container className="pt-6 pb-6">
-          <Card className="p-6">
-            <p className="text-sm text-muted-foreground">프로필을 불러오는 중...</p>
-          </Card>
-        </Container>
-      )}
+              </>
+            ) : (
+              <>
+                <Avatar className="w-24 h-24">
+                  <AvatarFallback className="flex items-center justify-center">
+                    <User className="w-12 h-12 text-muted-foreground" strokeWidth={1} />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-center gap-2 w-full">
+                  <h2 className="text-xl font-semibold mb-2.5">프로필 로드 실패</h2>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.location.reload()}
+                    className="w-1/2"
+                  >
+                    다시 시도
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </Container>
 
       <Container>
         <Card className="divide-y">
@@ -157,31 +191,35 @@ export function ProfilePage({
         </Card>
       </Container>
 
-      <Container className="pt-6">
-        <Button
-          variant="outline"
-          className="w-full text-destructive hover:bg-destructive/10"
-          onClick={() => setLogoutDialogOpen(true)}
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          로그아웃
-        </Button>
-      </Container>
-
-      <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>로그아웃</AlertDialogTitle>
-            <AlertDialogDescription>정말 로그아웃 하시겠어요?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={onLogout}>
+      {isAuthenticated && (
+        <>
+          <Container className="pt-6">
+            <Button
+              variant="outline"
+              className="w-full text-destructive hover:bg-destructive/10"
+              onClick={() => setLogoutDialogOpen(true)}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
               로그아웃
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </Container>
+
+          <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>로그아웃</AlertDialogTitle>
+                <AlertDialogDescription>정말 로그아웃 하시겠어요?</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" onClick={onLogout}>
+                  로그아웃
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
 
       <Container className="pt-8">
         <div className="text-center text-sm text-muted-foreground space-y-1">
