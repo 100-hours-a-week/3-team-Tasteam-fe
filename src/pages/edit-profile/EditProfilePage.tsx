@@ -9,6 +9,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { getMe, updateMeProfile } from '@/entities/member/api/memberApi'
+import { useImageUpload, UploadErrorModal } from '@/features/upload'
 import type { MemberMeResponseDto } from '@/entities/member/model/dto'
 
 type EditProfilePageProps = {
@@ -23,6 +24,20 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [initialNickname, setInitialNickname] = useState('')
   const [initialBio, setInitialBio] = useState('')
+
+  const {
+    files: profileImages,
+    isUploading,
+    uploadErrors,
+    clearErrors,
+    addFiles,
+    uploadAll,
+  } = useImageUpload({
+    purpose: 'PROFILE_IMAGE',
+    maxFiles: 1,
+  })
+
+  const profilePreviewUrl = profileImages.length > 0 ? profileImages[0].previewUrl : undefined
 
   useEffect(() => {
     getMe()
@@ -40,6 +55,13 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
       })
   }, [])
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      addFiles(e.target.files)
+    }
+    e.target.value = ''
+  }
+
   const handleSave = async () => {
     if (!nickname.trim()) {
       toast.error('닉네임을 입력해주세요')
@@ -48,7 +70,16 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
 
     setIsLoading(true)
     try {
-      await updateMeProfile({ nickname, bio })
+      let profileImageUrl: string | undefined
+      let profileImageId: string | undefined
+
+      if (profileImages.length > 0) {
+        const results = await uploadAll()
+        profileImageUrl = results[0].url
+        profileImageId = results[0].fileUuid
+      }
+
+      await updateMeProfile({ nickname, bio, profileImageUrl, profileImageId })
       toast.success('프로필이 수정되었습니다')
       navigate('/profile', { replace: true })
     } catch {
@@ -58,7 +89,8 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
     }
   }
 
-  const isChanged = nickname !== initialNickname || bio !== initialBio
+  const hasImageChange = profileImages.length > 0
+  const isChanged = nickname !== initialNickname || bio !== initialBio || hasImageChange
   const user = {
     nickname: userData?.data?.member?.nickname ?? '사용자',
     email: 'chulsoo@example.com',
@@ -73,7 +105,12 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
         showBackButton
         onBack={onBack}
         actions={
-          <Button variant="ghost" size="sm" onClick={handleSave} disabled={!isChanged || isLoading}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSave}
+            disabled={!isChanged || isLoading || isUploading}
+          >
             <Check className="w-5 h-5" />
           </Button>
         }
@@ -84,14 +121,15 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
           <div className="flex flex-col items-center">
             <div className="relative">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={user.profileImageUrl} alt={user.nickname} />
+                <AvatarImage src={profilePreviewUrl ?? user.profileImageUrl} alt={user.nickname} />
                 <AvatarFallback className="text-2xl">{user.nickname[0]}</AvatarFallback>
               </Avatar>
               <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
                 <Camera className="w-4 h-4" />
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageChange}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
               </button>
@@ -130,11 +168,21 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
             <p className="text-xs text-muted-foreground text-right">{bio.length}/100</p>
           </div>
 
-          <Button className="w-full" onClick={handleSave} disabled={!isChanged || isLoading}>
-            {isLoading ? '저장 중...' : '저장하기'}
+          <Button
+            className="w-full"
+            onClick={handleSave}
+            disabled={!isChanged || isLoading || isUploading}
+          >
+            {isUploading ? '이미지 업로드 중...' : isLoading ? '저장 중...' : '저장하기'}
           </Button>
         </div>
       </Container>
+
+      <UploadErrorModal
+        open={uploadErrors.length > 0}
+        onClose={clearErrors}
+        errors={uploadErrors}
+      />
     </div>
   )
 }

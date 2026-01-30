@@ -8,7 +8,6 @@ import { Container } from '@/widgets/container'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
   Sheet,
   SheetContent,
@@ -21,10 +20,12 @@ import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { RestaurantCard } from '@/entities/restaurant/ui'
-import { GroupCard } from '@/entities/group/ui'
 import { searchAll } from '@/entities/search/api/searchApi'
 import { useRecentSearches } from '@/entities/search/model/useRecentSearches'
+import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
 import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search/model/types'
+
+const SEARCH_DEBOUNCE_MS = 700
 
 type SearchPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -43,8 +44,10 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const searchRequestId = useRef(0)
+  const searchTimeoutId = useRef<number | null>(null)
 
-  const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
+  // TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
+  // const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
 
   const handleSaveToggle = (id: string) => {
     setSavedRestaurants((prev) => ({
@@ -53,17 +56,30 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
     }))
   }
 
-  useEffect(() => {
-    const keyword = searchQuery.trim()
-    if (!keyword) {
-      return
+  const scheduleSearch = (rawQuery: string) => {
+    const keyword = rawQuery.trim()
+
+    if (searchTimeoutId.current !== null) {
+      window.clearTimeout(searchTimeoutId.current)
+      searchTimeoutId.current = null
     }
 
     const requestId = ++searchRequestId.current
 
-    const timeoutId = window.setTimeout(() => {
-      setIsSearching(true)
+    if (!keyword) {
+      setRestaurantResults([])
+      setGroupResults([])
       setSearchError(null)
+      setIsSearching(false)
+      return
+    }
+
+    setRestaurantResults([])
+    setGroupResults([])
+    setIsSearching(true)
+    setSearchError(null)
+
+    searchTimeoutId.current = window.setTimeout(() => {
       addRecentSearch(keyword)
       searchAll({ keyword })
         .then((response) => {
@@ -82,12 +98,17 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
             setIsSearching(false)
           }
         })
-    }, 300)
+    }, SEARCH_DEBOUNCE_MS)
+  }
 
+  useEffect(() => {
     return () => {
-      window.clearTimeout(timeoutId)
+      if (searchTimeoutId.current !== null) {
+        window.clearTimeout(searchTimeoutId.current)
+      }
+      searchRequestId.current += 1
     }
-  }, [searchQuery])
+  }, [])
 
   return (
     <div className="pb-20">
@@ -100,7 +121,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
               placeholder="음식점, 지역, 음식 종류 검색"
               className="pl-9"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                const nextQuery = e.target.value
+                setSearchQuery(nextQuery)
+                scheduleSearch(nextQuery)
+              }}
             />
           </div>
           <Sheet>
@@ -165,7 +190,10 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     key={item.id}
                     variant="secondary"
                     className="pl-3 pr-1 py-1.5 cursor-pointer hover:bg-secondary/80"
-                    onClick={() => setSearchQuery(item.keyword)}
+                    onClick={() => {
+                      setSearchQuery(item.keyword)
+                      scheduleSearch(item.keyword)
+                    }}
                   >
                     {item.keyword}
                     <Button
@@ -184,6 +212,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
               </div>
             </div>
           )}
+          {/* TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
           <div>
             <h3 className="mb-3 font-medium">추천 키워드</h3>
             <div className="flex flex-wrap gap-2">
@@ -199,67 +228,70 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
               ))}
             </div>
           </div>
+          */}
         </Container>
       )}
 
       {searchQuery && (
-        <Tabs defaultValue="restaurants" className="pt-4">
-          <Container>
-            <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="restaurants">맛집</TabsTrigger>
-              <TabsTrigger value="groups">그룹</TabsTrigger>
-            </TabsList>
-          </Container>
-
-          <TabsContent value="restaurants" className="mt-4">
-            <Container className="space-y-3">
-              {isSearching && <p className="text-sm text-muted-foreground">검색 중...</p>}
-              {!isSearching && searchError && (
-                <p className="text-sm text-destructive">{searchError}</p>
-              )}
-              {!isSearching && !searchError && restaurantResults.length === 0 && (
-                <p className="text-sm text-muted-foreground">검색 결과가 없습니다.</p>
-              )}
-              {restaurantResults.map((restaurant) => (
-                <RestaurantCard
-                  key={restaurant.restaurantId}
-                  id={String(restaurant.restaurantId)}
-                  name={restaurant.name}
-                  category="음식점"
-                  address={restaurant.address}
-                  imageUrl={restaurant.imageUrl}
-                  isSaved={savedRestaurants[String(restaurant.restaurantId)]}
-                  onSave={() => handleSaveToggle(String(restaurant.restaurantId))}
-                  onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
-                />
-              ))}
+        <div className="pt-4 space-y-6">
+          {isSearching && (
+            <Container>
+              <p className="text-sm text-muted-foreground">검색 중...</p>
             </Container>
-          </TabsContent>
-
-          <TabsContent value="groups" className="mt-4">
-            <Container className="space-y-3">
-              {isSearching && <p className="text-sm text-muted-foreground">검색 중...</p>}
-              {!isSearching && searchError && (
-                <p className="text-sm text-destructive">{searchError}</p>
-              )}
-              {!isSearching && !searchError && groupResults.length === 0 && (
-                <p className="text-sm text-muted-foreground">검색 결과가 없습니다.</p>
-              )}
-              {groupResults.map((group) => (
-                <GroupCard
-                  key={group.groupId}
-                  id={String(group.groupId)}
-                  name={group.name}
-                  memberCount={group.memberCount}
-                  memberAvatars={
-                    group.logoImageUrl ? [{ src: group.logoImageUrl, name: group.name }] : []
-                  }
-                  onClick={() => onGroupClick?.(String(group.groupId))}
-                />
-              ))}
+          )}
+          {!isSearching && searchError && (
+            <Container>
+              <p className="text-sm text-destructive">{searchError}</p>
             </Container>
-          </TabsContent>
-        </Tabs>
+          )}
+          {!isSearching && !searchError && (
+            <>
+              <div>
+                <Container>
+                  <h3 className="text-sm font-semibold mb-3">연관 그룹</h3>
+                </Container>
+                {groupResults.length > 0 ? (
+                  <SearchGroupCarousel groups={groupResults} onGroupClick={onGroupClick} />
+                ) : (
+                  <Container className="flex flex-col items-center gap-3 py-6">
+                    <p className="text-sm text-muted-foreground">찾으시는 그룹이 없습니다</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(ROUTES.createGroup)}
+                    >
+                      그룹 만들기
+                    </Button>
+                  </Container>
+                )}
+              </div>
+              <div>
+                <Container className="space-y-3">
+                  <h3 className="text-sm font-semibold">연관 음식점</h3>
+                  {restaurantResults.length > 0 ? (
+                    restaurantResults.map((restaurant) => (
+                      <RestaurantCard
+                        key={restaurant.restaurantId}
+                        id={String(restaurant.restaurantId)}
+                        name={restaurant.name}
+                        category="음식점"
+                        address={restaurant.address}
+                        imageUrl={restaurant.imageUrl}
+                        isSaved={savedRestaurants[String(restaurant.restaurantId)]}
+                        onSave={() => handleSaveToggle(String(restaurant.restaurantId))}
+                        onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      검색 결과가 없습니다
+                    </p>
+                  )}
+                </Container>
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       <BottomTabBar

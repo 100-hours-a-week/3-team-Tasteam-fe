@@ -10,6 +10,7 @@ import { createReview, getReviewKeywords } from '@/entities/review/api/reviewApi
 import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
 import { cn } from '@/shared/lib/utils'
 import { getMyGroupSummaries } from '@/entities/member/api/memberApi'
+import { useImageUpload, UploadErrorModal } from '@/features/upload'
 import type { MemberGroupSummaryItemDto } from '@/entities/member/model/dto'
 import type { ReviewKeywordItemDto } from '@/entities/review/model/dto'
 
@@ -22,12 +23,23 @@ export function WriteReviewPage() {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
   const [category, setCategory] = useState('그룹 불러오는 중...')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
-  const [selectedImages, setSelectedImages] = useState<{ url: string; file: File }[]>([])
+  const {
+    files: selectedImages,
+    isUploading,
+    uploadErrors,
+    clearErrors,
+    addFiles,
+    removeFile: removeImage,
+    uploadAll,
+  } = useImageUpload({
+    purpose: 'REVIEW_IMAGE',
+    maxFiles: 6,
+  })
   const [reviewText, setReviewText] = useState('')
   const [isRecommended, setIsRecommended] = useState(false)
   const [keywords, setKeywords] = useState<ReviewKeywordItemDto[]>([])
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<number[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Drag to scroll logic
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -88,17 +100,10 @@ export function WriteReviewPage() {
   }, [])
 
   const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    const validFiles = files.filter((file) => file.size <= 10 * 1024 * 1024)
-    const newImages = validFiles.slice(0, 6 - selectedImages.length).map((file) => ({
-      url: URL.createObjectURL(file),
-      file,
-    }))
-    setSelectedImages([...selectedImages, ...newImages])
-  }
-
-  const removeImage = (index: number) => {
-    setSelectedImages(selectedImages.filter((_, i) => i !== index))
+    if (e.target.files) {
+      addFiles(e.target.files)
+    }
+    e.target.value = ''
   }
 
   const handleKeywordToggle = (keywordId: number) => {
@@ -133,22 +138,28 @@ export function WriteReviewPage() {
       return
     }
 
-    setIsLoading(true)
+    setIsSubmitting(true)
 
     try {
+      let imageIds: string[] = []
+      if (selectedImages.length > 0) {
+        const results = await uploadAll()
+        imageIds = results.map((r) => r.fileUuid)
+      }
+
       await createReview(Number(restaurantId), {
         groupId: selectedGroupId,
         content: reviewText,
         isRecommended: isRecommended,
         keywordIds: selectedKeywordIds,
-        imageIds: [],
+        imageIds,
       })
       toast.success('리뷰가 등록되었습니다')
       navigate(-1)
     } catch {
       toast.error('리뷰 등록에 실패했습니다')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -227,7 +238,7 @@ export function WriteReviewPage() {
                   <span className="text-[10px] text-muted-foreground">사진 추가</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     multiple
                     onChange={handleImagesUpload}
                     className="hidden"
@@ -237,7 +248,7 @@ export function WriteReviewPage() {
               {selectedImages.map((img, idx) => (
                 <div key={idx} className="relative flex-shrink-0 w-24 h-24">
                   <img
-                    src={img.url}
+                    src={img.previewUrl}
                     alt={`Selected ${idx}`}
                     draggable={false}
                     className="w-full h-full object-cover rounded-xl border border-border"
@@ -332,12 +343,22 @@ export function WriteReviewPage() {
           <Button
             className="w-full py-6 rounded-xl text-base font-bold shadow-lg"
             onClick={handleSubmit}
-            disabled={isLoading}
+            disabled={isSubmitting || isUploading}
           >
-            {isLoading ? '리뷰 저장 중...' : '리뷰 등록 완료'}
+            {isUploading
+              ? '이미지 업로드 중...'
+              : isSubmitting
+                ? '리뷰 저장 중...'
+                : '리뷰 등록 완료'}
           </Button>
         </div>
       </Container>
+
+      <UploadErrorModal
+        open={uploadErrors.length > 0}
+        onClose={clearErrors}
+        errors={uploadErrors}
+      />
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar {

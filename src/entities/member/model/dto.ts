@@ -78,6 +78,7 @@ export type MemberReviewListResponseDto = CursorPageResponse<{
 export type MemberProfileUpdateRequestDto = {
   nickname?: string
   profileImageUrl?: string
+  profileImageId?: string
   email?: string
   bio?: string
 }

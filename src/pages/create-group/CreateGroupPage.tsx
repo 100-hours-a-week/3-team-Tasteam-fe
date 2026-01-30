@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Camera, Plus, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
@@ -8,9 +9,10 @@ import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent } from '@/shared/ui/card'
+import { useImageUpload, UploadErrorModal } from '@/features/upload'
 
 type CreateGroupPageProps = {
-  onSubmit?: (data: { name: string; description: string; tags: string[] }) => void
+  onSubmit?: (data: { name: string; description: string; tags: string[]; imageId?: string }) => void
   onBack?: () => void
 }
 
@@ -22,6 +24,27 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
   const [tags, setTags] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
+  const {
+    files: groupImages,
+    isUploading,
+    uploadErrors,
+    clearErrors,
+    addFiles,
+    uploadAll,
+  } = useImageUpload({
+    purpose: 'GROUP_IMAGE',
+    maxFiles: 1,
+  })
+
+  const groupImagePreview = groupImages.length > 0 ? groupImages[0].previewUrl : undefined
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      addFiles(e.target.files)
+    }
+    e.target.value = ''
+  }
+
   const handleTagToggle = (tag: string) => {
     setTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : prev.length < 5 ? [...prev, tag] : prev,
@@ -32,9 +55,19 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
     if (!name.trim()) return
 
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    onSubmit?.({ name, description, tags })
-    setIsLoading(false)
+    try {
+      let imageId: string | undefined
+      if (groupImages.length > 0) {
+        const results = await uploadAll()
+        imageId = results[0].fileUuid
+      }
+
+      onSubmit?.({ name, description, tags, imageId })
+    } catch {
+      toast.error('그룹 생성에 실패했습니다')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -45,10 +78,19 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
         <div className="space-y-6">
           <div className="flex justify-center">
             <button className="relative w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-muted-foreground/30 hover:border-primary transition-colors">
-              <Camera className="w-8 h-8 text-muted-foreground" />
+              {groupImagePreview ? (
+                <img
+                  src={groupImagePreview}
+                  alt="그룹 이미지"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Camera className="w-8 h-8 text-muted-foreground" />
+              )}
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageChange}
                 className="absolute inset-0 opacity-0 cursor-pointer"
               />
             </button>
@@ -113,12 +155,22 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
             </Card>
           )}
 
-          <Button className="w-full" onClick={handleSubmit} disabled={!name.trim() || isLoading}>
+          <Button
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={!name.trim() || isLoading || isUploading}
+          >
             <Plus className="w-4 h-4 mr-2" />
-            {isLoading ? '생성 중...' : '그룹 만들기'}
+            {isUploading ? '이미지 업로드 중...' : isLoading ? '생성 중...' : '그룹 만들기'}
           </Button>
         </div>
       </Container>
+
+      <UploadErrorModal
+        open={uploadErrors.length > 0}
+        onClose={clearErrors}
+        errors={uploadErrors}
+      />
     </div>
   )
 }

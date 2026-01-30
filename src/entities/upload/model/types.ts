@@ -1,13 +1,26 @@
 import type { IsoDateTimeString } from '@/shared/types/common'
 
-export type UploadPurpose = 'REVIEW_IMAGE' | (string & {})
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+export const ALLOWED_IMAGE_EXTENSIONS = 'JPEG, PNG, WebP'
+export const MAX_IMAGE_SIZE_MB = 10
+export const MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_SIZE_MB * 1024 * 1024
+
+export type UploadPurpose =
+  | 'REVIEW_IMAGE'
+  | 'RESTAURANT_IMAGE'
+  | 'PROFILE_IMAGE'
+  | 'GROUP_IMAGE'
+  | 'COMMON_ASSET'
+  | (string & {})
 
 export type UploadFile = {
+  fileName: string
   contentType: string
   size: number
 }
 
 export type UploadGrant = {
+  fileUuid: string
   url: string
   fields: Record<string, string>
   expiresAt: IsoDateTimeString
