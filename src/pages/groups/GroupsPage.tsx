@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
@@ -9,7 +9,8 @@ import { Input } from '@/shared/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { GroupCard } from '@/entities/group/ui'
 import { useAuth } from '@/entities/user/model/useAuth'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { getMyGroupDetails } from '@/entities/member/api/memberApi'
+import type { MemberGroupDetailSummaryItemDto } from '@/entities/member/model/dto'
 
 type GroupsPageProps = {
   onGroupClick?: (id: string) => void
@@ -18,19 +19,62 @@ type GroupsPageProps = {
 export function GroupsPage({ onGroupClick }: GroupsPageProps) {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
-  const { summaries, isLoaded, error } = useMemberGroups()
   const [searchQuery, setSearchQuery] = useState('')
+  const [myGroups, setMyGroups] = useState<MemberGroupDetailSummaryItemDto[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const myGroups = useMemo(
-    () =>
-      summaries.map((group) => ({
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setMyGroups([])
+      setIsLoading(false)
+      setError(null)
+      return
+    }
+    let cancelled = false
+    const fetchGroups = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await getMyGroupDetails()
+        if (!cancelled) {
+          setMyGroups(data)
+        }
+      } catch {
+        if (!cancelled) {
+          setMyGroups([])
+          setError('Failed to load groups')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+    fetchGroups()
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated])
+
+  const myGroupCards = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    const mapped = myGroups.map((group) => {
+      const detailAddress = group.groupDetailAddress?.trim()
+      const description = detailAddress
+        ? `${group.groupAddress} ${detailAddress}`
+        : group.groupAddress
+      return {
         id: String(group.groupId),
         name: group.groupName,
-        memberCount: 0,
+        description,
+        memberCount: group.groupMemberCount,
         memberAvatars: [],
-      })),
-    [summaries],
-  )
+      }
+    })
+    if (!query) return mapped
+    return mapped.filter((group) => group.name.toLowerCase().includes(query))
+  }, [myGroups, searchQuery])
 
   const recommendedGroups = [
     {
@@ -77,7 +121,7 @@ export function GroupsPage({ onGroupClick }: GroupsPageProps) {
 
         <TabsContent value="my-groups" className="mt-4">
           <Container className="space-y-3">
-            {isAuthenticated && !isLoaded ? (
+            {isAuthenticated && isLoading ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">그룹 불러오는 중...</p>
               </div>
@@ -85,8 +129,8 @@ export function GroupsPage({ onGroupClick }: GroupsPageProps) {
               <div className="text-center py-12">
                 <p className="text-muted-foreground">그룹 불러오기에 실패했습니다</p>
               </div>
-            ) : myGroups.length > 0 ? (
-              myGroups.map((group) => (
+            ) : myGroupCards.length > 0 ? (
+              myGroupCards.map((group) => (
                 <GroupCard key={group.id} {...group} onClick={() => onGroupClick?.(group.id)} />
               ))
             ) : (
