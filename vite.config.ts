@@ -5,17 +5,21 @@ import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 const disablePwa = process.env.DISABLE_PWA === 'true'
+const appEnv = process.env.VITE_APP_ENV
+const isLocal = appEnv === 'local'
 
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
       disable: disablePwa,
-      minify: false,
+      minify: !isLocal,
       registerType: 'autoUpdate',
       workbox: {
-        mode: 'development',
         navigateFallbackDenylist: [/^\/api\//],
+        skipWaiting: true,
+        clientsClaim: true,
+        ...(isLocal && { mode: 'development' as const }),
       },
       manifest: {
         name: 'Tasteam',
