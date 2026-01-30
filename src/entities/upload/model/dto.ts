@@ -7,6 +7,7 @@ export type UploadGrantRequestDto = {
 
 export type UploadGrantResponseDto = {
   uploads: Array<{
+    fileUuid: string
     url: string
     fields: Record<string, string>
     expiresAt: string
