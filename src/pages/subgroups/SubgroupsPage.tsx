@@ -71,6 +71,8 @@ export function SubgroupsPage() {
     subgroupId !== null &&
     !Number.isNaN(subgroupId) &&
     isSubgroupMember(subgroupId)
+  const memberCount =
+    subgroup && typeof subgroup.memberCount === 'number' ? subgroup.memberCount : 1
   // const restaurants: Array<{
   //   id: string
   //   name: string
@@ -385,7 +387,7 @@ export function SubgroupsPage() {
                           />
                         ))
                     : Array.from({
-                        length: Math.min(5, subgroup?.memberCount ?? 1),
+                        length: Math.min(5, memberCount),
                       }).map((_, idx) => (
                         <Avatar
                           key={`member-${idx}`}
@@ -396,9 +398,7 @@ export function SubgroupsPage() {
                       ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                {isSubgroupLoading
-                  ? '멤버 수 불러오는 중'
-                  : `${subgroup?.memberCount ?? 1}명 참여 중`}
+                {isSubgroupLoading ? '멤버 수 불러오는 중' : `${memberCount}명 참여 중`}
               </span>
             </div>
             <div />
