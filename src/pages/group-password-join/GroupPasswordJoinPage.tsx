@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupPasswordJoinForm } from '@/features/groups'
 import { getGroup } from '@/entities/group/api/groupApi'
 import { verifyGroupPassword } from '@/entities/member/api/memberApi'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 
 type GroupPasswordJoinPageProps = {
   onBack?: () => void
@@ -23,6 +24,7 @@ type GroupInfo = {
 export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageProps) {
   const { id } = useParams()
   const groupId = id ? Number(id) : null
+  const { refresh } = useMemberGroups()
   const [password, setPassword] = useState('')
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
@@ -96,6 +98,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
         }
         setHelperStatus('success')
         setHelperText('비밀번호 인증이 완료되었습니다.')
+        refresh()
         onJoin?.(String(groupId))
       })
       .catch((error) => {

@@ -51,7 +51,7 @@ export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { isAuthenticated, openLogin } = useAuth()
-  const { isSubgroupMember, isLoaded, summaries } = useMemberGroups()
+  const { isSubgroupMember, isLoaded, summaries, refresh } = useMemberGroups()
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [subgroup, setSubgroup] = useState<SubgroupDetailDto | null>(null)
@@ -193,6 +193,7 @@ export function SubgroupsPage() {
       await joinSubgroup(subgroup.groupId, Number(id), password)
 
       alert('가입되었습니다!')
+      refresh()
       setIsJoinDialogOpen(false)
       setPassword('')
       // 필요한 경우 페이지 새로고침 또는 상태 업데이트 로직 추가 가능
@@ -224,6 +225,7 @@ export function SubgroupsPage() {
     try {
       await leaveSubgroup(subgroupId)
       alert('하위 그룹에서 나왔습니다.')
+      refresh()
       navigate(-1)
     } catch (error: unknown) {
       const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined

@@ -66,7 +66,7 @@ export function GroupDetailPage() {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const [isGroupLoaded, setIsGroupLoaded] = useState(false)
   const groupId = id ? Number(id) : null
-  const { summaries, isLoaded } = useMemberGroups()
+  const { summaries, isLoaded, refresh } = useMemberGroups()
 
   const joinedState =
     location.state && typeof location.state === 'object'
@@ -303,6 +303,7 @@ export function GroupDetailPage() {
                 leaveGroup(groupId)
                   .then(() => {
                     toast.success('그룹에서 탈퇴했습니다')
+                    refresh()
                   })
                   .catch(() => {
                     toast.error('그룹 탈퇴에 실패했습니다')
