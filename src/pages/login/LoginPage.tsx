@@ -1,8 +1,40 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { SocialLoginButtons } from '@/features/auth/social-login/SocialLoginButtons'
 import { Container } from '@/widgets/container'
 import { Separator } from '@/shared/ui/separator'
+import { Button } from '@/shared/ui/button'
+import { APP_ENV } from '@/shared/config/env'
+import { http } from '@/shared/api/http'
+import { setAccessToken, setRefreshEnabled } from '@/shared/lib/authToken'
+
+type DevMemberResponse = {
+  memberId: number
+  email: string
+  nickname: string
+  profileImageUrl: string
+  groups: unknown[]
+  accessToken: string
+}
 
 export function LoginPage() {
+  const navigate = useNavigate()
+  const [isDevLoading, setIsDevLoading] = useState(false)
+  const isDev = APP_ENV === 'development'
+
+  const handleDevLogin = async () => {
+    setIsDevLoading(true)
+    try {
+      const response = await http.get<{ data: DevMemberResponse }>('/api/v1/test/dev/member')
+      const { accessToken } = response.data.data
+      setAccessToken(accessToken)
+      setRefreshEnabled(true)
+      navigate('/')
+    } catch {
+      setIsDevLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Container className="flex-1 flex flex-col justify-center items-center py-12">
@@ -16,6 +48,16 @@ export function LoginPage() {
           </div>
           <div className="pt-3 pb-9">
             <SocialLoginButtons />
+            {isDev && (
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={handleDevLogin}
+                disabled={isDevLoading}
+              >
+                {isDevLoading ? '로그인 중...' : '테스트 유저로 로그인 (Dev)'}
+              </Button>
+            )}
           </div>
         </div>
       </Container>
