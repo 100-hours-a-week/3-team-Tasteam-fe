@@ -14,4 +14,9 @@ export const FEATURE_FLAGS = {
    * - 비활성화 시: 화면은 유지하되 회색 처리 + 클릭/토글 불가
    */
   enableSettingsInteractions: false,
+  /**
+   * 채팅 기능 노출 여부
+   * - 비활성화 시: 관련 UI는 숨기고 라우트 접근은 오류 페이지로 처리
+   */
+  enableChat: false,
 } as const

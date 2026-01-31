@@ -64,6 +64,7 @@ export function SubgroupsPage() {
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = id ? Number(id) : null
+  const isSubgroupLoading = isLoading || (!subgroup && !error)
   const isMember =
     isAuthenticated &&
     isLoaded &&
@@ -79,6 +80,15 @@ export function SubgroupsPage() {
   //   image: string
   //   tags: string[]
   // }> = []
+
+  const handleChatClick = () => {
+    if (!id) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+    navigate(ROUTES.chatRoom(id))
+  }
 
   useEffect(() => {
     if (!subgroupId || Number.isNaN(subgroupId)) return
@@ -229,15 +239,6 @@ export function SubgroupsPage() {
     }
   }
 
-  const handleChatClick = () => {
-    if (!id) return
-    if (!isAuthenticated) {
-      openLogin()
-      return
-    }
-    navigate(ROUTES.chatRoom(id))
-  }
-
   const handleGroupNameClick = () => {
     if (subgroup?.groupId) {
       navigate(ROUTES.groupDetail(String(subgroup.groupId)))
@@ -279,7 +280,7 @@ export function SubgroupsPage() {
       <Container className="pt-4 pb-6">
         {/* Parent Group Badge */}
         <div className="flex items-center gap-1 mb-3">
-          {isLoading ? (
+          {isSubgroupLoading ? (
             <Skeleton className="h-4 w-20" />
           ) : (
             <button
@@ -291,7 +292,7 @@ export function SubgroupsPage() {
             </button>
           )}
           <span className="mx-0.5 text-muted-foreground/50">&gt;</span>
-          {isLoading ? (
+          {isSubgroupLoading ? (
             <Skeleton className="h-4 w-24" />
           ) : (
             <span className="text-sm font-medium text-foreground">
@@ -303,7 +304,7 @@ export function SubgroupsPage() {
         <Card className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              {isLoading ? (
+              {isSubgroupLoading ? (
                 <>
                   <Skeleton className="h-6 w-40 mb-2" />
                   <Skeleton className="h-4 w-full" />
@@ -364,7 +365,7 @@ export function SubgroupsPage() {
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
-                {isLoading
+                {isSubgroupLoading
                   ? Array.from({ length: 5 }).map((_, idx) => (
                       <Skeleton
                         key={`member-skeleton-${idx}`}
@@ -383,19 +384,21 @@ export function SubgroupsPage() {
                             className="h-8 w-8 border-2 border-background"
                           />
                         ))
-                    : Array.from({ length: Math.min(5, subgroup.memberCount || 0) }).map(
-                        (_, idx) => (
-                          <Avatar
-                            key={`member-${idx}`}
-                            className="h-8 w-8 border-2 border-background"
-                          >
-                            <AvatarFallback className="text-xs">멤버</AvatarFallback>
-                          </Avatar>
-                        ),
-                      )}
+                    : Array.from({
+                        length: Math.min(5, subgroup?.memberCount ?? 1),
+                      }).map((_, idx) => (
+                        <Avatar
+                          key={`member-${idx}`}
+                          className="h-8 w-8 border-2 border-background"
+                        >
+                          <AvatarFallback className="text-xs">멤버</AvatarFallback>
+                        </Avatar>
+                      ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                {isLoading ? '멤버 수 불러오는 중' : `${subgroup?.memberCount ?? 0}명 참여 중`}
+                {isSubgroupLoading
+                  ? '멤버 수 불러오는 중'
+                  : `${subgroup?.memberCount ?? 1}명 참여 중`}
               </span>
             </div>
             <div />
@@ -450,7 +453,7 @@ export function SubgroupsPage() {
             </div>
 
             <div className="space-y-3">
-              {isLoading ? (
+              {isSubgroupLoading ? (
                 <>
                   <Skeleton className="h-24 w-full" />
                   <Skeleton className="h-24 w-full" />
@@ -470,16 +473,17 @@ export function SubgroupsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Floating Chat Button */}
-      <Button
-        variant="default"
-        size="icon"
-        className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
-        onClick={handleChatClick}
-        aria-label="채팅하기"
-      >
-        <MessageSquare className="h-6 w-6" />
-      </Button>
+      {FEATURE_FLAGS.enableChat && (
+        <Button
+          variant="default"
+          size="icon"
+          className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
+          onClick={handleChatClick}
+          aria-label="채팅하기"
+        >
+          <MessageSquare className="h-6 w-6" />
+        </Button>
+      )}
 
       {/* Join Password Dialog */}
       <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
