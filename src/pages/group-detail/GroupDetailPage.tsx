@@ -13,6 +13,8 @@ import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/grou
 import type { RestaurantListItemDto } from '@/entities/restaurant/model/dto'
 import { getFoodCategories } from '@/entities/restaurant/api/restaurantApi'
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
+import { Skeleton } from '@/shared/ui/skeleton'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,14 +41,9 @@ const CATEGORY_OPTIONS = [
 ]
 
 const EMPTY_GROUP: GroupDetailHeaderData = {
-  name: '그룹 불러오는 중...',
+  name: '',
   addressLine: '',
   memberCount: 0,
-}
-
-const MOCK_LOCATION = {
-  latitude: 37.5,
-  longitude: 127.0,
 }
 
 export function GroupDetailPage() {
@@ -56,11 +53,16 @@ export function GroupDetailPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [categories, setCategories] = useState<string[]>([])
   const [isCategoryLoading, setIsCategoryLoading] = useState(false)
-  const [group, setGroup] = useState<GroupDetailHeaderData>(EMPTY_GROUP)
+  const [group, setGroup] = useState<GroupDetailHeaderData | null>(null)
   const [emailDomain, setEmailDomain] = useState<string | null>(null)
   const [restaurants, setRestaurants] = useState<RestaurantListItemDto[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isGroupLoading, setIsGroupLoading] = useState(false)
+  const [isRestaurantsLoading, setIsRestaurantsLoading] = useState(false)
+  const [groupError, setGroupError] = useState<string | null>(null)
+  const [restaurantError, setRestaurantError] = useState<string | null>(null)
+  const [locationPosition, setLocationPosition] = useState<GeoPosition | null>(null)
+  const [isLocationLoading, setIsLocationLoading] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const [isGroupLoaded, setIsGroupLoaded] = useState(false)
   const groupId = id ? Number(id) : null
@@ -107,11 +109,37 @@ export function GroupDetailPage() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
+    const fetchLocation = async () => {
+      setIsLocationLoading(true)
+      setLocationError(null)
+      try {
+        const position = await getCurrentPosition()
+        if (cancelled) return
+        if (!position) {
+          setLocationPosition(null)
+          setLocationError('위치 정보를 확인할 수 없습니다.')
+          return
+        }
+        setLocationPosition(position)
+      } finally {
+        if (!cancelled) {
+          setIsLocationLoading(false)
+        }
+      }
+    }
+    fetchLocation()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     if (!groupId || Number.isNaN(groupId)) return
     let cancelled = false
     const fetchGroup = async () => {
-      setIsLoading(true)
-      setError(null)
+      setIsGroupLoading(true)
+      setGroupError(null)
       setIsGroupLoaded(false)
       try {
         const groupRes = await getGroup(groupId)
@@ -127,15 +155,15 @@ export function GroupDetailPage() {
         setIsGroupLoaded(true)
       } catch {
         if (!cancelled) {
-          setError('그룹 정보를 불러오지 못했습니다')
-          setGroup(EMPTY_GROUP)
+          setGroupError('그룹 정보를 불러오지 못했습니다')
+          setGroup(null)
           setRestaurants([])
           setEmailDomain(null)
           setIsGroupLoaded(false)
         }
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsGroupLoading(false)
         }
       }
     }
@@ -148,13 +176,20 @@ export function GroupDetailPage() {
   useEffect(() => {
     if (!groupId || Number.isNaN(groupId)) return
     if (!selectedCategory || !isGroupLoaded) return
+    if (isLocationLoading) return
+    if (!locationPosition) {
+      setRestaurants([])
+      setRestaurantError(locationError ?? '위치 정보가 필요합니다.')
+      return
+    }
     let cancelled = false
     const fetchRestaurants = async () => {
-      setIsLoading(true)
-      setError(null)
+      setIsRestaurantsLoading(true)
+      setRestaurantError(null)
       try {
         const restaurantRes = await getGroupReviewRestaurants(groupId, {
-          ...MOCK_LOCATION,
+          latitude: locationPosition.latitude,
+          longitude: locationPosition.longitude,
           size: 10,
           categories: selectedCategory,
         })
@@ -162,12 +197,12 @@ export function GroupDetailPage() {
         setRestaurants(restaurantRes.items ?? [])
       } catch {
         if (!cancelled) {
-          setError('음식점 정보를 불러오지 못했습니다')
+          setRestaurantError('음식점 정보를 불러오지 못했습니다')
           setRestaurants([])
         }
       } finally {
         if (!cancelled) {
-          setIsLoading(false)
+          setIsRestaurantsLoading(false)
         }
       }
     }
@@ -175,7 +210,7 @@ export function GroupDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [groupId, isGroupLoaded, selectedCategory])
+  }, [groupId, isGroupLoaded, isLocationLoading, locationError, locationPosition, selectedCategory])
 
   const isJoined =
     isLoaded && groupId !== null && !Number.isNaN(groupId)
@@ -185,8 +220,9 @@ export function GroupDetailPage() {
   return (
     <div className="pb-10">
       <GroupDetailHeader
-        group={group}
+        group={group ?? EMPTY_GROUP}
         isJoined={isJoined || shouldMarkJoined}
+        isLoading={isGroupLoading}
         onBack={() => navigate(-1)}
         onJoin={() => {
           if (!groupId) return
@@ -216,12 +252,16 @@ export function GroupDetailPage() {
       </Container>
 
       <Container className="mt-4 space-y-4">
-        {isLoading || isCategoryLoading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            그룹 정보를 불러오는 중입니다.
-          </div>
-        ) : error ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">{error}</div>
+        {isGroupLoading || isRestaurantsLoading || isCategoryLoading || isLocationLoading ? (
+          <>
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </>
+        ) : groupError ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">{groupError}</div>
+        ) : restaurantError ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">{restaurantError}</div>
         ) : (
           restaurants.map((restaurant) => (
             <RestaurantCard
@@ -233,11 +273,15 @@ export function GroupDetailPage() {
           ))
         )}
 
-        {!isLoading && !error && restaurants.length === 0 && (
-          <div className="py-12 text-center text-sm text-muted-foreground">
-            선택한 카테고리에 해당하는 음식점이 없습니다.
-          </div>
-        )}
+        {!isGroupLoading &&
+          !isRestaurantsLoading &&
+          !groupError &&
+          !restaurantError &&
+          restaurants.length === 0 && (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              선택한 카테고리에 해당하는 음식점이 없습니다.
+            </div>
+          )}
       </Container>
 
       <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
