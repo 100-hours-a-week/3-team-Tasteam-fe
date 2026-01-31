@@ -20,6 +20,7 @@ import {
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
 import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup/api/subgroupApi'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import type { ErrorResponse } from '@/shared/types/api'
 
 type Group = {
@@ -45,6 +46,7 @@ export function SubgroupListPage({
   onCreateClick,
   onBack,
 }: SubgroupListPageProps) {
+  const { refresh } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
   const groupId = groupIdParam ? Number(groupIdParam) : null
@@ -146,6 +148,7 @@ export function SubgroupListPage({
     try {
       await joinSubgroup(groupId, Number(subgroupId))
       markJoined(subgroupId)
+      refresh()
       toast.success('하위그룹에 가입했습니다.')
       onJoinSuccess?.(subgroupId)
     } catch (error: unknown) {
@@ -189,6 +192,7 @@ export function SubgroupListPage({
     try {
       await joinSubgroup(groupId, Number(pendingJoinGroup.id), passwordValue.trim())
       markJoined(pendingJoinGroup.id)
+      refresh()
       toast.success('하위그룹에 가입했습니다.')
       onJoinSuccess?.(pendingJoinGroup.id)
       setPasswordModalOpen(false)
