@@ -19,11 +19,22 @@ export const getMySubgroups = (groupId: number, params?: { cursor?: string; size
     url: `/api/v1/members/me/groups/${groupId}/subgroups${buildQuery(params ?? {})}`,
   })
 
-export const getSubgroups = (groupId: number, params?: { cursor?: string; size?: number }) =>
-  request<SubgroupListResponseDto>({
+export const getSubgroups = async (
+  groupId: number,
+  params?: { cursor?: string; size?: number },
+): Promise<SubgroupListResponseDto> => {
+  const response = await request<
+    SuccessResponse<SubgroupListResponseDto> | SubgroupListResponseDto
+  >({
     method: 'GET',
     url: `/api/v1/groups/${groupId}/subgroups${buildQuery(params ?? {})}`,
   })
+
+  if ('data' in response) {
+    return response.data
+  }
+  return response as SubgroupListResponseDto
+}
 
 export const searchSubgroups = async (
   groupId: number,
@@ -51,7 +62,17 @@ export const getSubgroup = async (subgroupId: number): Promise<SubgroupDetailDto
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}`,
   })
-  return res.data?.data ?? (res as unknown as { data: SubgroupDetailDto }).data
+  const payload = (res as { data?: unknown }).data
+  if (payload && typeof payload === 'object') {
+    const nested = (payload as { data?: unknown }).data
+    if (nested && typeof nested === 'object' && 'subgroupId' in nested) {
+      return nested as SubgroupDetailDto
+    }
+    if ('subgroupId' in payload) {
+      return payload as SubgroupDetailDto
+    }
+  }
+  return res as unknown as SubgroupDetailDto
 }
 
 export const leaveSubgroup = (subgroupId: number) =>
