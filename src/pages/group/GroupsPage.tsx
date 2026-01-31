@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogIn, Users } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -8,7 +8,8 @@ import { ROUTES } from '@/shared/config/routes'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { type GroupListItem, GroupListCard } from '@/features/groups'
 import { useAuth } from '@/entities/user/model/useAuth'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { getMyGroupDetails } from '@/entities/member/api/memberApi'
+import type { MemberGroupDetailSummaryItemDto } from '@/entities/member/model/dto'
 
 type GroupsPageProps = {
   onGroupClick?: (groupId: string) => void
@@ -19,21 +20,63 @@ type GroupsPageProps = {
 export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: GroupsPageProps) {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
-  const { summaries, isLoaded, error } = useMemberGroups()
+  const [myGroups, setMyGroups] = useState<MemberGroupDetailSummaryItemDto[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setMyGroups([])
+      setIsLoading(false)
+      setError(null)
+      return
+    }
+    let cancelled = false
+    const fetchGroups = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const data = await getMyGroupDetails()
+        if (!cancelled) {
+          setMyGroups(data)
+        }
+      } catch {
+        if (!cancelled) {
+          setMyGroups([])
+          setError('Failed to load groups')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+    fetchGroups()
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated])
 
   const groups = useMemo<GroupListItem[]>(
     () =>
-      summaries.map((group) => ({
-        id: String(group.groupId),
-        name: group.groupName,
-        memberCount: 0,
-        subgroups: (group.subGroups ?? []).map((subgroup) => ({
-          id: String(subgroup.subGroupId),
-          name: subgroup.subGroupName,
-          memberCount: 0,
-        })),
-      })),
-    [summaries],
+      myGroups.map((group) => {
+        const detailAddress = group.groupDetailAddress?.trim()
+        const description = detailAddress
+          ? `${group.groupAddress} ${detailAddress}`
+          : group.groupAddress
+        return {
+          id: String(group.groupId),
+          name: group.groupName,
+          description,
+          memberCount: group.groupMemberCount,
+          subgroups: (group.subGroups ?? []).map((subgroup) => ({
+            id: String(subgroup.subGroupId),
+            name: subgroup.subGroupName,
+            memberCount: subgroup.memberCount,
+          })),
+        }
+      }),
+    [myGroups],
   )
 
   const handleTabChange = (tab: TabId) => {
@@ -58,7 +101,7 @@ export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: Group
             actionLabel="로그인하기"
             onAction={() => navigate(ROUTES.login)}
           />
-        ) : !isLoaded ? (
+        ) : isLoading ? (
           <div className="text-center py-12 text-muted-foreground">그룹 불러오는 중...</div>
         ) : error ? (
           <div className="text-center py-12 text-muted-foreground">
