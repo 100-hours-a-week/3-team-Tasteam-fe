@@ -19,4 +19,9 @@ export const FEATURE_FLAGS = {
    * - 비활성화 시: 관련 UI는 숨기고 라우트 접근은 오류 페이지로 처리
    */
   enableChat: false,
+  /**
+   * 음식점 찜 버튼 노출 여부
+   * - 비활성화 시: 상세 화면에서 찜 버튼 숨김
+   */
+  enableRestaurantFavorite: false,
 } as const
