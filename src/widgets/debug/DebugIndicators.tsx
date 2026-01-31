@@ -5,7 +5,7 @@ import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 export function DebugIndicators() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isVisible, setIsVisible] = useState(FEATURE_FLAGS.enableDebugTools)
+  const [isVisible, setIsVisible] = useState<boolean>(FEATURE_FLAGS.enableDebugTools)
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
