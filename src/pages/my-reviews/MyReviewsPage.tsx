@@ -46,14 +46,23 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
   useEffect(() => {
     getMyReviews()
       .then((response) => {
-        const apiData =
-          response.items?.map((item) => ({
-            id: String(item.id),
-            restaurantName: item.restaurantName,
-            rating: 5,
-            content: item.reviewContent,
-            createdAt: '',
-          })) ?? []
+        const rawItems =
+          response.data?.items ??
+          (
+            response.data as {
+              data?: {
+                items?: Array<{ id: number; restaurantName: string; reviewContent: string }>
+              }
+            }
+          )?.data?.items ??
+          []
+        const apiData = rawItems.map((item) => ({
+          id: String((item as { id: number }).id),
+          restaurantName: (item as { restaurantName: string }).restaurantName,
+          rating: 5,
+          content: (item as { reviewContent: string }).reviewContent,
+          createdAt: '',
+        }))
         setReviews(apiData)
       })
       .catch(() => setReviews([]))
