@@ -11,13 +11,13 @@ import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
 import { SubgroupImageUploader } from '@/features/subgroups/subgroup-create-image'
 import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-password'
-import { createSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import { createSubgroup, getSubgroup } from '@/entities/subgroup/api/subgroupApi'
 import type { ErrorResponse } from '@/shared/types/api'
 
 const DESCRIPTION_LIMIT = 500
 
 type SubgroupCreatePageProps = {
-  onSubmit?: () => void
+  onSubmit?: (subgroupId: string) => void
   onBack?: () => void
 }
 
@@ -96,7 +96,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
         setSubmitError('그룹 정보를 찾을 수 없습니다.')
         return
       }
-      await createSubgroup(groupId, {
+      const res = await createSubgroup(groupId, {
         name: name.trim(),
         description: description.trim() || undefined,
         profileImageId: undefined,
@@ -104,7 +104,17 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
         password: isPasswordEnabled ? password.trim() : null,
       })
       toast.success('하위그룹을 생성했습니다.')
-      onSubmit?.()
+      const createdId = res.data?.id
+      if (typeof createdId === 'number') {
+        try {
+          await getSubgroup(createdId)
+          onSubmit?.(String(createdId))
+        } catch {
+          toast.error('하위그룹 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
+        }
+        return
+      }
+      onSubmit?.(String(groupId))
     } catch (error: unknown) {
       let code: ErrorResponse['code'] | undefined
       if (axios.isAxiosError<ErrorResponse>(error)) {
