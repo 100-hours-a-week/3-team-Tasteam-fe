@@ -1,6 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
+import type { VariantProps } from 'class-variance-authority'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/lib/utils'
+import { buttonVariants } from '@/shared/ui/button-variants'
 
 type EmptyStateProps = {
   icon?: LucideIcon
@@ -8,6 +10,9 @@ type EmptyStateProps = {
   description?: string
   actionLabel?: string
   onAction?: () => void
+  actionVariant?: VariantProps<typeof buttonVariants>['variant']
+  actionSize?: VariantProps<typeof buttonVariants>['size']
+  actionClassName?: string
   className?: string
 }
 
@@ -17,6 +22,9 @@ export function EmptyState({
   description,
   actionLabel,
   onAction,
+  actionVariant,
+  actionSize,
+  actionClassName,
   className,
 }: EmptyStateProps) {
   return (
@@ -30,7 +38,16 @@ export function EmptyState({
       )}
       <h3 className="mb-2 font-medium">{title}</h3>
       {description && <p className="text-sm text-muted-foreground mb-6 max-w-sm">{description}</p>}
-      {actionLabel && onAction && <Button onClick={onAction}>{actionLabel}</Button>}
+      {actionLabel && onAction && (
+        <Button
+          onClick={onAction}
+          variant={actionVariant}
+          size={actionSize}
+          className={actionClassName}
+        >
+          {actionLabel}
+        </Button>
+      )}
     </div>
   )
 }

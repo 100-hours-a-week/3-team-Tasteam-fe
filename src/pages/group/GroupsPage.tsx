@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { LogIn, Users } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
+import { EmptyState } from '@/widgets/empty-state'
 import { ROUTES } from '@/shared/config/routes'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { type GroupListItem, GroupListCard } from '@/features/groups'
@@ -48,7 +50,15 @@ export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: Group
       <TopAppBar title="나의 그룹 목록" />
 
       <Container className="py-4 space-y-4">
-        {isAuthenticated && !isLoaded ? (
+        {!isAuthenticated ? (
+          <EmptyState
+            icon={LogIn}
+            title="로그인이 필요해요"
+            description="그룹 목록을 보려면 로그인해주세요"
+            actionLabel="로그인하기"
+            onAction={() => navigate(ROUTES.login)}
+          />
+        ) : !isLoaded ? (
           <div className="text-center py-12 text-muted-foreground">그룹 불러오는 중...</div>
         ) : error ? (
           <div className="text-center py-12 text-muted-foreground">
@@ -70,7 +80,15 @@ export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: Group
             />
           ))
         ) : (
-          <div className="text-center py-12 text-muted-foreground">아직 가입한 그룹이 없습니다</div>
+          <EmptyState
+            icon={Users}
+            title="가입한 그룹이 없어요"
+            description="관심 있는 그룹을 찾아 가입해보세요"
+            actionLabel="그룹 찾기"
+            onAction={() => navigate(ROUTES.search)}
+            actionVariant="secondary"
+            actionSize="sm"
+          />
         )}
       </Container>
 

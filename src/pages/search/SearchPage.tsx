@@ -45,6 +45,9 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
   const [searchError, setSearchError] = useState<string | null>(null)
   const searchRequestId = useRef(0)
   const searchTimeoutId = useRef<number | null>(null)
+  const hasGroupResults = groupResults.length > 0
+  const hasRestaurantResults = restaurantResults.length > 0
+  const hasNoResults = !hasGroupResults && !hasRestaurantResults
 
   // TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
   // const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
@@ -246,49 +249,67 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           )}
           {!isSearching && !searchError && (
             <>
-              <div>
-                <Container>
-                  <h3 className="text-sm font-semibold mb-3">연관 그룹</h3>
-                </Container>
-                {groupResults.length > 0 ? (
-                  <SearchGroupCarousel groups={groupResults} onGroupClick={onGroupClick} />
-                ) : (
-                  <Container className="flex flex-col items-center gap-3 py-6">
-                    <p className="text-sm text-muted-foreground">찾으시는 그룹이 없습니다</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(ROUTES.createGroup)}
-                    >
-                      그룹 만들기
-                    </Button>
-                  </Container>
-                )}
-              </div>
-              <div>
-                <Container className="space-y-3">
-                  <h3 className="text-sm font-semibold">연관 음식점</h3>
-                  {restaurantResults.length > 0 ? (
-                    restaurantResults.map((restaurant) => (
-                      <RestaurantCard
-                        key={restaurant.restaurantId}
-                        id={String(restaurant.restaurantId)}
-                        name={restaurant.name}
-                        category="음식점"
-                        address={restaurant.address}
-                        imageUrl={restaurant.imageUrl}
-                        isSaved={savedRestaurants[String(restaurant.restaurantId)]}
-                        onSave={() => handleSaveToggle(String(restaurant.restaurantId))}
-                        onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
-                      />
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground py-6 text-center">
-                      검색 결과가 없습니다
+              {hasNoResults ? (
+                <Container className="py-12">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <Search className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-base font-semibold mb-2">검색 결과가 없습니다</h3>
+                    <p className="text-sm text-muted-foreground">
+                      다른 키워드로 다시 검색해보세요.
                     </p>
-                  )}
+                  </div>
                 </Container>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <Container>
+                      <h3 className="text-sm font-semibold mb-3">연관 그룹</h3>
+                    </Container>
+                    {hasGroupResults ? (
+                      <SearchGroupCarousel groups={groupResults} onGroupClick={onGroupClick} />
+                    ) : (
+                      <Container className="flex flex-col items-center gap-3 py-6">
+                        <p className="text-sm text-muted-foreground">그룹 검색 결과가 없습니다</p>
+                        {hasRestaurantResults && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(ROUTES.createGroup)}
+                          >
+                            그룹 만들기
+                          </Button>
+                        )}
+                      </Container>
+                    )}
+                  </div>
+                  <div>
+                    <Container className="space-y-3">
+                      <h3 className="text-sm font-semibold">연관 음식점</h3>
+                      {hasRestaurantResults ? (
+                        restaurantResults.map((restaurant) => (
+                          <RestaurantCard
+                            key={restaurant.restaurantId}
+                            id={String(restaurant.restaurantId)}
+                            name={restaurant.name}
+                            category="음식점"
+                            address={restaurant.address}
+                            imageUrl={restaurant.imageUrl}
+                            isSaved={savedRestaurants[String(restaurant.restaurantId)]}
+                            onSave={() => handleSaveToggle(String(restaurant.restaurantId))}
+                            onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
+                          />
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-6 text-center">
+                          음식점 검색 결과가 없습니다
+                        </p>
+                      )}
+                    </Container>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
