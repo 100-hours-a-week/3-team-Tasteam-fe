@@ -36,6 +36,7 @@ import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
 import { LocationPermissionModal } from '@/widgets/location/LocationPermissionModal'
 import { getLocationPermission, requestLocationPermission } from '@/shared/lib/geolocation'
 import { resetLoginRequired } from '@/shared/lib/authToken'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { Route, Routes } from 'react-router-dom'
 
 function ScrollToTop() {
@@ -271,15 +272,18 @@ function App() {
         <Route
           path="/chat/:roomId"
           element={
-            <RequireAuth>
-              <ChatRoomPage />
-            </RequireAuth>
+            FEATURE_FLAGS.enableChat ? (
+              <RequireAuth>
+                <ChatRoomPage />
+              </RequireAuth>
+            ) : (
+              <Navigate to="/error" replace />
+            )
           }
         />
+
         <Route path="/restaurants/:id/reviews" element={<RestaurantReviewsPage />} />
         <Route path="/restaurants/:id/review" element={<WriteReviewPage />} />
-
-        <Route path="/chat/:roomId" element={<ChatRoomPage />} />
 
         <Route
           path="/error"

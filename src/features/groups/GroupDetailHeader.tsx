@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/lib/utils'
 import { Container } from '@/widgets/container'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
@@ -22,6 +23,7 @@ export type GroupDetailHeaderData = {
 type GroupDetailHeaderProps = {
   group: GroupDetailHeaderData
   isJoined?: boolean
+  isLoading?: boolean
   onBack?: () => void
   onJoin?: () => void
   onMoreAction?: () => void
@@ -33,6 +35,7 @@ type GroupDetailHeaderProps = {
 export function GroupDetailHeader({
   group,
   isJoined = false,
+  isLoading = false,
   onBack,
   onJoin,
   onMoreAction,
@@ -87,27 +90,45 @@ export function GroupDetailHeader({
       <div className={cn('bg-background', className)}>
         <Container className="pt-4 pb-6">
           <div className="mt-6 flex items-center gap-4">
-            <Avatar className="h-24 w-24 border border-border">
-              {group.profileImage ? (
-                <AvatarImage src={group.profileImage} alt={`${group.name} 프로필 이미지`} />
-              ) : null}
-              <AvatarFallback className="text-base">{group.name.slice(0, 2)}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <h1 className="text-lg font-semibold truncate">{group.name}</h1>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                  <Users className="h-4 w-4" />
-                  <span>{group.memberCount}</span>
+            {isLoading ? (
+              <>
+                <Skeleton className="h-24 w-24 rounded-full border border-border" />
+                <div className="min-w-0 flex-1 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2 space-y-1">
-                <p className="text-sm text-muted-foreground truncate">{group.addressLine}</p>
-                {group.addressDetail && (
-                  <p className="text-sm text-muted-foreground">{group.addressDetail}</p>
-                )}
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <Avatar className="h-24 w-24 border border-border">
+                  {group.profileImage ? (
+                    <AvatarImage src={group.profileImage} alt={`${group.name} 프로필 이미지`} />
+                  ) : null}
+                  <AvatarFallback className="text-base">{group.name.slice(0, 2)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h1 className="text-lg font-semibold truncate">{group.name}</h1>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                      <Users className="h-4 w-4" />
+                      <span>{group.memberCount}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-sm text-muted-foreground truncate">{group.addressLine}</p>
+                    {group.addressDetail && (
+                      <p className="text-sm text-muted-foreground">{group.addressDetail}</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </Container>
       </div>

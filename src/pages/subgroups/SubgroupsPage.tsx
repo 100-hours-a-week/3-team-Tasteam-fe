@@ -10,6 +10,7 @@ import { Card } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { Skeleton } from '@/shared/ui/skeleton'
 // import { RestaurantCard } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import {
@@ -46,16 +47,6 @@ import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup/m
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
 import type { ErrorResponse } from '@/shared/types/api'
 
-const EMPTY_SUBGROUP: SubgroupDetailDto = {
-  groupId: 0,
-  subgroupId: 0,
-  name: '하위 그룹 불러오는 중...',
-  description: '',
-  memberCount: 0,
-  thumnailImage: undefined,
-  createdAt: new Date().toISOString(),
-}
-
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -63,8 +54,8 @@ export function SubgroupsPage() {
   const { isSubgroupMember, isLoaded, summaries } = useMemberGroups()
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
   const [password, setPassword] = useState('')
-  const [subgroup, setSubgroup] = useState<SubgroupDetailDto>(EMPTY_SUBGROUP)
-  const [parentGroupName, setParentGroupName] = useState('그룹')
+  const [subgroup, setSubgroup] = useState<SubgroupDetailDto | null>(null)
+  const [parentGroupName, setParentGroupName] = useState('')
   const [reviews, setReviews] = useState<ReviewListItemDto[]>([])
   const [members, setMembers] = useState<SubgroupMemberDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -73,12 +64,15 @@ export function SubgroupsPage() {
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = id ? Number(id) : null
+  const isSubgroupLoading = isLoading || (!subgroup && !error)
   const isMember =
     isAuthenticated &&
     isLoaded &&
     subgroupId !== null &&
     !Number.isNaN(subgroupId) &&
     isSubgroupMember(subgroupId)
+  const memberCount =
+    subgroup && typeof subgroup.memberCount === 'number' ? subgroup.memberCount : 1
   // const restaurants: Array<{
   //   id: string
   //   name: string
@@ -88,6 +82,15 @@ export function SubgroupsPage() {
   //   image: string
   //   tags: string[]
   // }> = []
+
+  const handleChatClick = () => {
+    if (!id) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+    navigate(ROUTES.chatRoom(id))
+  }
 
   useEffect(() => {
     if (!subgroupId || Number.isNaN(subgroupId)) return
@@ -137,8 +140,8 @@ export function SubgroupsPage() {
         }
       } catch {
         if (!cancelled) {
-          setSubgroup(EMPTY_SUBGROUP)
-          setParentGroupName('그룹')
+          setSubgroup(null)
+          setParentGroupName('')
           setReviews([])
           setMembers([])
           setError('하위 그룹 정보를 불러오지 못했습니다')
@@ -156,12 +159,12 @@ export function SubgroupsPage() {
   }, [subgroupId, summaries])
 
   useEffect(() => {
-    if (!subgroup.groupId || !isLoaded) return
+    if (!subgroup?.groupId || !isLoaded) return
     const matchedGroup = summaries.find((item) => item.groupId === subgroup.groupId)
     if (matchedGroup) {
       setParentGroupName(matchedGroup.groupName)
     }
-  }, [subgroup.groupId, isLoaded, summaries])
+  }, [subgroup?.groupId, isLoaded, summaries])
 
   // const handleSaveToggle = (restaurantId: string) => {
   //   setSavedRestaurants((prev) => ({
@@ -186,7 +189,7 @@ export function SubgroupsPage() {
     }
 
     try {
-      if (!subgroup.groupId) return
+      if (!subgroup?.groupId) return
       await joinSubgroup(subgroup.groupId, Number(id), password)
 
       alert('가입되었습니다!')
@@ -238,17 +241,8 @@ export function SubgroupsPage() {
     }
   }
 
-  const handleChatClick = () => {
-    if (!id) return
-    if (!isAuthenticated) {
-      openLogin()
-      return
-    }
-    navigate(ROUTES.chatRoom(id))
-  }
-
   const handleGroupNameClick = () => {
-    if (subgroup.groupId) {
+    if (subgroup?.groupId) {
       navigate(ROUTES.groupDetail(String(subgroup.groupId)))
     }
   }
@@ -288,21 +282,44 @@ export function SubgroupsPage() {
       <Container className="pt-4 pb-6">
         {/* Parent Group Badge */}
         <div className="flex items-center gap-1 mb-3">
-          <button
-            onClick={handleGroupNameClick}
-            className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-          >
-            {parentGroupName}
-          </button>
+          {isSubgroupLoading ? (
+            <Skeleton className="h-4 w-20" />
+          ) : (
+            <button
+              onClick={handleGroupNameClick}
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              disabled={!parentGroupName}
+            >
+              {parentGroupName || '그룹'}
+            </button>
+          )}
           <span className="mx-0.5 text-muted-foreground/50">&gt;</span>
-          <span className="text-sm font-medium text-foreground">{subgroup.name}</span>
+          {isSubgroupLoading ? (
+            <Skeleton className="h-4 w-24" />
+          ) : (
+            <span className="text-sm font-medium text-foreground">
+              {subgroup?.name || '하위 그룹'}
+            </span>
+          )}
         </div>
 
         <Card className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold mb-2">{subgroup.name}</h1>
-              <p className="text-sm text-muted-foreground mb-3">{subgroup.description}</p>
+              {isSubgroupLoading ? (
+                <>
+                  <Skeleton className="h-6 w-40 mb-2" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </>
+              ) : (
+                <>
+                  <h1 className="text-xl font-bold mb-2">{subgroup?.name || '하위 그룹'}</h1>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {subgroup?.description || '설명이 없습니다.'}
+                  </p>
+                </>
+              )}
             </div>
             {isMember && (
               <DropdownMenu>
@@ -350,26 +367,38 @@ export function SubgroupsPage() {
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
-                {members.length > 0
-                  ? members
-                      .slice(0, 5)
-                      .map((member) => (
-                        <ProfileImage
-                          key={member.memberId}
-                          image={member.profileImage}
-                          name={member.nickname}
-                          size="sm"
+                {isSubgroupLoading
+                  ? Array.from({ length: 5 }).map((_, idx) => (
+                      <Skeleton
+                        key={`member-skeleton-${idx}`}
+                        className="h-8 w-8 rounded-full border-2 border-background"
+                      />
+                    ))
+                  : members.length > 0
+                    ? members
+                        .slice(0, 5)
+                        .map((member) => (
+                          <ProfileImage
+                            key={member.memberId}
+                            image={member.profileImage}
+                            name={member.nickname}
+                            size="sm"
+                            className="h-8 w-8 border-2 border-background"
+                          />
+                        ))
+                    : Array.from({
+                        length: Math.min(5, memberCount),
+                      }).map((_, idx) => (
+                        <Avatar
+                          key={`member-${idx}`}
                           className="h-8 w-8 border-2 border-background"
-                        />
-                      ))
-                  : Array.from({ length: Math.min(5, subgroup.memberCount || 0) }).map((_, idx) => (
-                      <Avatar key={`member-${idx}`} className="h-8 w-8 border-2 border-background">
-                        <AvatarFallback className="text-xs">멤버</AvatarFallback>
-                      </Avatar>
-                    ))}
+                        >
+                          <AvatarFallback className="text-xs">멤버</AvatarFallback>
+                        </Avatar>
+                      ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                {subgroup.memberCount}명 참여 중
+                {isSubgroupLoading ? '멤버 수 불러오는 중' : `${memberCount}명 참여 중`}
               </span>
             </div>
             <div />
@@ -424,10 +453,12 @@ export function SubgroupsPage() {
             </div>
 
             <div className="space-y-3">
-              {isLoading ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  리뷰를 불러오는 중입니다.
-                </div>
+              {isSubgroupLoading ? (
+                <>
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </>
               ) : error ? (
                 <div className="text-center py-12 text-muted-foreground">{error}</div>
               ) : reviews.length > 0 ? (
@@ -442,16 +473,17 @@ export function SubgroupsPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Floating Chat Button */}
-      <Button
-        variant="default"
-        size="icon"
-        className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
-        onClick={handleChatClick}
-        aria-label="채팅하기"
-      >
-        <MessageSquare className="h-6 w-6" />
-      </Button>
+      {FEATURE_FLAGS.enableChat && (
+        <Button
+          variant="default"
+          size="icon"
+          className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
+          onClick={handleChatClick}
+          aria-label="채팅하기"
+        >
+          <MessageSquare className="h-6 w-6" />
+        </Button>
+      )}
 
       {/* Join Password Dialog */}
       <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
