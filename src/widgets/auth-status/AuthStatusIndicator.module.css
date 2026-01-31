@@ -1,7 +1,7 @@
 .container {
   position: fixed;
   top: 12px;
-  right: 48px;
+  left: 48px;
   z-index: 9999;
 }
 
@@ -10,7 +10,7 @@
   height: 28px;
   border-radius: 9999px;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.6);
   display: grid;
   place-items: center;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
