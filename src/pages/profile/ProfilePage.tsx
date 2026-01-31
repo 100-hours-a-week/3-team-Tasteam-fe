@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight, Heart, Bell, Settings, LogOut, User } from 'lucide-react'
+import { ChevronRight, Heart, Bell, Settings, LogOut, User, Pencil } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -104,6 +104,16 @@ export function ProfilePage({
         ]
       : []),
     { label: '설정', icon: Settings, onClick: onSettingsClick },
+    ...(isAuthenticated
+      ? [
+          {
+            label: '로그아웃',
+            icon: LogOut,
+            onClick: () => setLogoutDialogOpen(true),
+            tone: 'destructive' as const,
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -111,7 +121,7 @@ export function ProfilePage({
       <TopAppBar title="프로필" />
 
       <Container className="pt-6 pb-6">
-        <div className="p-6 h-[200px] flex items-center justify-center">
+        <div className="p-6 h-[200px] flex items-center justify-center relative">
           <div className="flex flex-col items-center gap-4">
             {isLoading ? (
               <>
@@ -130,7 +140,18 @@ export function ProfilePage({
               </div>
             ) : member ? (
               <>
-                <Avatar className="w-24 h-24">
+                {onEditProfile && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={onEditProfile}
+                    className="absolute right-4 top-4 rounded-md border-muted-foreground/60 shadow-none"
+                    aria-label="프로필 수정"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+                <Avatar className="w-24 h-24 ring-1 ring-muted-foreground/40">
                   {member.profileImage?.url ? (
                     <AvatarImage src={member.profileImage.url} alt={member.nickname} />
                   ) : (
@@ -141,14 +162,14 @@ export function ProfilePage({
                 </Avatar>
                 <div className="flex flex-col items-center gap-2 w-full">
                   <h2 className="text-xl font-semibold mb-2.5">{member.nickname} 님</h2>
-                  <Button size="sm" onClick={onEditProfile} className="w-1/2">
-                    프로필 수정
-                  </Button>
+                  <p className="text-sm text-muted-foreground text-center max-w-xs">
+                    {(member as { bio?: string }).bio?.trim() || '자기소개를 입력해주세요.'}
+                  </p>
                 </div>
               </>
             ) : (
               <>
-                <Avatar className="w-24 h-24">
+                <Avatar className="w-24 h-24 ring-1 ring-muted-foreground/40">
                   <AvatarFallback className="flex items-center justify-center">
                     <User className="w-12 h-12 text-muted-foreground" strokeWidth={1} />
                   </AvatarFallback>
@@ -159,7 +180,7 @@ export function ProfilePage({
                     size="sm"
                     variant="outline"
                     onClick={() => window.location.reload()}
-                    className="w-1/2"
+                    className="w-[150px]"
                   >
                     다시 시도
                   </Button>
@@ -174,6 +195,7 @@ export function ProfilePage({
         <Card className="divide-y">
           {menuItems.map((item, idx) => {
             const Icon = item.icon
+            const isDestructive = item.tone === 'destructive'
             return (
               <button
                 key={idx}
@@ -181,8 +203,12 @@ export function ProfilePage({
                 className="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <Icon className="h-5 w-5 text-muted-foreground" />
-                  <span>{item.label}</span>
+                  <Icon
+                    className={`h-5 w-5 ${isDestructive ? 'text-destructive' : 'text-muted-foreground'}`}
+                  />
+                  <span className={isDestructive ? 'text-destructive' : undefined}>
+                    {item.label}
+                  </span>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -192,33 +218,20 @@ export function ProfilePage({
       </Container>
 
       {isAuthenticated && (
-        <>
-          <Container className="pt-6">
-            <Button
-              variant="outline"
-              className="w-full text-destructive hover:bg-destructive/10"
-              onClick={() => setLogoutDialogOpen(true)}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              로그아웃
-            </Button>
-          </Container>
-
-          <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-            <AlertDialogContent size="sm">
-              <AlertDialogHeader>
-                <AlertDialogTitle>로그아웃</AlertDialogTitle>
-                <AlertDialogDescription>정말 로그아웃 하시겠어요?</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>취소</AlertDialogCancel>
-                <AlertDialogAction variant="destructive" onClick={onLogout}>
-                  로그아웃
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
+        <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>로그아웃</AlertDialogTitle>
+              <AlertDialogDescription>정말 로그아웃 하시겠어요?</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={onLogout}>
+                로그아웃
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
 
       <Container className="pt-8">
