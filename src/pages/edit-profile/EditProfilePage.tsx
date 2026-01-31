@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Camera, Check } from 'lucide-react'
+import { Camera } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -120,23 +120,9 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
 
   return (
     <div className="flex flex-col h-full bg-background min-h-screen">
-      <TopAppBar
-        title="프로필 수정"
-        showBackButton
-        onBack={onBack}
-        actions={
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSave}
-            disabled={!isChanged || isLoading || isUploading}
-          >
-            <Check className="w-5 h-5" />
-          </Button>
-        }
-      />
+      <TopAppBar title="프로필 수정" showBackButton onBack={onBack} />
 
-      <Container className="flex-1 py-6 overflow-auto">
+      <Container className="flex-1 py-6 overflow-auto pb-24">
         <div className="space-y-6">
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -157,7 +143,6 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
                 />
               </button>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">프로필 사진 변경</p>
           </div>
 
           <div className="space-y-2">
@@ -185,17 +170,21 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
             />
             <p className="text-xs text-muted-foreground text-right">{bio.length}/100</p>
           </div>
+        </div>
+      </Container>
 
+      <div className="sticky bottom-0 border-t border-border bg-background/95 backdrop-blur">
+        <Container className="py-4">
           <Button
-            variant="outline"
-            className="w-full"
+            variant="default"
+            className="w-full h-11 font-medium"
             onClick={handleSave}
             disabled={!isChanged || isLoading || isUploading}
           >
             {isUploading ? '이미지 업로드 중...' : isLoading ? '저장 중...' : '저장하기'}
           </Button>
-        </div>
-      </Container>
+        </Container>
+      </div>
 
       <UploadErrorModal
         open={uploadErrors.length > 0}
