@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, Sparkles } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Container } from '@/widgets/container'
-import { MainRestaurantCard } from '@/entities/restaurant/ui'
+import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { getMainPage } from '@/entities/main/api/mainApi'
 import { useAppLocation } from '@/entities/location'
 import type { MainSectionItem } from '@/entities/main/model/types'
@@ -74,7 +74,15 @@ export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProp
         ) : recommendations.length > 0 ? (
           <div className="space-y-4">
             {recommendations.map((item) => (
-              <MainRestaurantCard key={item.restaurantId} item={item} onClick={onRestaurantClick} />
+              <VerticalRestaurantCard
+                key={item.restaurantId}
+                id={item.restaurantId}
+                name={item.name}
+                category={item.category}
+                distance={`${item.distanceMeter}m`}
+                image={item.thumbnailImageUrl}
+                onClick={onRestaurantClick}
+              />
             ))}
           </div>
         ) : (
