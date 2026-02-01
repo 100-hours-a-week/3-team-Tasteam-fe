@@ -30,7 +30,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       duration={2000}
       toastOptions={{
         duration: 2000,
-        onClick: () => window.setTimeout(() => toast.dismiss(), 500),
       }}
       icons={{
         success: <CircleCheckIcon className="size-4" />,

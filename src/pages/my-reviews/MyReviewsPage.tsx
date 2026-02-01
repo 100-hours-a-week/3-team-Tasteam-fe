@@ -88,6 +88,7 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
                   onClick={() => onRestaurantClick?.(review.restaurantName)}
                 >
                   <ReviewCard
+                    id={review.id}
                     userName={review.restaurantName}
                     date={review.createdAt}
                     content={review.content}
