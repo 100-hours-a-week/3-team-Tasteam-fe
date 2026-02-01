@@ -21,6 +21,7 @@ type DummyRestaurant = {
   id: number
   name: string
   category: string
+  address?: string
   rating: number
   distance: string
   image: string
@@ -33,6 +34,7 @@ const dummyNewRestaurants: DummyRestaurant[] = [
     id: 1,
     name: '베이커리 카페 온',
     category: '카페',
+    address: '강남구 역삼동',
     rating: 4.6,
     distance: '200m',
     image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800',
@@ -42,6 +44,7 @@ const dummyNewRestaurants: DummyRestaurant[] = [
     id: 2,
     name: '테이스티 라멘',
     category: '일식',
+    address: '강남구 역삼동',
     rating: 4.4,
     distance: '350m',
     image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800',
@@ -51,6 +54,7 @@ const dummyNewRestaurants: DummyRestaurant[] = [
     id: 3,
     name: '더 스테이크 하우스',
     category: '양식',
+    address: '강남구 역삼동',
     rating: 4.8,
     distance: '600m',
     image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=800',
@@ -63,6 +67,7 @@ const dummyHotRestaurants: DummyRestaurant[] = [
     id: 4,
     name: '맛있는 스시 레스토랑',
     category: '일식',
+    address: '강남구 역삼동',
     rating: 4.5,
     distance: '500m',
     image: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800',
@@ -73,6 +78,7 @@ const dummyHotRestaurants: DummyRestaurant[] = [
     id: 5,
     name: '정통 파스타 하우스',
     category: '이탈리안',
+    address: '강남구 역삼동',
     rating: 4.7,
     distance: '1.2km',
     image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800',
@@ -83,6 +89,7 @@ const dummyHotRestaurants: DummyRestaurant[] = [
     id: 6,
     name: '강남 BBQ',
     category: '한식',
+    address: '강남구 역삼동',
     rating: 4.3,
     distance: '800m',
     image: 'https://images.unsplash.com/photo-1588347818036-891e9c90c08d?w=800',
@@ -227,6 +234,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
                   id={item.id}
                   name={item.name}
                   category={item.category}
+                  address={item.address}
                   rating={item.rating}
                   distance={item.distance}
                   image={item.image}
@@ -254,6 +262,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
                 id={item.id}
                 name={item.name}
                 category={item.category}
+                address={item.address}
                 rating={item.rating}
                 distance={item.distance}
                 image={item.image}

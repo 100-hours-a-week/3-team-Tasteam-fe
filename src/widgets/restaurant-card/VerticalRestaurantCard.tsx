@@ -8,6 +8,7 @@ type VerticalRestaurantCardProps = {
   id: number
   name: string
   category: string
+  address?: string
   rating?: number
   distance: string
   image: string
@@ -21,6 +22,7 @@ export function VerticalRestaurantCard({
   id,
   name,
   category,
+  address,
   rating,
   distance,
   image,
@@ -37,15 +39,17 @@ export function VerticalRestaurantCard({
         </Badge>
       )}
       <Card
-        className={cn('overflow-hidden cursor-pointer transition-all hover:shadow-md p-0')}
+        className={cn('overflow-hidden cursor-pointer transition-all hover:shadow-md p-0 gap-2')}
         onClick={() => onClick?.(String(id))}
       >
-        <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+        <div className="relative aspect-[21/10] overflow-hidden bg-muted">
           <ImageWithFallback src={image} alt={name} className="object-cover w-full h-full" />
         </div>
-        <div className="p-4 space-y-2">
+        <div className="px-4 pb-4 pt-1 space-y-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="flex-1 min-w-0 truncate text-base font-semibold">{name}</h3>
+            <h3 className="flex-1 min-w-0 truncate text-[17px] font-semibold leading-tight">
+              {name}
+            </h3>
             {rating !== undefined && (
               <div className="flex items-center gap-1 text-sm shrink-0">
                 <Star className="h-4 w-4 fill-primary text-primary" />
@@ -53,9 +57,9 @@ export function VerticalRestaurantCard({
               </div>
             )}
           </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{category}</span>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span className="min-w-0 truncate">{address ?? category}</span>
+            <div className="flex items-center gap-1 shrink-0">
               <MapPin className="h-3 w-3" />
               <span>{distance}</span>
             </div>
