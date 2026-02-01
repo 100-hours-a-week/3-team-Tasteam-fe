@@ -148,10 +148,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
 
   return (
     <div className="pb-20">
-      <LocationHeader
-        district={currentLocation.district}
-        onLocationClick={() => navigate(ROUTES.locationSelect)}
-      />
+      <LocationHeader district={currentLocation.district} />
 
       <Container className="py-4">
         <div
