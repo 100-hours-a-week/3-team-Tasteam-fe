@@ -14,6 +14,7 @@ import type {
   GroupEmailVerificationResponseDto,
   GroupJoinVerificationResponseDto,
 } from '../model/dto'
+import type { SuccessResponse } from '@/shared/types/api'
 
 export const getMe = () =>
   request<MemberMeResponseDto>({
@@ -71,7 +72,7 @@ export const getMyGroupRequests = (params?: { cursor?: string }) =>
   })
 
 export const getMyReviews = (params?: { cursor?: string }) =>
-  request<MemberReviewListResponseDto>({
+  request<SuccessResponse<MemberReviewListResponseDto>>({
     method: 'GET',
     url: `/api/v1/members/me/reviews${buildQuery(params ?? {})}`,
   })

@@ -79,7 +79,7 @@ function App() {
   return (
     <>
       <ScrollToTop />
-      <Toaster position="top-center" />
+      <Toaster position="bottom-center" offset={{ bottom: 74 }} />
       <LoginRequiredModal
         open={showLogin}
         onClose={() => {

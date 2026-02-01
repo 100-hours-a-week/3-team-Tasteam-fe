@@ -24,7 +24,15 @@ export type SearchResponse = SuccessResponse<{
 export type RecentSearch = {
   id: number
   keyword: string
-  createdAt: IsoDateTimeString
+  updatedAt: IsoDateTimeString
 }
 
-export type RecentSearchesResponse = SuccessResponse<RecentSearch[]>
+export type RecentSearchesResponse = SuccessResponse<{
+  items: RecentSearch[]
+  pagination: {
+    page: number
+    size: number
+    totalPages: number
+    totalElements: number
+  }
+}>

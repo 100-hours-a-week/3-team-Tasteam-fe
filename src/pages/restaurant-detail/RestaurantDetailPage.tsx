@@ -26,6 +26,7 @@ import { RestaurantMetaRow } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
 import { Container } from '@/widgets/container'
 import { cn } from '@/shared/lib/utils'
+import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
 import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
@@ -234,23 +235,13 @@ export function RestaurantDetailPage() {
             이미지가 없습니다
           </div>
         )}
-
-        {/* Floating Save Button */}
-        <Button
-          variant={isSaved ? 'default' : 'secondary'}
-          size="icon"
-          className="absolute top-4 right-4 rounded-full shadow-lg"
-          onClick={handleSave}
-        >
-          <Heart className={cn('h-5 w-5', isSaved && 'fill-current')} />
-        </Button>
       </div>
 
       {/* Restaurant Info */}
       <Container className="space-y-4 mb-6">
         <div>
           <div className="flex items-start justify-between gap-3 mb-2">
-            <div className="flex-1">
+            <div className="min-w-0 flex-1">
               {isRestaurantLoading ? (
                 <>
                   <Skeleton className="h-4 w-20 mb-2" />
@@ -259,12 +250,24 @@ export function RestaurantDetailPage() {
               ) : (
                 <>
                   <p className="text-muted-foreground">{restaurant.category || '카테고리 없음'}</p>
-                  <h1 className="text-2xl font-bold mb-1">
+                  <h1 className="text-2xl font-bold mb-1 truncate">
                     {restaurant.name || '음식점 정보 없음'}
                   </h1>
                 </>
               )}
             </div>
+            {FEATURE_FLAGS.enableRestaurantFavorite && (
+              <Button
+                variant={isSaved ? 'default' : 'secondary'}
+                size="icon"
+                className="shrink-0 rounded-full border border-gray-300 shadow-md bg-white text-foreground hover:bg-white/90"
+                onClick={handleSave}
+                aria-pressed={isSaved}
+                aria-label="찜"
+              >
+                <Heart className={cn('h-5 w-5 text-primary', isSaved && 'fill-primary')} />
+              </Button>
+            )}
           </div>
 
           {/* Restaurant Feature - AI Highlighted */}

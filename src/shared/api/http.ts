@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
+import { toast } from 'sonner'
 import { API_BASE_URL } from '@/shared/config/env'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import {
@@ -29,7 +30,7 @@ const createHttpClient = (withCredentials = true) =>
   })
 
 export const http = createHttpClient(true)
-const refreshClient = createHttpClient(true)
+export const refreshClient = createHttpClient(true)
 
 let refreshPromise: Promise<string | null> | null = null
 
@@ -118,6 +119,19 @@ http.interceptors.response.use(
       isRefreshCall,
       getRefreshEnabled: getRefreshEnabled(),
     })
+
+    if (status === 401 && errorData?.code === 'REFRESH_TOKEN_NOT_FOUND') {
+      logger.debug('[인증] REFRESH_TOKEN_NOT_FOUND 에러, accessToken 제거')
+      clearAccessToken()
+      return Promise.reject(error)
+    }
+
+    if (status === 401 && errorData?.code === 'MEMBER_INACTIVE') {
+      logger.debug('[인증] MEMBER_INACTIVE 에러')
+      toast.error('이미 탈퇴된 회원입니다')
+      clearAccessToken()
+      return Promise.reject(error)
+    }
 
     if (status !== 401 || originalRequest?._retry || isRefreshCall) {
       return Promise.reject(error)
