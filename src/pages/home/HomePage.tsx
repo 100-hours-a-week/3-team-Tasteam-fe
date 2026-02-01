@@ -11,7 +11,11 @@ import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main/api/mainApi'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
-import type { MainResponse, MainSection, MainSectionItem } from '@/entities/main/model/types'
+import type {
+  MainPageResponseDto,
+  MainSectionDto,
+  MainSectionItemDto,
+} from '@/entities/main/model/types'
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -107,7 +111,7 @@ function formatDistance(meter: number): string {
 
 export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
-  const [mainData, setMainData] = useState<MainResponse | null>(null)
+  const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
   const { location, status, requestCurrentLocation } = useAppLocation()
   const hasRefreshedRef = useRef(false)
   const latitude = location?.latitude ?? 37.5665
@@ -133,33 +137,92 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     })()
   }, [requestCurrentLocation, status])
 
-  const newSection = mainData?.data?.sections?.find((s: MainSection) => s.type === 'NEW')
-  const hotSection = mainData?.data?.sections?.find((s: MainSection) => s.type === 'HOT')
-
-  const newItems: DummyRestaurant[] = newSection?.items?.length
-    ? newSection.items.map((item: MainSectionItem) => ({
-        id: item.restaurantId,
+  const sections = mainData?.data?.sections ?? []
+  const fallbackSections: MainSectionDto[] = [
+    {
+      type: 'NEW',
+      title: '신규 개장',
+      items: dummyNewRestaurants.map((item) => ({
+        restaurantId: item.id,
         name: item.name,
         category: item.category,
-        rating: 4.5,
-        distance: formatDistance(item.distanceMeter),
-        image: item.thumbnailImageUrl,
-        tags: [],
-      }))
-    : dummyNewRestaurants
-
-  const hotItems: DummyRestaurant[] = hotSection?.items?.length
-    ? hotSection.items.map((item: MainSectionItem) => ({
-        id: item.restaurantId,
+        distanceMeter: Number.parseFloat(item.distance) || 0,
+        thumbnailImageUrl: item.image,
+        isFavorite: false,
+        reviewSummary: '',
+      })),
+    },
+    {
+      type: 'HOT',
+      title: 'HOT 플레이스',
+      items: dummyHotRestaurants.map((item) => ({
+        restaurantId: item.id,
         name: item.name,
         category: item.category,
-        rating: 4.5,
-        distance: formatDistance(item.distanceMeter),
-        image: item.thumbnailImageUrl,
-        tags: [],
-        reason: item.reviewSummary,
-      }))
-    : dummyHotRestaurants
+        distanceMeter: Number.parseFloat(item.distance) || 0,
+        thumbnailImageUrl: item.image,
+        isFavorite: false,
+        reviewSummary: item.reason ?? '',
+      })),
+    },
+  ]
+  const resolvedSections = sections.length > 0 ? sections : fallbackSections
+
+  const newSection = resolvedSections.find((section) => section.type === 'NEW')
+  const hotSection = resolvedSections.find((section) => section.type === 'HOT')
+
+  const renderHorizontal = (section?: MainSectionDto) => {
+    const items = section?.items ?? []
+    if (items.length === 0) {
+      return <p className="text-sm text-muted-foreground py-6 text-center">데이터가 없습니다</p>
+    }
+    return (
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex w-max gap-3 px-4">
+          {items.map((item: MainSectionItemDto) => (
+            <div key={item.restaurantId} className="w-[260px] shrink-0">
+              <HorizontalRestaurantCard
+                id={item.restaurantId}
+                name={item.name}
+                category={item.category}
+                rating={4.5}
+                distance={formatDistance(item.distanceMeter)}
+                image={item.thumbnailImageUrl}
+                tags={[]}
+                onClick={onRestaurantClick}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const renderVertical = (section?: MainSectionDto) => {
+    const items = section?.items ?? []
+    if (items.length === 0) {
+      return <p className="text-sm text-muted-foreground py-6 text-center">데이터가 없습니다</p>
+    }
+    return (
+      <Container>
+        <div className="space-y-4">
+          {items.map((item: MainSectionItemDto) => (
+            <VerticalRestaurantCard
+              key={item.restaurantId}
+              id={item.restaurantId}
+              name={item.name}
+              category={item.category}
+              distance={formatDistance(item.distanceMeter)}
+              image={item.thumbnailImageUrl}
+              tags={[]}
+              reason={item.reviewSummary}
+              onClick={onRestaurantClick}
+            />
+          ))}
+        </div>
+      </Container>
+    )
+  }
 
   return (
     <div className="pb-20">
@@ -238,56 +301,20 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
         <Container className="mb-4">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">신규 개장</h2>
+            <h2 className="text-lg font-semibold">{newSection?.title ?? '신규 개장'}</h2>
           </div>
         </Container>
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex w-max gap-3 px-4">
-            {newItems.map((item) => (
-              <div key={item.id} className="w-[260px] shrink-0">
-                <HorizontalRestaurantCard
-                  id={item.id}
-                  name={item.name}
-                  category={item.category}
-                  address={item.address}
-                  rating={item.rating}
-                  distance={item.distance}
-                  image={item.image}
-                  tags={item.tags}
-                  onClick={onRestaurantClick}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+        {renderHorizontal(newSection)}
       </section>
 
       <section className="mb-8">
         <Container className="mb-4">
           <div className="flex items-center gap-2">
             <Flame className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">HOT 플레이스</h2>
+            <h2 className="text-lg font-semibold">{hotSection?.title ?? 'HOT 플레이스'}</h2>
           </div>
         </Container>
-        <Container>
-          <div className="space-y-4">
-            {hotItems.map((item) => (
-              <VerticalRestaurantCard
-                key={item.id}
-                id={item.id}
-                name={item.name}
-                category={item.category}
-                address={item.address}
-                rating={item.rating}
-                distance={item.distance}
-                image={item.image}
-                tags={item.tags}
-                reason={item.reason}
-                onClick={onRestaurantClick}
-              />
-            ))}
-          </div>
-        </Container>
+        {renderVertical(hotSection)}
       </section>
 
       <BottomTabBar

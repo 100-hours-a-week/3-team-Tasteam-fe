@@ -1,21 +1,26 @@
 import type { SuccessResponse } from '@/shared/types/api'
 import type { IsoDateTimeString } from '@/shared/types/common'
 
+export type MainPageQuery = {
+  latitude: number
+  longitude: number
+}
+
 export type MainSectionType = 'SPONSORED' | 'HOT' | 'NEW' | 'AI_RECOMMEND' | (string & {})
 
-export type MainBanner = {
+export type MainBannerDto = {
   id: number
   imageUrl: string
   landingUrl: string
   order: number
 }
 
-export type MainBannerGroup = {
+export type MainBannerGroupDto = {
   enabled: boolean
-  items: MainBanner[]
+  items: MainBannerDto[]
 }
 
-export type MainSectionItem = {
+export type MainSectionItemDto = {
   restaurantId: number
   name: string
   distanceMeter: number
@@ -25,18 +30,18 @@ export type MainSectionItem = {
   reviewSummary: string
 }
 
-export type MainSection = {
+export type MainSectionDto = {
   type: MainSectionType
   title: string
-  items: MainSectionItem[]
+  items: MainSectionItemDto[]
 }
 
-export type MainResponse = SuccessResponse<{
-  banners: MainBannerGroup
-  sections: MainSection[]
+export type MainPageResponseDto = SuccessResponse<{
+  banners: MainBannerGroupDto
+  sections: MainSectionDto[]
 }>
 
-export type MainBannerEvent = MainBanner & {
+export type MainBannerEvent = MainBannerDto & {
   createdAt?: IsoDateTimeString
   updatedAt?: IsoDateTimeString
 }

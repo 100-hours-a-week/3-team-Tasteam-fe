@@ -5,7 +5,7 @@ import { Container } from '@/widgets/container'
 import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { getMainPage } from '@/entities/main/api/mainApi'
 import { useAppLocation } from '@/entities/location'
-import type { MainSectionItem } from '@/entities/main/model/types'
+import type { MainSectionItemDto } from '@/entities/main/model/types'
 
 type TodayLunchPageProps = {
   onBack?: () => void
@@ -13,7 +13,7 @@ type TodayLunchPageProps = {
 }
 
 export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProps) {
-  const [recommendations, setRecommendations] = useState<MainSectionItem[]>([])
+  const [recommendations, setRecommendations] = useState<MainSectionItemDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { location } = useAppLocation()
   const latitude = location?.latitude ?? 37.5665
