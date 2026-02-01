@@ -19,7 +19,7 @@ import {
 import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { RestaurantCard } from '@/entities/restaurant/ui'
+import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { searchAll } from '@/entities/search/api/searchApi'
 import { useRecentSearches } from '@/entities/search/model/useRecentSearches'
 import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
@@ -43,7 +43,6 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
   } = useRecentSearches()
   const [restaurantResults, setRestaurantResults] = useState<SearchRestaurantItem[]>([])
   const [groupResults, setGroupResults] = useState<SearchGroupItem[]>([])
-  const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
   const [distance, setDistance] = useState([5])
   const [priceRange, setPriceRange] = useState('all')
   const [isSearching, setIsSearching] = useState(false)
@@ -56,13 +55,6 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
   // TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
   // const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
-
-  const handleSaveToggle = (id: string) => {
-    setSavedRestaurants((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }))
-  }
 
   const scheduleSearch = (rawQuery: string) => {
     const keyword = rawQuery.trim()
@@ -295,15 +287,14 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                       <h3 className="text-sm font-semibold">연관 음식점</h3>
                       {hasRestaurantResults ? (
                         restaurantResults.map((restaurant) => (
-                          <RestaurantCard
+                          <VerticalRestaurantCard
                             key={restaurant.restaurantId}
-                            id={String(restaurant.restaurantId)}
+                            id={restaurant.restaurantId}
                             name={restaurant.name}
-                            category="음식점"
                             address={restaurant.address}
-                            imageUrl={restaurant.imageUrl}
-                            isSaved={savedRestaurants[String(restaurant.restaurantId)]}
-                            onSave={() => handleSaveToggle(String(restaurant.restaurantId))}
+                            category=""
+                            distance=""
+                            image={restaurant.imageUrl}
                             onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
                           />
                         ))
