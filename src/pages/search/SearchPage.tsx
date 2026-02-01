@@ -121,7 +121,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="음식점, 지역, 음식 종류 검색"
+              placeholder="그룹 이름, 음식점 이름을 검색해보세요"
               className="pl-9"
               value={searchQuery}
               onChange={(e) => {
@@ -192,7 +192,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                   <Badge
                     key={item.id}
                     variant="secondary"
-                    className="pl-3 pr-1 py-1.5 cursor-pointer hover:bg-secondary/80"
+                    className="pl-3 pr-1 py-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
                     onClick={() => {
                       setSearchQuery(item.keyword)
                       scheduleSearch(item.keyword)
@@ -202,7 +202,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-4 w-4 ml-1 hover:bg-transparent"
+                      className="h-4 w-4 ml-1 hover:bg-transparent text-primary-foreground"
                       onClick={(event) => {
                         event.stopPropagation()
                         removeRecentSearch(item.id)
