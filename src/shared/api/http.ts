@@ -1,5 +1,6 @@
 import axios from 'axios'
 import type { AxiosRequestConfig } from 'axios'
+import { toast } from 'sonner'
 import { API_BASE_URL } from '@/shared/config/env'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import {
@@ -121,6 +122,13 @@ http.interceptors.response.use(
 
     if (status === 401 && errorData?.code === 'REFRESH_TOKEN_NOT_FOUND') {
       logger.debug('[인증] REFRESH_TOKEN_NOT_FOUND 에러, accessToken 제거')
+      clearAccessToken()
+      return Promise.reject(error)
+    }
+
+    if (status === 401 && errorData?.code === 'MEMBER_INACTIVE') {
+      logger.debug('[인증] MEMBER_INACTIVE 에러')
+      toast.error('이미 탈퇴된 회원입니다')
       clearAccessToken()
       return Promise.reject(error)
     }
