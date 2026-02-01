@@ -29,6 +29,8 @@ import { WriteReviewPage } from '@/pages/write-review'
 import { ChatRoomPage } from '@/pages/chat-room'
 import { SubgroupsPage } from '@/pages/subgroups'
 import { ErrorPage } from '@/pages/error-page'
+import { LocationSelectPage } from '@/pages/location-select'
+import { TodayLunchPage } from '@/pages/today-lunch'
 import { RequireAuth } from '@/features/auth/require-auth'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
@@ -142,6 +144,25 @@ function App() {
             <SearchPage
               onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
               onGroupClick={(id) => navigate(`/groups/${id}`)}
+            />
+          }
+        />
+
+        <Route
+          path="/location-select"
+          element={
+            <LocationSelectPage
+              onBack={() => navigate(-1)}
+              onLocationSelect={() => navigate('/')}
+            />
+          }
+        />
+        <Route
+          path="/today-lunch"
+          element={
+            <TodayLunchPage
+              onBack={() => navigate(-1)}
+              onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
             />
           }
         />
