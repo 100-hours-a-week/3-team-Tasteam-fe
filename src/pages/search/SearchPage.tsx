@@ -26,6 +26,7 @@ import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
 import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search/model/types'
 
 const SEARCH_DEBOUNCE_MS = 700
+const POPULAR_KEYWORDS = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치'] as const
 
 type SearchPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -48,9 +49,6 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
   const hasGroupResults = groupResults.length > 0
   const hasRestaurantResults = restaurantResults.length > 0
   const hasNoResults = !hasGroupResults && !hasRestaurantResults
-
-  // TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
-  // const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
 
   const handleSaveToggle = (id: string) => {
     setSavedRestaurants((prev) => ({
@@ -112,6 +110,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
       searchRequestId.current += 1
     }
   }, [])
+
+  const applyKeyword = (keyword: string) => {
+    setSearchQuery(keyword)
+    scheduleSearch(keyword)
+  }
 
   return (
     <div className="pb-20">
@@ -184,9 +187,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
       {!searchQuery && (
         <Container className="space-y-4 pt-4">
-          {recentSearches.length > 0 && (
-            <div>
-              <h3 className="mb-3 font-medium">최근 검색어</h3>
+          <div>
+            <h3 className="mb-3 font-medium">최근 검색어</h3>
+            {recentSearches.length === 0 ? (
+              <p className="text-sm text-muted-foreground">최근 검색어가 없습니다.</p>
+            ) : (
               <div className="flex flex-wrap gap-2">
                 {recentSearches.map((item) => (
                   <Badge
@@ -194,8 +199,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     variant="secondary"
                     className="pl-3 pr-1 py-1.5 cursor-pointer hover:bg-secondary/80"
                     onClick={() => {
-                      setSearchQuery(item.keyword)
-                      scheduleSearch(item.keyword)
+                      applyKeyword(item.keyword)
                     }}
                   >
                     {item.keyword}
@@ -213,25 +217,23 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                   </Badge>
                 ))}
               </div>
-            </div>
-          )}
-          {/* TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
+            )}
+          </div>
           <div>
             <h3 className="mb-3 font-medium">추천 키워드</h3>
             <div className="flex flex-wrap gap-2">
-              {recommendedKeywords.map((keyword, idx) => (
+              {POPULAR_KEYWORDS.map((keyword) => (
                 <Badge
-                  key={idx}
+                  key={keyword}
                   variant="outline"
                   className="cursor-pointer hover:bg-accent"
-                  onClick={() => setSearchQuery(keyword)}
+                  onClick={() => applyKeyword(keyword)}
                 >
                   {keyword}
                 </Badge>
               ))}
             </div>
           </div>
-          */}
         </Container>
       )}
 
