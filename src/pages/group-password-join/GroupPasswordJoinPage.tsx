@@ -139,7 +139,11 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
       <TopAppBar title="그룹 비밀번호 가입" showBackButton onBack={onBack} />
 
       <Container className="flex-1 py-6 space-y-6">
-        <GroupEmailJoinGroupInfo name={groupInfo.name} imageUrl={groupInfo.imageUrl} />
+        <GroupEmailJoinGroupInfo
+          name={groupInfo.name}
+          imageUrl={groupInfo.imageUrl}
+          subtitle="그룹 비밀번호 인증 가입"
+        />
         {isGroupLoading ? (
           <p className="text-sm text-muted-foreground">그룹 정보를 불러오는 중입니다.</p>
         ) : groupError ? (
