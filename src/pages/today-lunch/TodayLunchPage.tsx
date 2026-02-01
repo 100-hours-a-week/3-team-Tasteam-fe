@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/button'
 import { Container } from '@/widgets/container'
 import { MainRestaurantCard } from '@/entities/restaurant/ui'
 import { getMainPage } from '@/entities/main/api/mainApi'
+import { useAppLocation } from '@/entities/location'
 import type { MainSectionItem } from '@/entities/main/model/types'
 
 type TodayLunchPageProps = {
@@ -14,10 +15,20 @@ type TodayLunchPageProps = {
 export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProps) {
   const [recommendations, setRecommendations] = useState<MainSectionItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const { location } = useAppLocation()
+  const latitude = location?.latitude ?? 37.5665
+  const longitude = location?.longitude ?? 126.978
 
   useEffect(() => {
-    getMainPage({ latitude: 37.5, longitude: 127.0 })
+    let active = true
+
+    queueMicrotask(() => {
+      if (active) setIsLoading(true)
+    })
+
+    getMainPage({ latitude, longitude })
       .then((response) => {
+        if (!active) return
         const aiRecommendSection = response.data?.sections?.find(
           (section) => section.type === 'AI_RECOMMEND',
         )
@@ -26,8 +37,14 @@ export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProp
         }
       })
       .catch(() => {})
-      .finally(() => setIsLoading(false))
-  }, [])
+      .finally(() => {
+        if (active) setIsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [latitude, longitude])
 
   return (
     <div className="min-h-screen bg-background pb-6">

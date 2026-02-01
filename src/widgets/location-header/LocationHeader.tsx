@@ -3,11 +3,13 @@ import { Container } from '@/widgets/container'
 
 type LocationHeaderProps = {
   district?: string
+  address?: string
   onLocationClick?: () => void
 }
 
 export function LocationHeader({
   district = '위치를 선택하세요',
+  address,
   onLocationClick,
 }: LocationHeaderProps) {
   return (
@@ -25,9 +27,16 @@ export function LocationHeader({
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           ) : (
-            <div className="flex items-center gap-1 px-2 py-1">
+            <div className="flex items-center gap-2 px-2 py-1">
               <MapPin className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">{district}</span>
+              <div className="min-w-0">
+                <div className="text-sm font-medium truncate">{district}</div>
+                {address && (
+                  <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                    {address}
+                  </div>
+                )}
+              </div>
             </div>
           )}
           {/* 알림 버튼 - 추후 활성화

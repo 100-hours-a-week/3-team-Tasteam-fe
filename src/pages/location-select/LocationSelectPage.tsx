@@ -3,6 +3,7 @@ import { ChevronLeft, MapPin, Navigation, Search } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Container } from '@/widgets/container'
+import { useAppLocation } from '@/entities/location'
 
 type LocationSelectPageProps = {
   onBack?: () => void
@@ -22,21 +23,17 @@ const recentLocations = [
 
 export function LocationSelectPage({ onBack, onLocationSelect }: LocationSelectPageProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const { requestCurrentLocation, setManualLocation } = useAppLocation()
 
-  const handleCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          onLocationSelect?.({
-            district: '현재 위치',
-            address: '현재 위치를 사용합니다',
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
-        },
-        () => {},
-      )
-    }
+  const handleCurrentLocation = async () => {
+    const updated = await requestCurrentLocation()
+    if (!updated) return
+    onLocationSelect?.({
+      district: updated.district,
+      address: updated.address,
+      lat: updated.latitude,
+      lng: updated.longitude,
+    })
   }
 
   return (
@@ -78,7 +75,15 @@ export function LocationSelectPage({ onBack, onLocationSelect }: LocationSelectP
             <button
               key={index}
               className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left"
-              onClick={() => onLocationSelect?.(location)}
+              onClick={() => {
+                setManualLocation({
+                  district: location.district,
+                  address: location.address,
+                  latitude: location.lat,
+                  longitude: location.lng,
+                })
+                onLocationSelect?.(location)
+              }}
             >
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>

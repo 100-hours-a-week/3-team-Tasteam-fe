@@ -9,6 +9,7 @@ import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/rest
 import { Input } from '@/shared/ui/input'
 import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main/api/mainApi'
+import { useAppLocation } from '@/entities/location'
 import type { MainResponse, MainSection, MainSectionItem } from '@/entities/main/model/types'
 
 type HomePageProps = {
@@ -106,17 +107,15 @@ function formatDistance(meter: number): string {
 export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainResponse | null>(null)
-  const [currentLocation] = useState({
-    district: '강남구 역삼동',
-    lat: 37.5,
-    lng: 127.0,
-  })
+  const { location, status } = useAppLocation()
+  const latitude = location?.latitude ?? 37.5665
+  const longitude = location?.longitude ?? 126.978
 
   useEffect(() => {
-    getMainPage({ latitude: currentLocation.lat, longitude: currentLocation.lng })
+    getMainPage({ latitude, longitude })
       .then(setMainData)
       .catch(() => {})
-  }, [currentLocation.lat, currentLocation.lng])
+  }, [latitude, longitude])
 
   const newSection = mainData?.data?.sections?.find((s: MainSection) => s.type === 'NEW')
   const hotSection = mainData?.data?.sections?.find((s: MainSection) => s.type === 'HOT')
@@ -148,7 +147,10 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
 
   return (
     <div className="pb-20">
-      <LocationHeader district={currentLocation.district} />
+      <LocationHeader
+        district={status === 'loading' ? '현재 위치 확인 중...' : location?.district}
+        address={location?.address}
+      />
 
       <Container className="py-4">
         <div
