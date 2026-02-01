@@ -7,6 +7,7 @@ import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/lib/utils'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { requestLocationPermission } from '@/shared/lib/geolocation'
+import { useAppLocation } from '@/entities/location'
 
 type OnboardingPageProps = {
   onComplete?: () => void
@@ -15,6 +16,7 @@ type OnboardingPageProps = {
 export function OnboardingPage({ onComplete }: OnboardingPageProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([])
+  const { requestCurrentLocation } = useAppLocation()
 
   const steps = [
     {
@@ -68,7 +70,10 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
 
   const handleNext = async () => {
     if (currentStepData.icon === MapPin) {
-      await requestLocationPermission()
+      const granted = await requestLocationPermission()
+      if (granted) {
+        await requestCurrentLocation()
+      }
     }
 
     if (currentStep < steps.length - 1) {

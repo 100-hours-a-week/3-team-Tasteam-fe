@@ -39,6 +39,7 @@ import { LocationPermissionModal } from '@/widgets/location/LocationPermissionMo
 import { getLocationPermission, requestLocationPermission } from '@/shared/lib/geolocation'
 import { resetLoginRequired } from '@/shared/lib/authToken'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { useAppLocation } from '@/entities/location'
 import { Route, Routes } from 'react-router-dom'
 
 function ScrollToTop() {
@@ -54,6 +55,7 @@ function ScrollToTop() {
 function App() {
   const isReady = useBootstrap()
   const { showLogin, isAuthenticated, closeLogin, logout } = useAuth()
+  const { requestCurrentLocation } = useAppLocation()
   const navigate = useNavigate()
   const location = useLocation()
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -97,7 +99,10 @@ function App() {
       <LocationPermissionModal
         open={showLocationModal}
         onAllow={async () => {
-          await requestLocationPermission()
+          const granted = await requestLocationPermission()
+          if (granted) {
+            await requestCurrentLocation()
+          }
           setShowLocationModal(false)
         }}
         onDeny={() => {

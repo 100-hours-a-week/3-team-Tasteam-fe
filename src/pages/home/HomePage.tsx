@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Flame, Sparkles } from 'lucide-react'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
@@ -10,6 +10,7 @@ import { Input } from '@/shared/ui/input'
 import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main/api/mainApi'
 import { useAppLocation } from '@/entities/location'
+import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
 import type { MainResponse, MainSection, MainSectionItem } from '@/entities/main/model/types'
 
 type HomePageProps = {
@@ -107,7 +108,8 @@ function formatDistance(meter: number): string {
 export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainResponse | null>(null)
-  const { location, status } = useAppLocation()
+  const { location, status, requestCurrentLocation } = useAppLocation()
+  const hasRefreshedRef = useRef(false)
   const latitude = location?.latitude ?? 37.5665
   const longitude = location?.longitude ?? 126.978
 
@@ -116,6 +118,20 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
       .then(setMainData)
       .catch(() => {})
   }, [latitude, longitude])
+
+  useEffect(() => {
+    if (hasRefreshedRef.current) return
+    if (status === 'loading') return
+
+    hasRefreshedRef.current = true
+    void (async () => {
+      const permission = await getGeolocationPermissionState()
+      if (permission !== 'granted') return
+      queueMicrotask(() => {
+        void requestCurrentLocation()
+      })
+    })()
+  }, [requestCurrentLocation, status])
 
   const newSection = mainData?.data?.sections?.find((s: MainSection) => s.type === 'NEW')
   const hotSection = mainData?.data?.sections?.find((s: MainSection) => s.type === 'HOT')

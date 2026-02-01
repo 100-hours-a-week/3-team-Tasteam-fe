@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { LocationContext } from './locationContext'
 import type { AppLocation, LocationStatus } from './types'
 import { getCurrentPosition, setLocationPermission } from '@/shared/lib/geolocation'
@@ -6,10 +6,11 @@ import { reverseGeocodeNominatim } from '../api/reverseGeocode'
 
 const STORAGE_KEY = 'app_location_v1'
 const DEFAULT_LOCATION: Omit<AppLocation, 'updatedAt' | 'source'> = {
-  latitude: 37.5665,
-  longitude: 126.978,
-  district: '서울',
-  address: '서울특별시',
+  // fallback: 경기도 성남시 판교역
+  latitude: 37.3947,
+  longitude: 127.1112,
+  district: '판교역',
+  address: '경기도 성남시 분당구 판교역',
 }
 
 function loadFromStorage(): AppLocation | null {
@@ -103,17 +104,11 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       }
       setLocation(fallback)
       saveToStorage(fallback)
-      setStatus('ready')
+      setStatus('error')
+      setError('주소 정보를 확인할 수 없습니다.')
       return fallback
     }
   }, [])
-
-  useEffect(() => {
-    if (status !== 'idle') return
-    queueMicrotask(() => {
-      void requestCurrentLocation()
-    })
-  }, [requestCurrentLocation, status])
 
   const value = useMemo(
     () => ({

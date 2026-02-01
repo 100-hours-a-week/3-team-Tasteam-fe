@@ -33,6 +33,7 @@ export async function reverseGeocodeNominatim(params: {
   latitude: number
   longitude: number
 }): Promise<ReverseGeocodeResult> {
+  // TODO(backend): 실서비스에서는 클라이언트 직접 호출 대신 백엔드 프록시(레이트리밋/정책 대응)로 이관 가능.
   const { latitude, longitude } = params
   const url = new URL('https://nominatim.openstreetmap.org/reverse')
   url.searchParams.set('format', 'jsonv2')
