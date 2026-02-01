@@ -46,7 +46,7 @@ export function SubgroupListPage({
   onCreateClick,
   onBack,
 }: SubgroupListPageProps) {
-  const { refresh } = useMemberGroups()
+  const { refresh, isSubgroupMember, isLoaded } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
   const groupId = groupIdParam ? Number(groupIdParam) : null
@@ -93,7 +93,7 @@ export function SubgroupListPage({
             description: record.description ?? '',
             memberCount: record.memberCount,
             imageUrl: record.thumnailImage?.url,
-            isJoined: false,
+            isJoined: isLoaded ? isSubgroupMember(record.subgroupId) : false,
             isPrivate: record.joinType === 'PASSWORD',
           }
         })
@@ -113,7 +113,7 @@ export function SubgroupListPage({
     return () => {
       cancelled = true
     }
-  }, [groupId, searchQuery])
+  }, [groupId, searchQuery, isLoaded, isSubgroupMember])
 
   const resolveJoinErrorCode = (error: unknown) => {
     if (axios.isAxiosError<ErrorResponse>(error)) {
