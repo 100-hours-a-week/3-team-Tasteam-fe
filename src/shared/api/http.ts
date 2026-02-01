@@ -104,6 +104,7 @@ http.interceptors.response.use(
     const errorData = errorResponse?.data
     logger.error(`[HTTP] ${error.config?.url}에서 오류 응답`, {
       status: errorResponse?.status,
+      method: error.config?.method,
       code: errorData?.code,
       message: errorData?.message,
       errors: errorData?.errors,

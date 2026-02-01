@@ -35,7 +35,12 @@ type SearchPageProps = {
 export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
-  const { recentSearches, remove: removeRecentSearch, add: addRecentSearch } = useRecentSearches()
+  const {
+    recentSearches,
+    remove: removeRecentSearch,
+    add: addRecentSearch,
+    refresh: refreshRecentSearches,
+  } = useRecentSearches()
   const [restaurantResults, setRestaurantResults] = useState<SearchRestaurantItem[]>([])
   const [groupResults, setGroupResults] = useState<SearchGroupItem[]>([])
   const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
@@ -89,6 +94,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           if (searchRequestId.current !== requestId) return
           setRestaurantResults(response.data.restaurants.items)
           setGroupResults(response.data.groups)
+          refreshRecentSearches()
         })
         .catch(() => {
           if (searchRequestId.current !== requestId) return

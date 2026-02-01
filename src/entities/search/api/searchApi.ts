@@ -14,13 +14,6 @@ export const getRecentSearches = () =>
     url: '/api/v1/recent-searches',
   })
 
-export const addRecentSearch = (keyword: string) =>
-  request<void>({
-    method: 'POST',
-    url: '/api/v1/recent-searches',
-    data: { keyword },
-  })
-
 export const deleteRecentSearch = (id: number) =>
   request<void>({
     method: 'DELETE',
