@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/entities/user/model/useAuth'
 import { request } from '@/shared/api/request'
@@ -13,9 +13,8 @@ type RefreshResponse = {
 }
 
 export const OAuthCallbackPage = () => {
-  const { loginWithToken, openLogin } = useAuth()
+  const { loginWithToken } = useAuth()
   const navigate = useNavigate()
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const requestRef = useRef<Promise<RefreshResponse> | null>(null)
   const handledRef = useRef(false)
 
@@ -44,29 +43,18 @@ export const OAuthCallbackPage = () => {
           navigate(returnTo, { replace: true })
           return
         }
-        setErrorMessage('액세스 토큰을 가져오지 못했습니다.')
-        openLogin()
+        navigate('/error', { replace: true })
       })
       .catch(() => {
         if (handledRef.current) {
           return
         }
         handledRef.current = true
-        setErrorMessage('로그인 처리 중 오류가 발생했습니다.')
-        openLogin()
+        navigate('/error', { replace: true })
       })
 
     return () => {}
-  }, [loginWithToken, openLogin])
+  }, [loginWithToken, navigate])
 
-  if (!errorMessage) {
-    return <div className={styles.hidden} aria-hidden="true" />
-  }
-
-  return (
-    <main className={styles.error}>
-      <h1 className={styles.title}>로그인 처리 실패</h1>
-      <p className={styles.message}>{errorMessage}</p>
-    </main>
-  )
+  return <div className={styles.hidden} aria-hidden="true" />
 }
