@@ -119,7 +119,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="그룹 이름, 음식점 이름을 검색해보세요"
+              placeholder="그룹, 음식점, 태그를 검색해보세요"
               className="pl-9"
               value={searchQuery}
               onChange={(e) => {

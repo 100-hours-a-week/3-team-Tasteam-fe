@@ -39,7 +39,7 @@ jobs:
       #      - name: Run tests with coverage
       #        run: npm test -- --coverage
 
-      # 1주차 생략
+      # 1주차 생략 SonarCloud 사용 불가
       # SonarCloud 분석
       #      - name: SonarCloud Scan
       #        uses: SonarSource/sonarcloud-github-action@master

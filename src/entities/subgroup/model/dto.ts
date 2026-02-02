@@ -9,6 +9,7 @@ export type SubgroupListItemDto = {
   memberCount: number
   joinType: 'OPEN' | 'PASSWORD'
   thumnailImage?: ImageResource
+  profileImageUrl?: string | null
   createdAt: IsoDateTimeString
 }
 
@@ -33,6 +34,7 @@ export type SubgroupDetailDto = {
   description: string
   memberCount: number
   thumnailImage?: ImageResource
+  profileImageUrl?: string | null
   createdAt: IsoDateTimeString
 }
 
@@ -43,7 +45,7 @@ export type SubgroupDetailResponseDto = SuccessResponse<{
 export type SubgroupCreateRequestDto = {
   name: string
   description?: string
-  profileImageId?: string
+  profileImageFileUuid?: string
   joinType: 'OPEN' | 'PASSWORD'
   password?: string | null
 }
