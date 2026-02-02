@@ -1,4 +1,4 @@
-import { MapPin, Star } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
@@ -9,7 +9,6 @@ type HorizontalRestaurantCardProps = {
   name: string
   category: string
   address?: string
-  rating?: number
   distance: string
   image: string
   tags?: string[]
@@ -22,7 +21,6 @@ export function HorizontalRestaurantCard({
   name,
   category,
   address,
-  rating,
   distance,
   image,
   tags = [],
@@ -43,12 +41,6 @@ export function HorizontalRestaurantCard({
       <div className="px-4 pb-4 pt-1 space-y-1">
         <div className="flex items-start justify-between gap-2">
           <h3 className="flex-1 min-w-0 truncate font-semibold">{name}</h3>
-          {rating !== undefined && (
-            <div className="flex items-center gap-1 text-sm shrink-0">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span>{rating.toFixed(1)}</span>
-            </div>
-          )}
         </div>
         <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
           <span className="min-w-0 truncate">{address ?? category}</span>

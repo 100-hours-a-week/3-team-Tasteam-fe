@@ -39,6 +39,7 @@ const CATEGORY_OPTIONS = [
   '주점',
   '고깃집',
 ]
+const ALL_CATEGORY = '전체'
 
 const EMPTY_GROUP: GroupDetailHeaderData = {
   name: '',
@@ -91,11 +92,11 @@ export function GroupDetailPage() {
         if (cancelled) return
         const names = list.map((item) => item.name)
         setCategories(names)
-        setSelectedCategory((prev) => prev ?? names[0] ?? null)
+        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
       } catch {
         if (cancelled) return
         setCategories(CATEGORY_OPTIONS)
-        setSelectedCategory((prev) => prev ?? CATEGORY_OPTIONS[0] ?? null)
+        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
       } finally {
         if (!cancelled) {
           setIsCategoryLoading(false)
@@ -175,7 +176,7 @@ export function GroupDetailPage() {
 
   useEffect(() => {
     if (!groupId || Number.isNaN(groupId)) return
-    if (!selectedCategory || !isGroupLoaded) return
+    if (!isGroupLoaded) return
     if (isLocationLoading) return
     if (!locationPosition) {
       setRestaurants([])
@@ -191,7 +192,8 @@ export function GroupDetailPage() {
           latitude: locationPosition.latitude,
           longitude: locationPosition.longitude,
           size: 10,
-          categories: selectedCategory,
+          categories:
+            selectedCategory && selectedCategory !== ALL_CATEGORY ? selectedCategory : undefined,
         })
         if (cancelled) return
         setRestaurants(restaurantRes.items ?? [])
@@ -242,11 +244,15 @@ export function GroupDetailPage() {
 
       <Container className="pt-3 pb-3 border-b border-border">
         <GroupCategoryFilter
-          categories={categories.length ? categories : CATEGORY_OPTIONS}
+          categories={[
+            ALL_CATEGORY,
+            ...(categories.length ? categories : CATEGORY_OPTIONS).filter(
+              (category) => category !== ALL_CATEGORY,
+            ),
+          ]}
           value={selectedCategory}
           onChange={(value) => {
-            const fallback = categories[0] ?? CATEGORY_OPTIONS[0] ?? null
-            setSelectedCategory(value ?? fallback)
+            setSelectedCategory(value ?? ALL_CATEGORY)
           }}
         />
       </Container>

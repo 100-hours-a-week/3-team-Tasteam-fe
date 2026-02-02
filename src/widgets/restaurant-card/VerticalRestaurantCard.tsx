@@ -1,4 +1,4 @@
-import { MapPin, Star } from 'lucide-react'
+import { MapPin, Sparkles } from 'lucide-react'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
@@ -9,7 +9,6 @@ type VerticalRestaurantCardProps = {
   name: string
   category: string
   address?: string
-  rating?: number
   distance: string
   image: string
   tags?: string[]
@@ -23,7 +22,6 @@ export function VerticalRestaurantCard({
   name,
   category,
   address,
-  rating,
   distance,
   image,
   tags = [],
@@ -34,8 +32,12 @@ export function VerticalRestaurantCard({
   return (
     <div className={cn('space-y-2', className)}>
       {reason && (
-        <Badge variant="secondary" className="text-xs">
-          {reason}
+        <Badge
+          variant="secondary"
+          className="text-xs inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-foreground/80"
+        >
+          <Sparkles className="h-3 w-3" />
+          AI 리뷰 한줄 요약: {reason}
         </Badge>
       )}
       <Card
@@ -50,12 +52,6 @@ export function VerticalRestaurantCard({
             <h3 className="flex-1 min-w-0 truncate text-[17px] font-semibold leading-tight">
               {name}
             </h3>
-            {rating !== undefined && (
-              <div className="flex items-center gap-1 text-sm shrink-0">
-                <Star className="h-4 w-4 fill-primary text-primary" />
-                <span>{rating.toFixed(1)}</span>
-              </div>
-            )}
           </div>
           <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
             <span className="min-w-0 truncate">{address ?? category}</span>
