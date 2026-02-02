@@ -154,7 +154,10 @@ function App() {
           path="/groups/create"
           element={
             <RequireAuth>
-              <CreateGroupPage onBack={() => navigate(-1)} onSubmit={() => navigate('/groups')} />
+              <CreateGroupPage
+                onBack={() => navigate(-1)}
+                onSubmit={() => navigate('/groups', { replace: true })}
+              />
             </RequireAuth>
           }
         />
@@ -175,7 +178,12 @@ function App() {
             <RequireAuth>
               <SubgroupCreatePage
                 onBack={() => navigate(-1)}
-                onSubmit={(subgroupId) => navigate(`/subgroups/${subgroupId}`)}
+                onSubmit={() => {
+                  const params = new URLSearchParams(location.search)
+                  const groupId = params.get('groupId')
+                  const target = groupId ? `/subgroup-list?groupId=${groupId}` : '/subgroup-list'
+                  navigate(target, { replace: true })
+                }}
               />
             </RequireAuth>
           }
@@ -187,7 +195,9 @@ function App() {
             <RequireAuth>
               <GroupEmailJoinPage
                 onBack={() => navigate(-1)}
-                onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+                onJoin={(groupId) =>
+                  navigate(`/groups/${groupId}`, { state: { joined: true }, replace: true })
+                }
               />
             </RequireAuth>
           }
@@ -198,7 +208,9 @@ function App() {
             <RequireAuth>
               <GroupPasswordJoinPage
                 onBack={() => navigate(-1)}
-                onJoin={(groupId) => navigate(`/groups/${groupId}`, { state: { joined: true } })}
+                onJoin={(groupId) =>
+                  navigate(`/groups/${groupId}`, { state: { joined: true }, replace: true })
+                }
               />
             </RequireAuth>
           }
