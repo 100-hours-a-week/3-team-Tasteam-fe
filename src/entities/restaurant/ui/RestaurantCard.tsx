@@ -152,7 +152,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
             </Button>
           )}
         </div>
-        <div className="p-4 space-y-2">
+        <div className="px-4 pb-4 pt-1 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="flex-1 min-w-0 truncate">{name}</h3>
             {rating !== undefined && (
@@ -252,7 +252,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
           </Button>
         )}
       </div>
-      <div className="p-4 space-y-2">
+      <div className="px-4 pb-4 pt-1 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="flex-1 min-w-0 truncate">{restaurant.name}</h3>
           {ratio !== undefined && (

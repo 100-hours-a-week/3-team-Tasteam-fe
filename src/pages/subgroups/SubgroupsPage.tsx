@@ -226,7 +226,7 @@ export function SubgroupsPage() {
       await leaveSubgroup(subgroupId)
       alert('하위 그룹에서 나왔습니다.')
       refresh()
-      navigate(-1)
+      navigate(ROUTES.groups, { replace: true })
     } catch (error: unknown) {
       const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
       if (code === 'AUTHENTICATION_REQUIRED') {

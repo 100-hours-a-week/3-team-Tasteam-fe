@@ -8,6 +8,8 @@ export const ROUTES = {
   otp: '/otp',
   onboarding: '/onboarding',
   search: '/search',
+  locationSelect: '/location-select',
+  todayLunch: '/today-lunch',
   groups: '/groups',
   createGroup: '/groups/create',
   groupEmailJoin: (id: string) => `/groups/${id}/email-join`,

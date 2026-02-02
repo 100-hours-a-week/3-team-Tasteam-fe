@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/entities/user/model/useAuth'
-import {
-  addRecentSearch as apiAddRecentSearch,
-  deleteRecentSearch,
-  getRecentSearches,
-} from '../api/searchApi'
+import { deleteRecentSearch, getRecentSearches } from '../api/searchApi'
 import type { RecentSearch } from './types'
 
 const STORAGE_KEY = 'recent_searches'
@@ -29,21 +25,38 @@ export function useRecentSearches() {
   const { isAuthenticated } = useAuth()
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (isAuthenticated) {
-      let active = true
       getRecentSearches()
         .then((response) => {
-          if (active) setRecentSearches(response.data.items || [])
+          setRecentSearches(response.data.items || [])
         })
         .catch(() => {
-          if (active) setRecentSearches([])
+          setRecentSearches([])
         })
-      return () => {
-        active = false
-      }
-    } else {
+      return
+    }
+
+    setRecentSearches(loadFromStorage())
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
       setRecentSearches(loadFromStorage())
+      return
+    }
+
+    let active = true
+    getRecentSearches()
+      .then((response) => {
+        if (active) setRecentSearches(response.data.items || [])
+      })
+      .catch(() => {
+        if (active) setRecentSearches([])
+      })
+
+    return () => {
+      active = false
     }
   }, [isAuthenticated])
 
@@ -68,13 +81,7 @@ export function useRecentSearches() {
   const add = useCallback(
     async (keyword: string) => {
       if (isAuthenticated) {
-        try {
-          await apiAddRecentSearch(keyword)
-          const response = await getRecentSearches()
-          setRecentSearches(response.data.items || [])
-        } catch {
-          return
-        }
+        return
       } else {
         setRecentSearches((prev) => {
           const filtered = prev.filter((item) => item.keyword !== keyword)
@@ -90,5 +97,5 @@ export function useRecentSearches() {
     [isAuthenticated],
   )
 
-  return { recentSearches, remove, add }
+  return { recentSearches, remove, add, refresh }
 }
