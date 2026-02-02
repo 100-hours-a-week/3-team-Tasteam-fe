@@ -155,7 +155,7 @@ export function WriteReviewPage() {
         imageIds,
       })
       toast.success('리뷰가 등록되었습니다')
-      navigate(-1)
+      navigate(`/restaurants/${restaurantId}`, { replace: true })
     } catch {
       toast.error('리뷰 등록에 실패했습니다')
     } finally {
