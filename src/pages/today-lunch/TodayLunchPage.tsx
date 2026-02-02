@@ -6,6 +6,7 @@ import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { getMainPage } from '@/entities/main/api/mainApi'
 import { useAppLocation } from '@/entities/location'
 import type { MainSectionItemDto } from '@/entities/main/model/types'
+import { toAiRecommendData } from '@/entities/main/model/mapper'
 
 type TodayLunchPageProps = {
   onBack?: () => void
@@ -29,12 +30,8 @@ export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProp
     getMainPage({ latitude, longitude })
       .then((response) => {
         if (!active) return
-        const aiRecommendSection = response.data?.sections?.find(
-          (section) => section.type === 'AI_RECOMMEND',
-        )
-        if (aiRecommendSection) {
-          setRecommendations(aiRecommendSection.items)
-        }
+        const aiRecommend = toAiRecommendData(response).section
+        if (aiRecommend) setRecommendations(aiRecommend.items)
       })
       .catch(() => {})
       .finally(() => {

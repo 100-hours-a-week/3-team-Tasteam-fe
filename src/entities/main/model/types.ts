@@ -41,6 +41,14 @@ export type MainPageResponseDto = SuccessResponse<{
   sections: MainSectionDto[]
 }>
 
+export type MainPageData = {
+  sections: MainSectionDto[]
+}
+
+export type AiRecommendData = {
+  section: MainSectionDto | null
+}
+
 export type MainBannerEvent = MainBannerDto & {
   createdAt?: IsoDateTimeString
   updatedAt?: IsoDateTimeString

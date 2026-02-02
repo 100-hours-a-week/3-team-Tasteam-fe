@@ -16,6 +16,7 @@ import type {
   MainSectionDto,
   MainSectionItemDto,
 } from '@/entities/main/model/types'
+import { toMainPageData } from '@/entities/main/model/mapper'
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -137,7 +138,8 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     })()
   }, [requestCurrentLocation, status])
 
-  const sections = mainData?.data?.sections ?? []
+  const mainPageData = toMainPageData(mainData)
+  const sections = mainPageData.sections
   const fallbackSections: MainSectionDto[] = [
     {
       type: 'NEW',
