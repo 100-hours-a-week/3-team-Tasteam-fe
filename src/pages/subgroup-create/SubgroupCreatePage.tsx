@@ -11,6 +11,7 @@ import { Label } from '@/shared/ui/label'
 import { Textarea } from '@/shared/ui/textarea'
 import { SubgroupImageUploader } from '@/features/subgroups/subgroup-create-image'
 import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-password'
+import { UploadErrorModal, useImageUpload } from '@/features/upload'
 import { createSubgroup, getSubgroup } from '@/entities/subgroup/api/subgroupApi'
 import type { ErrorResponse } from '@/shared/types/api'
 
@@ -22,14 +23,15 @@ type SubgroupCreatePageProps = {
 }
 
 export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps) {
+  const { files, isUploading, uploadErrors, clearErrors, addFiles, uploadAll, reset } =
+    useImageUpload({
+      purpose: 'PROFILE_IMAGE',
+      maxFiles: 1,
+    })
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
   const groupId = groupIdParam ? Number(groupIdParam) : null
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const imagePreviewUrl = useMemo(
-    () => (imageFile ? URL.createObjectURL(imageFile) : null),
-    [imageFile],
-  )
+  const imagePreviewUrl = files.length > 0 ? files[0].previewUrl : null
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [isPasswordEnabled, setIsPasswordEnabled] = useState(false)
@@ -40,12 +42,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!imagePreviewUrl) return
-    return () => {
-      URL.revokeObjectURL(imagePreviewUrl)
-    }
-  }, [imagePreviewUrl])
+  useEffect(() => () => reset(), [reset])
 
   const nameError = useMemo(() => {
     if (!name.trim()) return '그룹명을 입력해주세요'
@@ -96,10 +93,15 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
         setSubmitError('그룹 정보를 찾을 수 없습니다.')
         return
       }
+      let profileImageFileUuid: string | undefined
+      if (files.length > 0) {
+        const results = await uploadAll()
+        profileImageFileUuid = results[0]?.fileUuid
+      }
       const res = await createSubgroup(groupId, {
         name: name.trim(),
         description: description.trim() || undefined,
-        profileImageId: undefined,
+        profileImageFileUuid,
         joinType: isPasswordEnabled ? 'PASSWORD' : 'OPEN',
         password: isPasswordEnabled ? password.trim() : null,
       })
@@ -124,6 +126,10 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       }
       if (code === 'ALREADY_EXISTS') {
         setSubmitError('이미 존재하는 하위그룹명입니다.')
+      } else if (code === 'FILE_NOT_FOUND') {
+        setSubmitError('이미지 파일을 찾을 수 없습니다. 이미지를 다시 업로드해주세요.')
+      } else if (code === 'FILE_NOT_ACTIVE') {
+        setSubmitError('이미지 업로드가 만료되었어요. 이미지를 다시 업로드해주세요.')
       } else if (code === 'NO_PERMISSION') {
         setSubmitError('그룹 멤버만 하위그룹을 생성할 수 있습니다.')
       } else if (code === 'GROUP_NOT_FOUND') {
@@ -149,7 +155,13 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
           {!groupId || Number.isNaN(groupId) ? (
             <p className="text-sm text-destructive">그룹 정보를 찾을 수 없습니다.</p>
           ) : null}
-          <SubgroupImageUploader previewUrl={imagePreviewUrl} onImageChange={setImageFile} />
+          <SubgroupImageUploader
+            previewUrl={imagePreviewUrl}
+            onImageChange={(file) => {
+              reset()
+              if (file) addFiles([file])
+            }}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="subgroup-name">그룹명 *</Label>
@@ -192,13 +204,22 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
             onConfirmBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
           />
 
-          <Button className="w-full" onClick={handleSubmit} disabled={!isFormValid || isSubmitting}>
+          <Button
+            className="w-full"
+            onClick={handleSubmit}
+            disabled={!isFormValid || isSubmitting || isUploading}
+          >
             <Plus className="w-4 h-4 mr-2" />
-            {isSubmitting ? '생성 중...' : '생성하기'}
+            {isUploading ? '이미지 업로드 중...' : isSubmitting ? '생성 중...' : '생성하기'}
           </Button>
           {submitError ? <p className="text-xs text-destructive">{submitError}</p> : null}
         </div>
       </Container>
+      <UploadErrorModal
+        open={uploadErrors.length > 0}
+        onClose={clearErrors}
+        errors={uploadErrors}
+      />
     </div>
   )
 }

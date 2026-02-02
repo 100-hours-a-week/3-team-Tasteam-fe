@@ -84,6 +84,7 @@ export function SubgroupListPage({
             description: string
             memberCount: number
             thumnailImage?: { url?: string }
+            profileImageUrl?: string | null
             joinType?: 'OPEN' | 'PASSWORD' | null
             createdAt?: string
           }
@@ -92,7 +93,7 @@ export function SubgroupListPage({
             name: record.name,
             description: record.description ?? '',
             memberCount: record.memberCount,
-            imageUrl: record.thumnailImage?.url,
+            imageUrl: record.profileImageUrl ?? record.thumnailImage?.url,
             isJoined: false,
             isPrivate: record.joinType === 'PASSWORD',
           }

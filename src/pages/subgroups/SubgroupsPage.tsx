@@ -9,7 +9,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { ProfileImage } from '@/shared/ui/profile-image'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
 // import { RestaurantCard } from '@/entities/restaurant/ui'
 import { ReviewCard } from '@/entities/review/ui'
@@ -307,21 +307,34 @@ export function SubgroupsPage() {
 
         <Card className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
               {isSubgroupLoading ? (
-                <>
-                  <Skeleton className="h-6 w-40 mb-2" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </>
+                <Skeleton className="h-14 w-14 rounded-full shrink-0" />
               ) : (
-                <>
-                  <h1 className="text-xl font-bold mb-2">{subgroup?.name || '하위 그룹'}</h1>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {subgroup?.description || '설명이 없습니다.'}
-                  </p>
-                </>
+                <Avatar className="h-14 w-14 shrink-0 border border-border">
+                  <AvatarImage
+                    src={subgroup?.profileImageUrl ?? subgroup?.thumnailImage?.url}
+                    alt={subgroup?.name ?? '하위 그룹'}
+                  />
+                  <AvatarFallback>{(subgroup?.name ?? '하위').slice(0, 2)}</AvatarFallback>
+                </Avatar>
               )}
+              <div className="flex-1 min-w-0">
+                {isSubgroupLoading ? (
+                  <>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </>
+                ) : (
+                  <>
+                    <h1 className="text-xl font-bold mb-2">{subgroup?.name || '하위 그룹'}</h1>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {subgroup?.description || '설명이 없습니다.'}
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
             {isMember && (
               <DropdownMenu>
