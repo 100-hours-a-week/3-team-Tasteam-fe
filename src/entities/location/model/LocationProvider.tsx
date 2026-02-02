@@ -94,19 +94,18 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       setStatus('ready')
       return value
     } catch {
-      const fallback: AppLocation = {
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        district: '현재 위치',
-        address: '현재 위치',
-        updatedAt: new Date().toISOString(),
-        source: 'geolocation',
-      }
-      setLocation(fallback)
-      saveToStorage(fallback)
       setStatus('error')
       setError('주소 정보를 확인할 수 없습니다.')
-      return fallback
+      setLocation((prev) => {
+        const next = prev ?? {
+          ...DEFAULT_LOCATION,
+          updatedAt: new Date().toISOString(),
+          source: 'manual',
+        }
+        saveToStorage(next)
+        return next
+      })
+      return null
     }
   }, [])
 
