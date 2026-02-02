@@ -39,7 +39,7 @@ function getImages(review: ReviewListItemDto | ReviewDetailDto): string[] {
   if ('images' in review) {
     return review.images.map((img) => img.url)
   }
-  return review.thumbnailImage ? [review.thumbnailImage.url] : []
+  return review.thumbnailImages?.map((img) => img.url) ?? []
 }
 
 function getContent(review: ReviewListItemDto | ReviewDetailDto): string {

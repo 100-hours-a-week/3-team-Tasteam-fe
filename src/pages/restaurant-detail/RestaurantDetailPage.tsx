@@ -84,12 +84,7 @@ export function RestaurantDetailPage() {
     setReviewsError(false)
     getRestaurantReviews(Number(restaurantId), { size: 3 })
       .then((res) => {
-        const anyRes = res as {
-          items?: ReviewListItemDto[]
-          data?: { items?: ReviewListItemDto[] }
-        }
-        const items = anyRes.items ?? anyRes.data?.items
-        setPreviewReviews(items?.slice(0, 3) ?? [])
+        setPreviewReviews(res.items?.slice(0, 3) ?? [])
       })
       .catch(() => {
         setPreviewReviews([])

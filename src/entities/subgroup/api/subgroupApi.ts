@@ -85,12 +85,21 @@ export const getSubgroupReviews = (
   subgroupId: number,
   params?: { cursor?: string; size?: number },
 ) =>
-  request<{ data?: ReviewListResponseDto }>({
+  request<
+    | ReviewListResponseDto
+    | {
+        items: ReviewListResponseDto['data']['items']
+        pagination: ReviewListResponseDto['data']['pagination']
+      }
+  >({
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}/reviews${buildQuery(params ?? {})}`,
-  }).then(
-    (res) => res.data ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } },
-  )
+  }).then((res) => {
+    if ('data' in res) {
+      return res.data ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
+    }
+    return res ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
+  })
 
 export const getSubgroupMembers = async (
   subgroupId: number,

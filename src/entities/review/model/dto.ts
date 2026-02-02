@@ -5,16 +5,17 @@ import type { CursorPageResponse } from '@/shared/types/pagination'
 export type ReviewListItemDto = {
   id: number
   author: {
+    id: number
     nickname: string
   }
   contentPreview: string
   isRecommended: boolean
   keywords: string[]
-  thumbnailImage: ImageResource | null
+  thumbnailImages: ImageResource[]
   createdAt: IsoDateTimeString
 }
 
-export type ReviewListResponseDto = CursorPageResponse<ReviewListItemDto>
+export type ReviewListResponseDto = SuccessResponse<CursorPageResponse<ReviewListItemDto>>
 
 export type ReviewDetailDto = {
   id: number
