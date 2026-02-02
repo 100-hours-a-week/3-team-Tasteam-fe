@@ -14,6 +14,7 @@ import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-pa
 import { UploadErrorModal, useImageUpload } from '@/features/upload'
 import { createSubgroup, getSubgroup } from '@/entities/subgroup/api/subgroupApi'
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { useAuth } from '@/entities/user/model/useAuth'
 import type { ErrorResponse } from '@/shared/types/api'
 
 const DESCRIPTION_LIMIT = 500
@@ -24,6 +25,7 @@ type SubgroupCreatePageProps = {
 }
 
 export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps) {
+  const { isAuthenticated, openLogin } = useAuth()
   const { files, isUploading, uploadErrors, clearErrors, addFiles, uploadAll, reset } =
     useImageUpload({
       purpose: 'PROFILE_IMAGE',
@@ -87,6 +89,10 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
   const handleSubmit = async () => {
     setHasSubmitted(true)
     if (!isFormValid) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
 
     setIsSubmitting(true)
     setSubmitError(null)
@@ -143,7 +149,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       } else if (code === 'INVALID_REQUEST') {
         setSubmitError('요청 값이 올바르지 않습니다.')
       } else if (code === 'AUTHENTICATION_REQUIRED') {
-        setSubmitError('로그인이 필요합니다.')
+        openLogin()
       } else {
         setSubmitError('하위그룹 생성에 실패했습니다. 잠시 후 다시 시도해주세요.')
       }

@@ -204,7 +204,7 @@ export function SubgroupsPage() {
       } else if (code === 'SUBGROUP_ALREADY_JOINED') {
         alert('이미 가입된 하위그룹입니다.')
       } else if (code === 'AUTHENTICATION_REQUIRED') {
-        alert('로그인이 필요합니다.')
+        openLogin()
       } else if (code === 'NO_PERMISSION') {
         alert('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
       } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
@@ -230,7 +230,7 @@ export function SubgroupsPage() {
     } catch (error: unknown) {
       const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
       if (code === 'AUTHENTICATION_REQUIRED') {
-        alert('로그인이 필요합니다.')
+        openLogin()
       } else if (code === 'NO_PERMISSION') {
         alert('이미 탈퇴했거나 권한이 없습니다.')
       } else if (code === 'SUBGROUP_NOT_FOUND') {

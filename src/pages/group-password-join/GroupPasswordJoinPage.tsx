@@ -7,6 +7,7 @@ import { GroupEmailJoinGroupInfo, GroupPasswordJoinForm } from '@/features/group
 import { getGroup } from '@/entities/group/api/groupApi'
 import { verifyGroupPassword } from '@/entities/member/api/memberApi'
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { useAuth } from '@/entities/user/model/useAuth'
 
 type GroupPasswordJoinPageProps = {
   onBack?: () => void
@@ -24,6 +25,7 @@ type GroupInfo = {
 export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageProps) {
   const { id } = useParams()
   const groupId = id ? Number(id) : null
+  const { openLogin } = useAuth()
   const { refresh } = useMemberGroups()
   const [password, setPassword] = useState('')
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
@@ -111,6 +113,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
         if (code === 'UNAUTHORIZED') {
           setHelperStatus('error')
           setHelperText('로그인이 필요합니다.')
+          openLogin()
           return
         }
         if (code === 'GROUP_NOT_FOUND') {

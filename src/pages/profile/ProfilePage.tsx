@@ -46,7 +46,7 @@ export function ProfilePage({
 }: ProfilePageProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, openLogin } = useAuth()
   const [member, setMember] = useState<MemberProfileDto | null>(null)
   const [profileError, setProfileError] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
@@ -95,12 +95,17 @@ export function ProfilePage({
   const isLoading = isAuthenticated && member === null && !profileError
 
   const menuItems = [
-    { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites },
-    { label: '내 리뷰', icon: Bell, onClick: onMyReviews },
+    { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites, requiresAuth: true },
+    { label: '내 리뷰', icon: Bell, onClick: onMyReviews, requiresAuth: true },
     ...(FEATURE_FLAGS.enableNotifications
       ? [
-          { label: '알림', icon: Bell, onClick: onNotifications },
-          { label: '알림 설정', icon: Settings, onClick: onNotificationSettings },
+          { label: '알림', icon: Bell, onClick: onNotifications, requiresAuth: true },
+          {
+            label: '알림 설정',
+            icon: Settings,
+            onClick: onNotificationSettings,
+            requiresAuth: true,
+          },
         ]
       : []),
     { label: '설정', icon: Settings, onClick: onSettingsClick },
@@ -196,10 +201,17 @@ export function ProfilePage({
           {menuItems.map((item, idx) => {
             const Icon = item.icon
             const isDestructive = item.tone === 'destructive'
+            const handleClick = () => {
+              if (item.requiresAuth && !isAuthenticated) {
+                openLogin()
+                return
+              }
+              item.onClick?.()
+            }
             return (
               <button
                 key={idx}
-                onClick={item.onClick}
+                onClick={handleClick}
                 className="w-full flex items-center justify-between p-4 hover:bg-accent transition-colors"
               >
                 <div className="flex items-center gap-3">

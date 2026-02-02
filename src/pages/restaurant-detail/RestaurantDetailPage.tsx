@@ -27,6 +27,7 @@ import { ReviewCard } from '@/entities/review/ui'
 import { Container } from '@/widgets/container'
 import { cn } from '@/shared/lib/utils'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { useAuth } from '@/entities/user/model/useAuth'
 import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
 import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
@@ -44,6 +45,7 @@ export function RestaurantDetailPage() {
 
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { isAuthenticated, openLogin } = useAuth()
   const [isSaved, setIsSaved] = React.useState(false)
   const [isRestaurantLoading, setIsRestaurantLoading] = React.useState(true)
   const [restaurantData, setRestaurantData] = React.useState<{
@@ -190,10 +192,18 @@ export function RestaurantDetailPage() {
   }
 
   const handleSave = () => {
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
     setIsSaved(!isSaved)
   }
 
   const handleWriteReview = () => {
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
     navigate(`/restaurants/${restaurantId}/review`)
   }
 
