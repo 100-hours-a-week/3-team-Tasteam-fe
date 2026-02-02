@@ -175,7 +175,7 @@ function App() {
             <RequireAuth>
               <SubgroupCreatePage
                 onBack={() => navigate(-1)}
-                onSubmit={(subgroupId) => navigate(`/subgroups/${subgroupId}`)}
+                onSubmit={(subgroupId) => navigate(`/subgroups/${subgroupId}`, { replace: true })}
               />
             </RequireAuth>
           }

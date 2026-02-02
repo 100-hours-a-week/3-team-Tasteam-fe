@@ -12,6 +12,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { SubgroupImageUploader } from '@/features/subgroups/subgroup-create-image'
 import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-password'
 import { createSubgroup, getSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import type { ErrorResponse } from '@/shared/types/api'
 
 const DESCRIPTION_LIMIT = 500
@@ -22,6 +23,7 @@ type SubgroupCreatePageProps = {
 }
 
 export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps) {
+  const { refresh } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
   const groupId = groupIdParam ? Number(groupIdParam) : null
@@ -111,6 +113,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       if (typeof createdId === 'number') {
         try {
           await getSubgroup(createdId)
+          await refresh()
           onSubmit?.(String(createdId))
         } catch {
           toast.error('하위그룹 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
