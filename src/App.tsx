@@ -204,12 +204,7 @@ function App() {
             <RequireAuth>
               <SubgroupCreatePage
                 onBack={() => navigate(-1)}
-                onSubmit={() => {
-                  const params = new URLSearchParams(location.search)
-                  const groupId = params.get('groupId')
-                  const target = groupId ? `/subgroup-list?groupId=${groupId}` : '/subgroup-list'
-                  navigate(target, { replace: true })
-                }}
+                onSubmit={(subgroupId) => navigate(`/subgroups/${subgroupId}`, { replace: true })}
               />
             </RequireAuth>
           }
