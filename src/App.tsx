@@ -29,6 +29,8 @@ import { WriteReviewPage } from '@/pages/write-review'
 import { ChatRoomPage } from '@/pages/chat-room'
 import { SubgroupsPage } from '@/pages/subgroups'
 import { ErrorPage } from '@/pages/error-page'
+import { LocationSelectPage } from '@/pages/location-select'
+import { TodayLunchPage } from '@/pages/today-lunch'
 import { RequireAuth } from '@/features/auth/require-auth'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user/model/useAuth'
@@ -37,6 +39,7 @@ import { LocationPermissionModal } from '@/widgets/location/LocationPermissionMo
 import { getLocationPermission, requestLocationPermission } from '@/shared/lib/geolocation'
 import { resetLoginRequired } from '@/shared/lib/authToken'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { useAppLocation } from '@/entities/location'
 import { Route, Routes } from 'react-router-dom'
 
 function ScrollToTop() {
@@ -52,6 +55,7 @@ function ScrollToTop() {
 function App() {
   const isReady = useBootstrap()
   const { showLogin, isAuthenticated, closeLogin, logout } = useAuth()
+  const { requestCurrentLocation } = useAppLocation()
   const navigate = useNavigate()
   const location = useLocation()
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -95,7 +99,10 @@ function App() {
       <LocationPermissionModal
         open={showLocationModal}
         onAllow={async () => {
-          await requestLocationPermission()
+          const granted = await requestLocationPermission()
+          if (granted) {
+            await requestCurrentLocation()
+          }
           setShowLocationModal(false)
         }}
         onDeny={() => {
@@ -142,6 +149,25 @@ function App() {
             <SearchPage
               onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
               onGroupClick={(id) => navigate(`/groups/${id}`)}
+            />
+          }
+        />
+
+        <Route
+          path="/location-select"
+          element={
+            <LocationSelectPage
+              onBack={() => navigate(-1)}
+              onLocationSelect={() => navigate('/')}
+            />
+          }
+        />
+        <Route
+          path="/today-lunch"
+          element={
+            <TodayLunchPage
+              onBack={() => navigate(-1)}
+              onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
             />
           }
         />

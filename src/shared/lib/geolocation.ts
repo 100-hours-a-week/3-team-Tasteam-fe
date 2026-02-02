@@ -5,12 +5,32 @@ export type GeoPosition = {
   longitude: number
 }
 
+export type GeolocationPermissionState = 'granted' | 'denied' | 'prompt' | 'unknown'
+
 export const getLocationPermission = (): boolean => {
   return localStorage.getItem(STORAGE_KEY) === 'true'
 }
 
 export const setLocationPermission = (granted: boolean) => {
   localStorage.setItem(STORAGE_KEY, String(granted))
+}
+
+export const getGeolocationPermissionState = async (): Promise<GeolocationPermissionState> => {
+  if (typeof navigator === 'undefined') return 'unknown'
+
+  try {
+    const permissions = navigator.permissions
+    if (!permissions?.query) {
+      return getLocationPermission() ? 'granted' : 'unknown'
+    }
+    const status = await permissions.query({ name: 'geolocation' as PermissionName })
+    if (status.state === 'granted') return 'granted'
+    if (status.state === 'denied') return 'denied'
+    if (status.state === 'prompt') return 'prompt'
+    return 'unknown'
+  } catch {
+    return getLocationPermission() ? 'granted' : 'unknown'
+  }
 }
 
 export const requestLocationPermission = (): Promise<boolean> => {
