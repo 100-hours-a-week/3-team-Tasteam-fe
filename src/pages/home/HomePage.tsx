@@ -109,7 +109,6 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
                 id={item.restaurantId}
                 name={item.name}
                 category={item.category}
-                rating={4.5}
                 distance={formatDistance(item.distanceMeter)}
                 image={item.thumbnailImageUrl}
                 tags={[]}
