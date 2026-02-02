@@ -1,4 +1,5 @@
 import { request } from '@/shared/api/request'
+import { refreshClient } from '@/shared/api/http'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import type {
   AuthTokenRequestDto,
@@ -6,20 +7,18 @@ import type {
   RefreshAccessTokenResponseDto,
 } from '../model/dto'
 
-export const issueAccessToken = (payload: AuthTokenRequestDto) =>
-  request<AuthTokenResponseDto>({
-    method: 'POST',
-    url: '/api/v1/auth/token',
-    data: payload,
-  })
+export const issueAccessToken = async (payload: AuthTokenRequestDto) => {
+  const response = await refreshClient.post<AuthTokenResponseDto>('/api/v1/auth/token', payload)
+  return response.data
+}
 
-export const refreshAccessToken = (accessToken?: string | null) =>
-  request<RefreshAccessTokenResponseDto>({
-    method: 'POST',
-    url: '/api/v1/auth/token/refresh',
-    data: { accessToken: accessToken ?? null },
-    withCredentials: true,
-  })
+export const refreshAccessToken = async (accessToken?: string | null) => {
+  const response = await refreshClient.post<RefreshAccessTokenResponseDto>(
+    '/api/v1/auth/token/refresh',
+    { accessToken: accessToken ?? null },
+  )
+  return response.data
+}
 
 export const logout = () =>
   request<void>({

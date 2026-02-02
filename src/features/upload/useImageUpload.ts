@@ -5,6 +5,8 @@ import {
   ALLOWED_IMAGE_EXTENSIONS,
   MAX_IMAGE_SIZE_MB,
   MAX_IMAGE_SIZE_BYTES,
+  MIN_IMAGE_SIZE_BYTES,
+  MAX_FILENAME_LENGTH,
 } from '@/entities/upload/model/types'
 import type { UploadPurpose } from '@/entities/upload/model/types'
 
@@ -38,10 +40,18 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
       const errors: string[] = []
 
       const valid = incoming.filter((f) => {
+        if (f.name.length > MAX_FILENAME_LENGTH) {
+          errors.push(`파일 이름이 너무 깁니다: ${f.name.slice(0, 50)}...`)
+          return false
+        }
         if (!ALLOWED_IMAGE_TYPES.includes(f.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
           errors.push(
             `지원하지 않는 이미지 형식입니다: ${f.name} (허용: ${ALLOWED_IMAGE_EXTENSIONS})`,
           )
+          return false
+        }
+        if (f.size < MIN_IMAGE_SIZE_BYTES) {
+          errors.push(`파일이 비어있거나 너무 작습니다: ${f.name}`)
           return false
         }
         if (f.size > MAX_IMAGE_SIZE_BYTES) {
@@ -112,8 +122,7 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
         url: `${grant.url}/${grant.objectKey}`,
       }))
     } catch (e) {
-      const message = e instanceof Error && e.message ? e.message : '알 수 없는 오류가 발생했습니다'
-      setUploadErrors([`이미지 업로드 실패: ${message}`])
+      setUploadErrors(['이미지 업로드에 실패했습니다. 다시 시도해주세요.'])
       throw e
     } finally {
       setIsUploading(false)

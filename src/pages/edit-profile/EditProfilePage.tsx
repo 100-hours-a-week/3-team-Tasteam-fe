@@ -76,14 +76,14 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
 
     setIsLoading(true)
     try {
-      let profileImageId: string | undefined
+      let profileImageFileUuid: string | undefined
 
       if (profileImages.length > 0) {
         const results = await uploadAll()
-        profileImageId = results[0].fileUuid
+        profileImageFileUuid = results[0].fileUuid
       }
 
-      await updateMeProfile({ nickname, bio, profileImageId })
+      await updateMeProfile({ nickname, bio, profileImageFileUuid })
       toast.success('프로필이 수정되었습니다')
       navigate('/profile', { replace: true })
     } catch {

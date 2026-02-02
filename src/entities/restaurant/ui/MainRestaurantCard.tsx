@@ -58,7 +58,7 @@ export function MainRestaurantCard({ item, onClick, className }: MainRestaurantC
           )}
         </div>
 
-        <div className="p-4">
+        <div className="px-4 pb-4 pt-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-base font-semibold leading-[1.2] truncate">{item.name}</h3>
             <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground shrink-0">

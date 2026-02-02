@@ -19,7 +19,7 @@ import {
 import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { RestaurantCard } from '@/entities/restaurant/ui'
+import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { searchAll } from '@/entities/search/api/searchApi'
 import { useRecentSearches } from '@/entities/search/model/useRecentSearches'
 import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
@@ -35,10 +35,14 @@ type SearchPageProps = {
 export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps) {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
-  const { recentSearches, remove: removeRecentSearch, add: addRecentSearch } = useRecentSearches()
+  const {
+    recentSearches,
+    remove: removeRecentSearch,
+    add: addRecentSearch,
+    refresh: refreshRecentSearches,
+  } = useRecentSearches()
   const [restaurantResults, setRestaurantResults] = useState<SearchRestaurantItem[]>([])
   const [groupResults, setGroupResults] = useState<SearchGroupItem[]>([])
-  const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
   const [distance, setDistance] = useState([5])
   const [priceRange, setPriceRange] = useState('all')
   const [isSearching, setIsSearching] = useState(false)
@@ -51,13 +55,6 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
   // TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
   // const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
-
-  const handleSaveToggle = (id: string) => {
-    setSavedRestaurants((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }))
-  }
 
   const scheduleSearch = (rawQuery: string) => {
     const keyword = rawQuery.trim()
@@ -89,6 +86,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           if (searchRequestId.current !== requestId) return
           setRestaurantResults(response.data.restaurants.items)
           setGroupResults(response.data.groups)
+          refreshRecentSearches()
         })
         .catch(() => {
           if (searchRequestId.current !== requestId) return
@@ -121,7 +119,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="음식점, 지역, 음식 종류 검색"
+              placeholder="그룹, 음식점, 태그를 검색해보세요"
               className="pl-9"
               value={searchQuery}
               onChange={(e) => {
@@ -192,7 +190,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                   <Badge
                     key={item.id}
                     variant="secondary"
-                    className="pl-3 pr-1 py-1.5 cursor-pointer hover:bg-secondary/80"
+                    className="pl-3 pr-1 py-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90"
                     onClick={() => {
                       setSearchQuery(item.keyword)
                       scheduleSearch(item.keyword)
@@ -202,7 +200,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-4 w-4 ml-1 hover:bg-transparent"
+                      className="h-4 w-4 ml-1 hover:bg-transparent text-primary-foreground"
                       onClick={(event) => {
                         event.stopPropagation()
                         removeRecentSearch(item.id)
@@ -289,15 +287,14 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                       <h3 className="text-sm font-semibold">연관 음식점</h3>
                       {hasRestaurantResults ? (
                         restaurantResults.map((restaurant) => (
-                          <RestaurantCard
+                          <VerticalRestaurantCard
                             key={restaurant.restaurantId}
-                            id={String(restaurant.restaurantId)}
+                            id={restaurant.restaurantId}
                             name={restaurant.name}
-                            category="음식점"
                             address={restaurant.address}
-                            imageUrl={restaurant.imageUrl}
-                            isSaved={savedRestaurants[String(restaurant.restaurantId)]}
-                            onSave={() => handleSaveToggle(String(restaurant.restaurantId))}
+                            category=""
+                            distance=""
+                            image={restaurant.imageUrl}
                             onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
                           />
                         ))

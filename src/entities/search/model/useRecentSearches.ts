@@ -25,21 +25,38 @@ export function useRecentSearches() {
   const { isAuthenticated } = useAuth()
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (isAuthenticated) {
-      let active = true
       getRecentSearches()
         .then((response) => {
-          if (active) setRecentSearches(response.data)
+          setRecentSearches(response.data.items || [])
         })
         .catch(() => {
-          if (active) setRecentSearches([])
+          setRecentSearches([])
         })
-      return () => {
-        active = false
-      }
-    } else {
+      return
+    }
+
+    setRecentSearches(loadFromStorage())
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
       setRecentSearches(loadFromStorage())
+      return
+    }
+
+    let active = true
+    getRecentSearches()
+      .then((response) => {
+        if (active) setRecentSearches(response.data.items || [])
+      })
+      .catch(() => {
+        if (active) setRecentSearches([])
+      })
+
+    return () => {
+      active = false
     }
   }, [isAuthenticated])
 
@@ -62,20 +79,23 @@ export function useRecentSearches() {
   )
 
   const add = useCallback(
-    (keyword: string) => {
-      if (isAuthenticated) return
-      setRecentSearches((prev) => {
-        const filtered = prev.filter((item) => item.keyword !== keyword)
-        const next = [
-          { id: localIdCounter++, keyword, createdAt: new Date().toISOString() },
-          ...filtered,
-        ].slice(0, MAX_LOCAL_ITEMS)
-        saveToStorage(next)
-        return next
-      })
+    async (keyword: string) => {
+      if (isAuthenticated) {
+        return
+      } else {
+        setRecentSearches((prev) => {
+          const filtered = prev.filter((item) => item.keyword !== keyword)
+          const next = [
+            { id: localIdCounter++, keyword, updatedAt: new Date().toISOString() },
+            ...filtered,
+          ].slice(0, MAX_LOCAL_ITEMS)
+          saveToStorage(next)
+          return next
+        })
+      }
     },
     [isAuthenticated],
   )
 
-  return { recentSearches, remove, add }
+  return { recentSearches, remove, add, refresh }
 }

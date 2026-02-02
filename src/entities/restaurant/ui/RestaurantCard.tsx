@@ -1,4 +1,4 @@
-import { MapPin, Star, Heart, Sparkles } from 'lucide-react'
+import { MapPin, Heart, Sparkles } from 'lucide-react'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -60,15 +60,6 @@ function getCardImages(props: RestaurantCardProps): string[] {
   return restaurant.images.map((img) => img.url)
 }
 
-function getRecommendRatio(
-  restaurant: RestaurantListItemDto | RestaurantDetailDto,
-): number | undefined {
-  if ('recommendStat' in restaurant && restaurant.recommendStat) {
-    return restaurant.recommendStat.positiveRatio
-  }
-  return undefined
-}
-
 export function RestaurantCard(props: RestaurantCardProps) {
   const images = getCardImages(props)
 
@@ -110,8 +101,6 @@ export function RestaurantCard(props: RestaurantCardProps) {
     const {
       name,
       category,
-      rating,
-      reviewCount,
       distance,
       address,
       tags,
@@ -152,18 +141,9 @@ export function RestaurantCard(props: RestaurantCardProps) {
             </Button>
           )}
         </div>
-        <div className="p-4 space-y-2">
+        <div className="px-4 pb-4 pt-1 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="flex-1 min-w-0 truncate">{name}</h3>
-            {rating !== undefined && (
-              <div className="flex items-center gap-1 text-sm shrink-0">
-                <Star className="h-4 w-4 fill-primary text-primary" />
-                <span>{rating.toFixed(1)}</span>
-                {reviewCount !== undefined && (
-                  <span className="text-muted-foreground">({reviewCount})</span>
-                )}
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>{category}</span>
@@ -221,7 +201,6 @@ export function RestaurantCard(props: RestaurantCardProps) {
     onClick,
     className,
   } = props
-  const ratio = getRecommendRatio(restaurant)
   const summary = reviewSummary?.trim()
 
   return (
@@ -252,15 +231,9 @@ export function RestaurantCard(props: RestaurantCardProps) {
           </Button>
         )}
       </div>
-      <div className="p-4 space-y-2">
+      <div className="px-4 pb-4 pt-1 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="flex-1 min-w-0 truncate">{restaurant.name}</h3>
-          {ratio !== undefined && (
-            <div className="flex items-center gap-1 text-sm shrink-0">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span>{(ratio * 100).toFixed(0)}%</span>
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>{restaurant.foodCategories[0]}</span>

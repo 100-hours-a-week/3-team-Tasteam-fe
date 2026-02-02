@@ -33,7 +33,7 @@ export function WriteReviewPage() {
     uploadAll,
   } = useImageUpload({
     purpose: 'REVIEW_IMAGE',
-    maxFiles: 6,
+    maxFiles: 5,
   })
   const [reviewText, setReviewText] = useState('')
   const [isRecommended, setIsRecommended] = useState(false)
@@ -155,7 +155,7 @@ export function WriteReviewPage() {
         imageIds,
       })
       toast.success('리뷰가 등록되었습니다')
-      navigate(-1)
+      navigate(`/restaurants/${restaurantId}`, { replace: true })
     } catch {
       toast.error('리뷰 등록에 실패했습니다')
     } finally {
@@ -219,7 +219,7 @@ export function WriteReviewPage() {
 
         {/* Image Upload */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold px-1">사진 추가 (최대 6장)</label>
+          <label className="text-sm font-semibold px-1">사진 추가 (최대 5장)</label>
           <div className="border border-input rounded-xl p-4 bg-card shadow-sm">
             <div
               ref={scrollRef}
@@ -232,7 +232,7 @@ export function WriteReviewPage() {
                 isDragging && 'cursor-grabbing',
               )}
             >
-              {selectedImages.length < 6 && (
+              {selectedImages.length < 5 && (
                 <label className="flex-shrink-0 w-24 h-24 border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all">
                   <Plus className="w-5 h-5 text-muted-foreground mb-1" />
                   <span className="text-[10px] text-muted-foreground">사진 추가</span>

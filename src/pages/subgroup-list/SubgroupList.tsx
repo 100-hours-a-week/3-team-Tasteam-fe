@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, Users, Check, Plus, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -46,7 +46,8 @@ export function SubgroupListPage({
   onCreateClick,
   onBack,
 }: SubgroupListPageProps) {
-  const { refresh } = useMemberGroups()
+  const navigate = useNavigate()
+  const { refresh, isSubgroupMember, isLoaded } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
   const groupId = groupIdParam ? Number(groupIdParam) : null
@@ -94,7 +95,7 @@ export function SubgroupListPage({
             description: record.description ?? '',
             memberCount: record.memberCount,
             imageUrl: record.profileImageUrl ?? record.thumnailImage?.url,
-            isJoined: false,
+            isJoined: isLoaded ? isSubgroupMember(record.subgroupId) : false,
             isPrivate: record.joinType === 'PASSWORD',
           }
         })
@@ -114,7 +115,7 @@ export function SubgroupListPage({
     return () => {
       cancelled = true
     }
-  }, [groupId, searchQuery])
+  }, [groupId, searchQuery, isLoaded, isSubgroupMember])
 
   const resolveJoinErrorCode = (error: unknown) => {
     if (axios.isAxiosError<ErrorResponse>(error)) {
@@ -240,13 +241,21 @@ export function SubgroupListPage({
     }
   }
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack()
+      return
+    }
+    navigate(-1)
+  }
+
   return (
     <>
       <div className="flex flex-col h-full bg-background min-h-screen">
         <TopAppBar
           title="하위그룹 찾기"
           showBackButton
-          onBack={onBack}
+          onBack={handleBack}
           actions={
             <Button
               variant="ghost"

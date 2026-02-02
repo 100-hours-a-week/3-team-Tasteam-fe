@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { FileText, Star, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { FileText, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { EmptyState } from '@/widgets/empty-state'
-import { Card, CardContent } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -23,6 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { getMyReviews } from '@/entities/member/api/memberApi'
+import { ReviewCard } from '@/entities/review/ui'
 
 type Review = {
   id: string
@@ -46,14 +46,23 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
   useEffect(() => {
     getMyReviews()
       .then((response) => {
-        const apiData =
-          response.items?.map((item) => ({
-            id: String(item.id),
-            restaurantName: item.restaurantName,
-            rating: 5,
-            content: item.reviewContent,
-            createdAt: '',
-          })) ?? []
+        const rawItems =
+          response.data?.items ??
+          (
+            response.data as {
+              data?: {
+                items?: Array<{ id: number; restaurantName: string; reviewContent: string }>
+              }
+            }
+          )?.data?.items ??
+          []
+        const apiData = rawItems.map((item) => ({
+          id: String((item as { id: number }).id),
+          restaurantName: (item as { restaurantName: string }).restaurantName,
+          rating: 5,
+          content: (item as { reviewContent: string }).reviewContent,
+          createdAt: '',
+        }))
         setReviews(apiData)
       })
       .catch(() => setReviews([]))
@@ -73,56 +82,42 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
         {reviews.length > 0 ? (
           <div className="space-y-3">
             {reviews.map((review) => (
-              <Card key={review.id}>
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between">
-                    <button
-                      className="text-left"
-                      onClick={() => onRestaurantClick?.(review.restaurantName)}
-                    >
-                      <h3 className="font-semibold">{review.restaurantName}</h3>
-                    </button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEditReview?.(review.id)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          수정
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setDeleteTargetId(review.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          삭제
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="flex items-center gap-1 my-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`w-4 h-4 ${
-                          star <= review.rating
-                            ? 'fill-primary text-primary'
-                            : 'text-muted-foreground'
-                        }`}
-                      />
-                    ))}
-                    <span className="text-sm text-muted-foreground ml-1">{review.rating}</span>
-                  </div>
-
-                  <p className="text-sm text-muted-foreground line-clamp-3">{review.content}</p>
-
-                  <p className="text-xs text-muted-foreground mt-2">{review.createdAt}</p>
-                </CardContent>
-              </Card>
+              <div key={review.id} className="relative">
+                <button
+                  className="text-left w-full"
+                  onClick={() => onRestaurantClick?.(review.restaurantName)}
+                >
+                  <ReviewCard
+                    id={review.id}
+                    userName={review.restaurantName}
+                    date={review.createdAt}
+                    content={review.content}
+                    className="pr-10"
+                  />
+                </button>
+                <div className="absolute top-3 right-3 z-10">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEditReview?.(review.id)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        수정
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => setDeleteTargetId(review.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        삭제
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
             ))}
           </div>
         ) : (

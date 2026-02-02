@@ -13,6 +13,7 @@ import { SubgroupImageUploader } from '@/features/subgroups/subgroup-create-imag
 import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-password'
 import { UploadErrorModal, useImageUpload } from '@/features/upload'
 import { createSubgroup, getSubgroup } from '@/entities/subgroup/api/subgroupApi'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import type { ErrorResponse } from '@/shared/types/api'
 
 const DESCRIPTION_LIMIT = 500
@@ -28,6 +29,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       purpose: 'PROFILE_IMAGE',
       maxFiles: 1,
     })
+  const { refresh } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
   const groupId = groupIdParam ? Number(groupIdParam) : null
@@ -106,17 +108,21 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
         password: isPasswordEnabled ? password.trim() : null,
       })
       toast.success('하위그룹을 생성했습니다.')
-      const createdId = res.data?.id
+      const createdId =
+        res.data?.id ??
+        (res as { data?: { data?: { id?: number } } })?.data?.data?.id ??
+        (res as { id?: number })?.id
       if (typeof createdId === 'number') {
         try {
           await getSubgroup(createdId)
+          await refresh()
           onSubmit?.(String(createdId))
         } catch {
           toast.error('하위그룹 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
         }
         return
       }
-      onSubmit?.(String(groupId))
+      toast.error('하위그룹 생성 응답을 확인할 수 없습니다. 잠시 후 다시 시도해주세요.')
     } catch (error: unknown) {
       let code: ErrorResponse['code'] | undefined
       if (axios.isAxiosError<ErrorResponse>(error)) {
