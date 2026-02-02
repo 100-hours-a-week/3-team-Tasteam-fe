@@ -91,11 +91,11 @@ export function GroupDetailPage() {
         if (cancelled) return
         const names = list.map((item) => item.name)
         setCategories(names)
-        setSelectedCategory((prev) => prev ?? names[0] ?? null)
+        setSelectedCategory((prev) => prev ?? '전체')
       } catch {
         if (cancelled) return
         setCategories(CATEGORY_OPTIONS)
-        setSelectedCategory((prev) => prev ?? CATEGORY_OPTIONS[0] ?? null)
+        setSelectedCategory((prev) => prev ?? '전체')
       } finally {
         if (!cancelled) {
           setIsCategoryLoading(false)
@@ -107,6 +107,13 @@ export function GroupDetailPage() {
       cancelled = true
     }
   }, [])
+
+  const categoryOptions = [
+    '전체',
+    ...(categories.length ? categories : CATEGORY_OPTIONS).filter(
+      (category) => category !== '전체',
+    ),
+  ]
 
   useEffect(() => {
     let cancelled = false
@@ -175,7 +182,7 @@ export function GroupDetailPage() {
 
   useEffect(() => {
     if (!groupId || Number.isNaN(groupId)) return
-    if (!selectedCategory || !isGroupLoaded) return
+    if (!isGroupLoaded) return
     if (isLocationLoading) return
     if (!locationPosition) {
       setRestaurants([])
@@ -191,7 +198,8 @@ export function GroupDetailPage() {
           latitude: locationPosition.latitude,
           longitude: locationPosition.longitude,
           size: 10,
-          categories: selectedCategory,
+          categories:
+            selectedCategory && selectedCategory !== '전체' ? selectedCategory : undefined,
         })
         if (cancelled) return
         setRestaurants(restaurantRes.items ?? [])
@@ -242,11 +250,10 @@ export function GroupDetailPage() {
 
       <Container className="pt-3 pb-3 border-b border-border">
         <GroupCategoryFilter
-          categories={categories.length ? categories : CATEGORY_OPTIONS}
+          categories={categoryOptions}
           value={selectedCategory}
           onChange={(value) => {
-            const fallback = categories[0] ?? CATEGORY_OPTIONS[0] ?? null
-            setSelectedCategory(value ?? fallback)
+            setSelectedCategory(value ?? '전체')
           }}
         />
       </Container>
