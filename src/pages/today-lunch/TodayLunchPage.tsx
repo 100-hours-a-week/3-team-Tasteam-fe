@@ -65,7 +65,7 @@ export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProp
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 bg-muted animate-pulse rounded-lg" />
+              <div key={i} className="h-48 bg-background rounded-lg" />
             ))}
           </div>
         ) : recommendations.length > 0 ? (
