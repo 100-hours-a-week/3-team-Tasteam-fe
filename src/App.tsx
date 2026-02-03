@@ -134,10 +134,13 @@ function App() {
           path="/onboarding"
           element={
             <OnboardingPage
-              onComplete={() => {
+              onComplete={(nextPath) => {
                 window.localStorage.setItem('hasSeenOnboarding', 'true')
                 setHasSeenOnboarding(true)
-                navigate('/')
+                navigate(
+                  nextPath ?? '/',
+                  nextPath ? { state: { fromOnboarding: true } } : undefined,
+                )
               }}
             />
           }
