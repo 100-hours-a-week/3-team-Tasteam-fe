@@ -1,15 +1,6 @@
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  Heart,
-  MapPin,
-  Clock,
-  Phone,
-  ChevronRight,
-  Sparkles,
-  ThumbsUp,
-  ThumbsDown,
-} from 'lucide-react'
+import { Heart, MapPin, Clock, ChevronRight, Sparkles, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -440,11 +431,12 @@ export function RestaurantDetailPage() {
                     label="주소"
                     value={restaurant.address || '정보 없음'}
                   />
-                  <RestaurantMetaRow
+                  {/* 전화번호는 현재 비노출 */}
+                  {/* <RestaurantMetaRow
                     icon={Phone}
                     label="전화번호"
                     value={restaurant.phone || '정보 없음'}
-                  />
+                  /> */}
                 </>
               )}
             </Card>
@@ -497,7 +489,6 @@ export function RestaurantDetailPage() {
                 <Card key={category.id} className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold">{category.name}</h3>
-                    <span className="text-xs text-muted-foreground">{category.menus.length}개</span>
                   </div>
                   {category.menus.length > 0 ? (
                     <div className="divide-y divide-border">
