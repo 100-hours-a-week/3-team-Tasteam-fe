@@ -48,9 +48,9 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
         if (memberData) {
           setMember(memberData)
           setNickname(memberData.nickname)
-          setBio('')
+          setBio(memberData.introduction ?? '')
           setInitialNickname(memberData.nickname)
-          setInitialBio('')
+          setInitialBio(memberData.introduction ?? '')
         }
       })
       .catch(() => {

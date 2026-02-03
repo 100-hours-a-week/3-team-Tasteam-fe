@@ -163,7 +163,7 @@ export function ProfilePage({
                 <div className="flex flex-col items-center gap-2 w-full">
                   <h2 className="text-xl font-semibold mb-2.5">{member.nickname} 님</h2>
                   <p className="text-sm text-muted-foreground text-center max-w-xs">
-                    {(member as { bio?: string }).bio?.trim() || '자기소개를 입력해주세요.'}
+                    {member.introduction?.trim() || '자기소개를 입력해주세요.'}
                   </p>
                 </div>
               </>

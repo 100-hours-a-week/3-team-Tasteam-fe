@@ -4,6 +4,7 @@ import type { CursorPagination } from '@/shared/types/pagination'
 export type MemberProfile = {
   nickname: string
   profileImageUrl?: string | null
+  introduction?: string | null
 }
 
 export type MemberGroupRequestSummary = {

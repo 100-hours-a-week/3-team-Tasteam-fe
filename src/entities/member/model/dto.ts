@@ -5,6 +5,7 @@ import type { CursorPageResponse } from '@/shared/types/pagination'
 export type MemberProfileDto = {
   nickname: string
   profileImageUrl?: string | null
+  introduction?: string | null
 }
 
 export type MemberMeResponseDto = SuccessResponse<{
