@@ -1,6 +1,15 @@
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Heart, MapPin, Clock, ChevronRight, Sparkles, ThumbsUp, ThumbsDown } from 'lucide-react'
+import {
+  Heart,
+  MapPin,
+  Clock,
+  Phone,
+  ChevronRight,
+  Sparkles,
+  ThumbsUp,
+  ThumbsDown,
+} from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -42,6 +51,7 @@ export function RestaurantDetailPage() {
     id: number
     name: string
     address: string
+    phoneNumber?: string | null
     foodCategories: string[]
     businessHoursWeek?: BusinessHoursWeekItem[]
     images?: { id: string; url: string }[]
@@ -163,6 +173,7 @@ export function RestaurantDetailPage() {
       name: restaurantData.name,
       category: restaurantData.foodCategories[0] ?? baseRestaurant.category,
       address: restaurantData.address,
+      phone: restaurantData.phoneNumber ?? baseRestaurant.phone,
       images,
       reviewCount: reviewCountFromStat,
       aiSummary: restaurantData.aiSummary ?? baseRestaurant.aiSummary,
@@ -412,7 +423,7 @@ export function RestaurantDetailPage() {
             </Card>
 
             {/* Contact & Location */}
-            <Card className="divide-y overflow-hidden">
+            <Card className="divide-y overflow-hidden pt-3 pb-3">
               {isRestaurantLoading ? (
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
@@ -430,13 +441,14 @@ export function RestaurantDetailPage() {
                     icon={MapPin}
                     label="주소"
                     value={restaurant.address || '정보 없음'}
+                    className="pb-0"
                   />
-                  {/* 전화번호는 현재 비노출 */}
-                  {/* <RestaurantMetaRow
+                  <RestaurantMetaRow
                     icon={Phone}
                     label="전화번호"
                     value={restaurant.phone || '정보 없음'}
-                  /> */}
+                    className="pt-4"
+                  />
                 </>
               )}
             </Card>
