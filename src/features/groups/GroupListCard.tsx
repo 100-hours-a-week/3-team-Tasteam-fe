@@ -9,6 +9,7 @@ export type SubgroupListItem = {
   id: string
   name: string
   memberCount: number
+  imageUrl?: string | null
 }
 
 export type GroupListItem = {
@@ -16,6 +17,7 @@ export type GroupListItem = {
   name: string
   description?: string
   memberCount: number
+  imageUrl?: string | null
   subgroups: SubgroupListItem[]
 }
 
@@ -56,9 +58,17 @@ export function GroupListCard({
         aria-label={`${group.name} 그룹으로 이동`}
       >
         <div className="h-16 w-16 rounded-2xl border border-border bg-muted flex items-center justify-center overflow-hidden">
-          <div className="transition-transform duration-200 ease-out group-hover:scale-[1.03]">
-            <ImageIcon className="h-7 w-7 text-muted-foreground" />
-          </div>
+          {group.imageUrl ? (
+            <img
+              src={group.imageUrl}
+              alt={`${group.name} 그룹 이미지`}
+              className="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="transition-transform duration-200 ease-out group-hover:scale-[1.03]">
+              <ImageIcon className="h-7 w-7 text-muted-foreground" />
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
