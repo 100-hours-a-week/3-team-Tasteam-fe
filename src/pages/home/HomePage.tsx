@@ -24,11 +24,6 @@ type HomePageProps = {
   onGroupClick?: (id: string) => void
 }
 
-function formatDistance(meter: number): string {
-  if (meter < 1000) return `${meter}m`
-  return `${(meter / 1000).toFixed(1)}km`
-}
-
 export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
@@ -109,7 +104,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
                 id={item.restaurantId}
                 name={item.name}
                 category={item.category}
-                distance={formatDistance(item.distanceMeter)}
+                distance={item.distanceMeter}
                 image={item.thumbnailImageUrl}
                 tags={[]}
                 onClick={onRestaurantClick}
@@ -161,7 +156,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
               id={item.restaurantId}
               name={item.name}
               category={item.category}
-              distance={formatDistance(item.distanceMeter)}
+              distance={item.distanceMeter}
               image={item.thumbnailImageUrl}
               tags={[]}
               reason={item.reviewSummary}
