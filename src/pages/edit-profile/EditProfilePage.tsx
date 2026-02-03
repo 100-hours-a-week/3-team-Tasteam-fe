@@ -48,9 +48,9 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
         if (memberData) {
           setMember(memberData)
           setNickname(memberData.nickname)
-          setBio('')
+          setBio(memberData.introduction ?? '')
           setInitialNickname(memberData.nickname)
-          setInitialBio('')
+          setInitialBio(memberData.introduction ?? '')
         }
       })
       .catch(() => {
@@ -128,7 +128,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
             <div className="relative">
               <Avatar className="w-24 h-24">
                 <AvatarImage
-                  src={profilePreviewUrl ?? member.profileImage?.url}
+                  src={profilePreviewUrl ?? member.profileImageUrl ?? undefined}
                   alt={member.nickname}
                 />
                 <AvatarFallback className="text-2xl">{member.nickname[0]}</AvatarFallback>
