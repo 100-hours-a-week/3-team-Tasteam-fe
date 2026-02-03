@@ -452,6 +452,9 @@ export function RestaurantDetailPage() {
                 </>
               )}
             </Card>
+            <p className="text-xs text-muted-foreground text-center pt-2 pb-2">
+              실제 영업시간과 매장 정보는 매장 상황에 따라 다를 수 있습니다.
+            </p>
           </Container>
         </TabsContent>
 
@@ -545,6 +548,9 @@ export function RestaurantDetailPage() {
             ) : (
               <Card className="p-4 text-sm text-muted-foreground">등록된 메뉴가 없습니다.</Card>
             )}
+            <p className="text-xs text-muted-foreground text-center pt-4 pb-2">
+              실제 메뉴와 가격은 매장 상황에 따라 다를 수 있습니다.
+            </p>
           </Container>
         </TabsContent>
 
