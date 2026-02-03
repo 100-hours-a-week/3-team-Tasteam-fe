@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Heart,
@@ -27,6 +27,7 @@ import { ReviewCard } from '@/entities/review/ui'
 import { Container } from '@/widgets/container'
 import { cn } from '@/shared/lib/utils'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { GroupCategoryFilter } from '@/features/groups'
 import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant/api/restaurantApi'
 import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
@@ -82,6 +83,49 @@ export function RestaurantDetailPage() {
   const [isMenusLoading, setIsMenusLoading] = React.useState(true)
   const [menusError, setMenusError] = React.useState(false)
   const [menuCategories, setMenuCategories] = React.useState<MenuCategoryDto[]>([])
+  const [selectedMenuCategory, setSelectedMenuCategory] = React.useState<string | null>(null)
+  const [showAllMenuCategoryButtons, setShowAllMenuCategoryButtons] = React.useState(false)
+  const [expandedMenuCategoryIds, setExpandedMenuCategoryIds] = React.useState<Set<number>>(
+    () => new Set(),
+  )
+  const menuCategoryRefsMap = useRef<Record<number, HTMLDivElement | null>>({})
+
+  const MENU_CATEGORY_FOLD_LIMIT = 6
+  const MENU_ITEM_FOLD_LIMIT = 6
+  const displayedMenuCategories =
+    menuCategories.length > MENU_CATEGORY_FOLD_LIMIT && !showAllMenuCategoryButtons
+      ? menuCategories.slice(0, MENU_CATEGORY_FOLD_LIMIT)
+      : menuCategories
+  const hasMoreMenuCategories =
+    menuCategories.length > MENU_CATEGORY_FOLD_LIMIT && !showAllMenuCategoryButtons
+
+  // 스크롤 시 보이는 카테고리에 맞춰 상단 버튼 선택 갱신
+  useEffect(() => {
+    if (displayedMenuCategories.length === 0) return
+    const refs = menuCategoryRefsMap.current
+    const elements = displayedMenuCategories
+      .map((c) => refs[c.id])
+      .filter((el): el is HTMLDivElement => el != null)
+    if (elements.length === 0) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const intersecting = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        const topmost = intersecting[0]
+        if (!topmost) return
+        const idStr = (topmost.target as HTMLElement).dataset.categoryId
+        if (idStr == null) return
+        const id = Number(idStr)
+        const cat = menuCategories.find((c) => c.id === id)
+        if (cat) setSelectedMenuCategory(cat.name)
+      },
+      { rootMargin: '-80px 0px 0px 0px', threshold: 0 },
+    )
+    elements.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [displayedMenuCategories, menuCategories])
 
   React.useEffect(() => {
     if (!restaurantId) return
@@ -112,7 +156,11 @@ export function RestaurantDetailPage() {
       recommendedFirst: true,
     })
       .then((res) => {
-        setMenuCategories(res.data.categories ?? [])
+        const raw = res as {
+          data?: { categories?: MenuCategoryDto[] }
+          categories?: MenuCategoryDto[]
+        }
+        setMenuCategories(raw.data?.categories ?? raw.categories ?? [])
       })
       .catch(() => {
         setMenuCategories([])
@@ -460,6 +508,25 @@ export function RestaurantDetailPage() {
 
         <TabsContent value="menus" className="mt-4">
           <Container className="space-y-4">
+            {menuCategories.length > 0 && (
+              <div className="sticky top-14 z-10 -mx-4 px-4 py-2 bg-background flex items-center gap-2">
+                <div className="flex-1 min-w-0 overflow-x-auto">
+                  <GroupCategoryFilter
+                    categories={displayedMenuCategories.map((c) => c.name)}
+                    value={selectedMenuCategory ?? menuCategories[0]?.name ?? ''}
+                    onChange={(name) => {
+                      setSelectedMenuCategory(name)
+                      const cat = menuCategories.find((c) => c.name === name)
+                      if (cat)
+                        menuCategoryRefsMap.current[cat.id]?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        })
+                    }}
+                  />
+                </div>
+              </div>
+            )}
             {isMenusLoading && menuCategories.length === 0 ? (
               <>
                 <Card className="p-4 space-y-3">
@@ -500,51 +567,94 @@ export function RestaurantDetailPage() {
             ) : menusError && menuCategories.length === 0 ? (
               <Card className="p-4 text-sm text-muted-foreground">메뉴를 불러오지 못했습니다.</Card>
             ) : menuCategories.length > 0 ? (
-              menuCategories.map((category) => (
-                <Card key={category.id} className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold">{category.name}</h3>
-                  </div>
-                  {category.menus.length > 0 ? (
-                    <div className="divide-y divide-border">
-                      {category.menus.map((menu) => (
-                        <div
-                          key={menu.id}
-                          className="flex items-start gap-3 py-4 first:pt-0 last:pb-0"
-                        >
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium">{menu.name}</p>
-                              {menu.isRecommended && (
-                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                                  추천
-                                </span>
-                              )}
-                            </div>
-                            {menu.description && (
-                              <p className="text-xs text-muted-foreground line-clamp-2">
-                                {menu.description}
-                              </p>
-                            )}
-                            <p className="text-sm font-semibold">{formatPrice(menu.price)}</p>
+              <>
+                {displayedMenuCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    data-category-id={category.id}
+                    ref={(el) => {
+                      menuCategoryRefsMap.current[category.id] = el
+                    }}
+                  >
+                    <Card className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold">{category.name}</h3>
+                      </div>
+                      {category.menus.length > 0 ? (
+                        <div className="space-y-0">
+                          <div className="divide-y divide-border">
+                            {(expandedMenuCategoryIds.has(category.id) ||
+                            category.menus.length <= MENU_ITEM_FOLD_LIMIT
+                              ? category.menus
+                              : category.menus.slice(0, MENU_ITEM_FOLD_LIMIT)
+                            ).map((menu) => (
+                              <div
+                                key={menu.id}
+                                className="flex items-start gap-3 py-4 first:pt-0 last:pb-0"
+                              >
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium">{menu.name}</p>
+                                    {menu.isRecommended && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                                        추천
+                                      </span>
+                                    )}
+                                  </div>
+                                  {menu.description && (
+                                    <p className="text-xs text-muted-foreground line-clamp-2">
+                                      {menu.description}
+                                    </p>
+                                  )}
+                                  <p className="text-sm font-semibold">{formatPrice(menu.price)}</p>
+                                </div>
+                                {menu.imageUrl ? (
+                                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
+                                    <img
+                                      src={menu.imageUrl}
+                                      alt={menu.name}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </div>
+                                ) : null}
+                              </div>
+                            ))}
                           </div>
-                          {menu.imageUrl ? (
-                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
-                              <img
-                                src={menu.imageUrl}
-                                alt={menu.name}
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                          ) : null}
+                          {category.menus.length > MENU_ITEM_FOLD_LIMIT &&
+                            !expandedMenuCategoryIds.has(category.id) && (
+                              <div className="pt-3">
+                                <button
+                                  type="button"
+                                  className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors border-t border-border"
+                                  onClick={() =>
+                                    setExpandedMenuCategoryIds((prev) =>
+                                      new Set(prev).add(category.id),
+                                    )
+                                  }
+                                >
+                                  더보기
+                                </button>
+                              </div>
+                            )}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">등록된 메뉴가 없습니다.</p>
-                  )}
-                </Card>
-              ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">등록된 메뉴가 없습니다.</p>
+                      )}
+                    </Card>
+                  </div>
+                ))}
+                {hasMoreMenuCategories && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg border border-border bg-muted/30 hover:bg-muted/50"
+                      onClick={() => setShowAllMenuCategoryButtons(true)}
+                    >
+                      더보기
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <Card className="p-4 text-sm text-muted-foreground">등록된 메뉴가 없습니다.</Card>
             )}
