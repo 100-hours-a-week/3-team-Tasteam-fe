@@ -1,9 +1,9 @@
-import type { IsoDateTimeString, ImageResource } from '@/shared/types/common'
+import type { IsoDateTimeString } from '@/shared/types/common'
 import type { CursorPagination } from '@/shared/types/pagination'
 
 export type MemberProfile = {
   nickname: string
-  profileImage: ImageResource
+  profileImageUrl?: string | null
 }
 
 export type MemberGroupRequestSummary = {

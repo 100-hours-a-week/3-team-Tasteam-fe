@@ -152,8 +152,8 @@ export function ProfilePage({
                   </Button>
                 )}
                 <Avatar className="w-24 h-24 ring-1 ring-muted-foreground/40">
-                  {member.profileImage?.url ? (
-                    <AvatarImage src={member.profileImage.url} alt={member.nickname} />
+                  {member.profileImageUrl ? (
+                    <AvatarImage src={member.profileImageUrl} alt={member.nickname} />
                   ) : (
                     <AvatarFallback className="flex items-center justify-center">
                       <User className="w-12 h-12 text-muted-foreground" strokeWidth={1} />
