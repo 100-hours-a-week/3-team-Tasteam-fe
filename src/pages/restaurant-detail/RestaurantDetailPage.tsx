@@ -83,49 +83,49 @@ export function RestaurantDetailPage() {
   const [isMenusLoading, setIsMenusLoading] = React.useState(true)
   const [menusError, setMenusError] = React.useState(false)
   const [menuCategories, setMenuCategories] = React.useState<MenuCategoryDto[]>([])
-  const [selectedMenuCategory, setSelectedMenuCategory] = React.useState<string | null>(null)
-  const [showAllMenuCategoryButtons, setShowAllMenuCategoryButtons] = React.useState(false)
+  const [selectedMenuCategoryId, setSelectedMenuCategoryId] = React.useState<number | null>(null)
+  const [activeDetailTab, setActiveDetailTab] = React.useState('info')
   const [expandedMenuCategoryIds, setExpandedMenuCategoryIds] = React.useState<Set<number>>(
     () => new Set(),
   )
   const menuCategoryRefsMap = useRef<Record<number, HTMLDivElement | null>>({})
 
-  const MENU_CATEGORY_FOLD_LIMIT = 6
   const MENU_ITEM_FOLD_LIMIT = 6
-  const displayedMenuCategories =
-    menuCategories.length > MENU_CATEGORY_FOLD_LIMIT && !showAllMenuCategoryButtons
-      ? menuCategories.slice(0, MENU_CATEGORY_FOLD_LIMIT)
-      : menuCategories
-  const hasMoreMenuCategories =
-    menuCategories.length > MENU_CATEGORY_FOLD_LIMIT && !showAllMenuCategoryButtons
 
-  // 스크롤 시 보이는 카테고리에 맞춰 상단 버튼 선택 갱신
+  // 스크롤 시 보이는 카테고리에 맞춰 상단 버튼 선택 갱신 (스크롤 기준으로 현재 섹션 계산)
+  const STICKY_BAR_BOTTOM = 120
   useEffect(() => {
-    if (displayedMenuCategories.length === 0) return
+    if (activeDetailTab !== 'menus' || menuCategories.length === 0) return
     const refs = menuCategoryRefsMap.current
-    const elements = displayedMenuCategories
-      .map((c) => refs[c.id])
-      .filter((el): el is HTMLDivElement => el != null)
-    if (elements.length === 0) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const intersecting = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-        const topmost = intersecting[0]
-        if (!topmost) return
-        const idStr = (topmost.target as HTMLElement).dataset.categoryId
-        if (idStr == null) return
-        const id = Number(idStr)
-        const cat = menuCategories.find((c) => c.id === id)
-        if (cat) setSelectedMenuCategory(cat.name)
-      },
-      { rootMargin: '-80px 0px 0px 0px', threshold: 0 },
-    )
-    elements.forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
-  }, [displayedMenuCategories, menuCategories])
+    let rafId = 0
+    const onScroll = () => {
+      rafId = requestAnimationFrame(() => {
+        const withTop = menuCategories
+          .map((c) => {
+            const el = refs[c.id]
+            if (!el) return null
+            return { id: c.id, top: el.getBoundingClientRect().top }
+          })
+          .filter((x): x is { id: number; top: number } => x != null)
+        if (withTop.length === 0) return
+        withTop.sort((a, b) => a.top - b.top)
+        const pastLine = withTop.filter((x) => x.top <= STICKY_BAR_BOTTOM)
+        const currentId = pastLine.length > 0 ? pastLine[pastLine.length - 1].id : withTop[0].id
+        setSelectedMenuCategoryId(currentId)
+      })
+    }
+    const runAfterRefs = () => {
+      const t = setTimeout(onScroll, menuCategories.length > 8 ? 100 : 50)
+      return () => clearTimeout(t)
+    }
+    const cleanupDelay = runAfterRefs()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      cleanupDelay()
+      window.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(rafId)
+    }
+  }, [activeDetailTab, menuCategories])
 
   React.useEffect(() => {
     if (!restaurantId) return
@@ -369,7 +369,7 @@ export function RestaurantDetailPage() {
       </Container>
 
       {/* Details Tabs */}
-      <Tabs defaultValue="info" className="w-full">
+      <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="w-full">
         <Container>
           <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="info">정보</TabsTrigger>
@@ -512,16 +512,15 @@ export function RestaurantDetailPage() {
               <div className="sticky top-14 z-10 -mx-4 px-4 py-2 bg-background flex items-center gap-2">
                 <div className="flex-1 min-w-0 overflow-x-auto">
                   <GroupCategoryFilter
-                    categories={displayedMenuCategories.map((c) => c.name)}
-                    value={selectedMenuCategory ?? menuCategories[0]?.name ?? ''}
-                    onChange={(name) => {
-                      setSelectedMenuCategory(name)
-                      const cat = menuCategories.find((c) => c.name === name)
-                      if (cat)
-                        menuCategoryRefsMap.current[cat.id]?.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'start',
-                        })
+                    categories={menuCategories.map((c) => ({ id: c.id, name: c.name }))}
+                    value={selectedMenuCategoryId ?? menuCategories[0]?.id ?? null}
+                    onChange={(id: number | null) => {
+                      if (id == null) return
+                      setSelectedMenuCategoryId(id)
+                      menuCategoryRefsMap.current[id]?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                      })
                     }}
                   />
                 </div>
@@ -568,7 +567,7 @@ export function RestaurantDetailPage() {
               <Card className="p-4 text-sm text-muted-foreground">메뉴를 불러오지 못했습니다.</Card>
             ) : menuCategories.length > 0 ? (
               <>
-                {displayedMenuCategories.map((category) => (
+                {menuCategories.map((category) => (
                   <div
                     key={category.id}
                     data-category-id={category.id}
@@ -643,17 +642,6 @@ export function RestaurantDetailPage() {
                     </Card>
                   </div>
                 ))}
-                {hasMoreMenuCategories && (
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg border border-border bg-muted/30 hover:bg-muted/50"
-                      onClick={() => setShowAllMenuCategoryButtons(true)}
-                    >
-                      더보기
-                    </button>
-                  </div>
-                )}
               </>
             ) : (
               <Card className="p-4 text-sm text-muted-foreground">등록된 메뉴가 없습니다.</Card>

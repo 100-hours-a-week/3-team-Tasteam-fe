@@ -303,7 +303,7 @@ export function GroupDetailPage() {
             ),
           ]}
           value={selectedCategory}
-          onChange={(value) => {
+          onChange={(value: string | null) => {
             setSelectedCategory(value ?? ALL_CATEGORY)
           }}
         />
