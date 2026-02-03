@@ -36,6 +36,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
   } = useImageUpload({
     purpose: 'PROFILE_IMAGE',
     maxFiles: 1,
+    transform: 'square-webp-100',
   })
 
   const profilePreviewUrl = profileImages.length > 0 ? profileImages[0].previewUrl : undefined

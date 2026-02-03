@@ -28,6 +28,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
     useImageUpload({
       purpose: 'PROFILE_IMAGE',
       maxFiles: 1,
+      transform: 'square-webp-100',
     })
   const { refresh } = useMemberGroups()
   const [searchParams] = useSearchParams()

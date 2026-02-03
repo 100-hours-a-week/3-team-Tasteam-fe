@@ -34,6 +34,7 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
   } = useImageUpload({
     purpose: 'GROUP_IMAGE',
     maxFiles: 1,
+    transform: 'square-webp-100',
   })
 
   const groupImagePreview = groupImages.length > 0 ? groupImages[0].previewUrl : undefined
