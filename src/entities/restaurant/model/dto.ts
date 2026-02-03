@@ -1,11 +1,11 @@
 import type { SuccessResponse } from '@/shared/types/api'
+import type { CursorPageResponse } from '@/shared/types/pagination'
 import type {
   Coordinates,
   ImageResource,
   IsoDateTimeString,
   TimeString,
 } from '@/shared/types/common'
-import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type RestaurantBusinessHourDto = {
   day: string
@@ -79,3 +79,28 @@ export type RestaurantUpdateResponseDto = SuccessResponse<{
   createdAt: IsoDateTimeString
   updatedAt: IsoDateTimeString
 }>
+
+export type MenuItemDto = {
+  id: number
+  restaurantId: number | null
+  name: string
+  description: string | null
+  price: number | null
+  imageUrl: string | null
+  isRecommended: boolean | null
+  displayOrder: number | null
+}
+
+export type MenuCategoryDto = {
+  id: number
+  name: string
+  displayOrder: number | null
+  menus: MenuItemDto[]
+}
+
+export type RestaurantMenuDto = {
+  restaurantId: number
+  categories: MenuCategoryDto[]
+}
+
+export type RestaurantMenuResponseDto = SuccessResponse<RestaurantMenuDto>

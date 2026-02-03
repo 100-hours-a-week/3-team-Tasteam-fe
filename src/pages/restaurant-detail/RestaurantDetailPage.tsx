@@ -27,9 +27,10 @@ import { ReviewCard } from '@/entities/review/ui'
 import { Container } from '@/widgets/container'
 import { cn } from '@/shared/lib/utils'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
+import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant/api/restaurantApi'
 import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
+import type { MenuCategoryDto } from '@/entities/restaurant/model/dto'
 
 export function RestaurantDetailPage() {
   type BusinessHoursWeekItem = {
@@ -77,6 +78,9 @@ export function RestaurantDetailPage() {
   const [isReviewsLoading, setIsReviewsLoading] = React.useState(true)
   const [reviewsError, setReviewsError] = React.useState(false)
   const [previewReviews, setPreviewReviews] = React.useState<ReviewListItemDto[]>([])
+  const [isMenusLoading, setIsMenusLoading] = React.useState(true)
+  const [menusError, setMenusError] = React.useState(false)
+  const [menuCategories, setMenuCategories] = React.useState<MenuCategoryDto[]>([])
 
   React.useEffect(() => {
     if (!restaurantId) return
@@ -96,6 +100,24 @@ export function RestaurantDetailPage() {
         setReviewsError(true)
       })
       .finally(() => setIsReviewsLoading(false))
+  }, [restaurantId])
+
+  React.useEffect(() => {
+    if (!restaurantId) return
+    setIsMenusLoading(true)
+    setMenusError(false)
+    getRestaurantMenus(Number(restaurantId), {
+      includeEmptyCategories: false,
+      recommendedFirst: true,
+    })
+      .then((res) => {
+        setMenuCategories(res.data.categories ?? [])
+      })
+      .catch(() => {
+        setMenuCategories([])
+        setMenusError(true)
+      })
+      .finally(() => setIsMenusLoading(false))
   }, [restaurantId])
 
   const baseRestaurant = {
@@ -192,6 +214,11 @@ export function RestaurantDetailPage() {
   const isTodayRow = (item: BusinessHoursWeekItem, index: number) => {
     if (item.date) return item.date === todayString
     return index === 0
+  }
+
+  const formatPrice = (price: number | null | undefined) => {
+    if (price == null) return '가격 정보 없음'
+    return `${price.toLocaleString('ko-KR')}원`
   }
 
   const handleSave = () => {
@@ -294,8 +321,9 @@ export function RestaurantDetailPage() {
       {/* Details Tabs */}
       <Tabs defaultValue="info" className="w-full">
         <Container>
-          <TabsList className="w-full grid grid-cols-2">
+          <TabsList className="w-full grid grid-cols-3">
             <TabsTrigger value="info">정보</TabsTrigger>
+            <TabsTrigger value="menus">메뉴</TabsTrigger>
             <TabsTrigger value="reviews">리뷰</TabsTrigger>
           </TabsList>
         </Container>
@@ -420,6 +448,100 @@ export function RestaurantDetailPage() {
                 </>
               )}
             </Card>
+          </Container>
+        </TabsContent>
+
+        <TabsContent value="menus" className="mt-4">
+          <Container className="space-y-4">
+            {isMenusLoading && menuCategories.length === 0 ? (
+              <>
+                <Card className="p-4 space-y-3">
+                  <Skeleton className="h-5 w-28" />
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-48" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                      <Skeleton className="h-16 w-16 rounded-md" />
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-3 w-40" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <Skeleton className="h-16 w-16 rounded-md" />
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4 space-y-3">
+                  <Skeleton className="h-5 w-24" />
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-36" />
+                        <Skeleton className="h-3 w-52" />
+                        <Skeleton className="h-4 w-20" />
+                      </div>
+                      <Skeleton className="h-16 w-16 rounded-md" />
+                    </div>
+                  </div>
+                </Card>
+              </>
+            ) : menusError && menuCategories.length === 0 ? (
+              <Card className="p-4 text-sm text-muted-foreground">메뉴를 불러오지 못했습니다.</Card>
+            ) : menuCategories.length > 0 ? (
+              menuCategories.map((category) => (
+                <Card key={category.id} className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold">{category.name}</h3>
+                    <span className="text-xs text-muted-foreground">{category.menus.length}개</span>
+                  </div>
+                  {category.menus.length > 0 ? (
+                    <div className="divide-y divide-border">
+                      {category.menus.map((menu) => (
+                        <div
+                          key={menu.id}
+                          className="flex items-start gap-3 py-4 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{menu.name}</p>
+                              {menu.isRecommended && (
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                                  추천
+                                </span>
+                              )}
+                            </div>
+                            {menu.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {menu.description}
+                              </p>
+                            )}
+                            <p className="text-sm font-semibold">{formatPrice(menu.price)}</p>
+                          </div>
+                          {menu.imageUrl ? (
+                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
+                              <img
+                                src={menu.imageUrl}
+                                alt={menu.name}
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">등록된 메뉴가 없습니다.</p>
+                  )}
+                </Card>
+              ))
+            ) : (
+              <Card className="p-4 text-sm text-muted-foreground">등록된 메뉴가 없습니다.</Card>
+            )}
           </Container>
         </TabsContent>
 
