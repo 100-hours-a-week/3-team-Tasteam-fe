@@ -21,17 +21,16 @@ export function RestaurantMetaRow({
   return (
     <Component
       onClick={onClick}
-      // RestaurantMetaRow 컴포넌트에서
       className={cn(
-        'flex items-start gap-3 px-4 py-4',
+        'flex items-start gap-4 px-4 py-3',
         onClick && 'hover:bg-accent transition-colors cursor-pointer',
         className,
       )}
     >
-      <Icon className="h-4 w-4 text-muted-foreground shrink-0 mt-1.5" />
-      <div className="flex-1 min-w-0">
-        <p className="text-[11px] text-muted-foreground leading-none">{label}</p>
-        <p className="text-sm break-words leading-tight mt-1">{value}</p>
+      <Icon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+      <div className="flex flex-1 min-w-0 flex-col gap-1.5">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+        <span className="text-sm break-words leading-relaxed">{value}</span>
       </div>
     </Component>
   )

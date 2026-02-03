@@ -17,6 +17,7 @@ export type RestaurantDetailDto = {
   id: number
   name: string
   address: string
+  phoneNumber?: string | null
   location: Coordinates
   distanceMeter: number
   foodCategories: string[]
