@@ -63,7 +63,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     icon: ShieldCheck,
     action: '다음',
     highlights: [
-      '내 그룹이 자주 방문한 식당을 먼저 확인할 수 있어요.',
+      '내 그룹이 방문한 식당을 확인할 수 있어요.',
       '실사용 리뷰 기반으로 실패 확률을 낮출 수 있어요.',
     ],
   },
@@ -203,95 +203,99 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
         <div
           className={`flex-1 flex flex-col transition-all duration-700 ease-in-out ${
             currentStepData.key === 'group-search' && isGroupSearchFocused
-              ? '-translate-y-[70px] justify-center'
+              ? '-translate-y-[55px] justify-center'
               : 'translate-y-0 justify-center'
           }`}
         >
-          <OnboardingStepPanel
-            icon={Icon}
-            title={currentStepData.title}
-            description={currentStepData.description}
-            highlights={currentStepData.highlights}
-            highlightListClassName={isChecklistStep ? 'space-y-3' : undefined}
-            highlightItemClassName={isChecklistStep ? 'bg-transparent p-0 rounded-none' : undefined}
-            highlightIcon={isChecklistStep ? Check : undefined}
-          >
-            {currentStepData.key === 'location' && (
-              <p className="text-muted-foreground -mt-2 text-center text-base whitespace-nowrap">
-                권한을 허용하면 현재 위치 주변의 식당 정보를 제공해드려요.
-              </p>
-            )}
+          <div key={currentStep} className="animate-in slide-in-from-bottom-6 fade-in duration-300">
+            <OnboardingStepPanel
+              icon={Icon}
+              title={currentStepData.title}
+              description={currentStepData.description}
+              highlights={currentStepData.highlights}
+              highlightListClassName={isChecklistStep ? 'space-y-3' : undefined}
+              highlightItemClassName={
+                isChecklistStep ? 'bg-transparent p-0 rounded-none' : undefined
+              }
+              highlightIcon={isChecklistStep ? Check : undefined}
+            >
+              {currentStepData.key === 'location' && (
+                <p className="text-muted-foreground -mt-2 text-center text-base whitespace-nowrap">
+                  권한을 허용하면 현재 위치 주변의 식당 정보를 제공해드려요.
+                </p>
+              )}
 
-            {currentStepData.key === 'group-search' && (
-              <div
-                ref={groupSearchContainerRef}
-                className={`flex flex-col transition-all duration-700 ease-in-out ${
-                  isGroupSearchFocused ? 'h-[460px]' : 'h-[260px]'
-                }`}
-              >
-                <div className="bg-card/70 pointer-events-none sticky top-0 z-10 pb-2">
-                  <div className="pointer-events-auto relative">
-                    <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
-                    <Input
-                      value={groupQuery}
-                      onFocus={() => setIsGroupSearchFocused(true)}
-                      onBlur={handleGroupSearchBlur}
-                      onChange={(event) => {
-                        const nextQuery = event.target.value
-                        setGroupQuery(nextQuery)
-                        scheduleGroupSearch(nextQuery)
-                      }}
-                      placeholder="회사 이름으로 그룹 검색"
-                      className="pl-9"
-                    />
+              {currentStepData.key === 'group-search' && (
+                <div
+                  ref={groupSearchContainerRef}
+                  className={`flex flex-col transition-all duration-700 ease-in-out ${
+                    isGroupSearchFocused ? 'h-[460px]' : 'h-[260px]'
+                  }`}
+                >
+                  <div className="bg-card/70 pointer-events-none sticky top-0 z-10 pb-2">
+                    <div className="pointer-events-auto relative">
+                      <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                      <Input
+                        value={groupQuery}
+                        onFocus={() => setIsGroupSearchFocused(true)}
+                        onBlur={handleGroupSearchBlur}
+                        onChange={(event) => {
+                          const nextQuery = event.target.value
+                          setGroupQuery(nextQuery)
+                          scheduleGroupSearch(nextQuery)
+                        }}
+                        placeholder="회사 이름으로 그룹 검색"
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="relative mt-1 min-h-0 flex-1">
+                    <div className="h-full space-y-2 overflow-y-auto px-1 pt-1 pb-4">
+                      {isGroupSearching ? (
+                        <p className="text-muted-foreground text-sm">검색 중...</p>
+                      ) : groupSearchError ? (
+                        <p className="text-sm text-destructive">{groupSearchError}</p>
+                      ) : visibleGroups.length > 0 ? (
+                        visibleGroups.map((group) => (
+                          <button
+                            type="button"
+                            key={group.id}
+                            onClick={() => toggleGroupSelection(String(group.id))}
+                            className={cn(
+                              'bg-muted/60 border-border/60 w-full rounded-lg border px-3 py-3 text-left transition-all',
+                              selectedGroupId === String(group.id) && 'bg-primary/10',
+                            )}
+                          >
+                            <p className="text-sm font-semibold">{group.name}</p>
+                            <p className="text-muted-foreground mt-1 text-xs">
+                              멤버 {group.members}명
+                            </p>
+                            {group.tags && group.tags.length > 0 ? (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {group.tags.map((tag) => (
+                                  <Badge
+                                    key={`${group.id}-${tag}`}
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    #{tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : null}
+                          </button>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground text-sm">검색 결과가 없습니다.</p>
+                      )}
+                    </div>
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card via-card/45 to-transparent" />
                   </div>
                 </div>
-
-                <div className="relative mt-1 min-h-0 flex-1">
-                  <div className="h-full space-y-2 overflow-y-auto px-1 pt-1 pb-4">
-                    {isGroupSearching ? (
-                      <p className="text-muted-foreground text-sm">검색 중...</p>
-                    ) : groupSearchError ? (
-                      <p className="text-sm text-destructive">{groupSearchError}</p>
-                    ) : visibleGroups.length > 0 ? (
-                      visibleGroups.map((group) => (
-                        <button
-                          type="button"
-                          key={group.id}
-                          onClick={() => toggleGroupSelection(String(group.id))}
-                          className={cn(
-                            'bg-muted/60 border-border/60 w-full rounded-lg border px-3 py-3 text-left transition-all',
-                            selectedGroupId === String(group.id) && 'bg-primary/10',
-                          )}
-                        >
-                          <p className="text-sm font-semibold">{group.name}</p>
-                          <p className="text-muted-foreground mt-1 text-xs">
-                            멤버 {group.members}명
-                          </p>
-                          {group.tags && group.tags.length > 0 ? (
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              {group.tags.map((tag) => (
-                                <Badge
-                                  key={`${group.id}-${tag}`}
-                                  variant="secondary"
-                                  className="text-xs"
-                                >
-                                  #{tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          ) : null}
-                        </button>
-                      ))
-                    ) : (
-                      <p className="text-muted-foreground text-sm">검색 결과가 없습니다.</p>
-                    )}
-                  </div>
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card via-card/45 to-transparent" />
-                </div>
-              </div>
-            )}
-          </OnboardingStepPanel>
+              )}
+            </OnboardingStepPanel>
+          </div>
         </div>
 
         <div className="space-y-3">

@@ -40,7 +40,8 @@ const CATEGORY_OPTIONS = [
   '고깃집',
 ]
 const ALL_CATEGORY = '전체'
-const JOIN_GUIDE_AUTO_CLOSE_MS = 3000
+const JOIN_GUIDE_AUTO_CLOSE_MS = 2200
+const JOIN_GUIDE_FADE_OUT_MS = 250
 
 const EMPTY_GROUP: GroupDetailHeaderData = {
   name: '',
@@ -83,20 +84,32 @@ export function GroupDetailPage() {
   const shouldShowOnboardingMemberGuide =
     new URLSearchParams(location.search).get('onboardingMemberGuide') === 'true'
   const [showJoinGuide, setShowJoinGuide] = useState(shouldShowOnboardingMemberGuide)
+  const [isJoinGuideVisible, setIsJoinGuideVisible] = useState(shouldShowOnboardingMemberGuide)
 
   const dismissJoinGuide = useCallback(() => {
-    setShowJoinGuide(false)
-    if (shouldShowOnboardingMemberGuide) {
-      navigate(location.pathname, { replace: true, state: location.state })
-    }
+    setIsJoinGuideVisible(false)
+    window.setTimeout(() => {
+      setShowJoinGuide(false)
+      if (shouldShowOnboardingMemberGuide) {
+        navigate(location.pathname, { replace: true, state: location.state })
+      }
+    }, JOIN_GUIDE_FADE_OUT_MS)
   }, [location.pathname, location.state, navigate, shouldShowOnboardingMemberGuide])
 
   useEffect(() => {
-    setShowJoinGuide(shouldShowOnboardingMemberGuide)
+    if (shouldShowOnboardingMemberGuide) {
+      setShowJoinGuide(true)
+      window.setTimeout(() => {
+        setIsJoinGuideVisible(true)
+      }, 0)
+      return
+    }
+    setIsJoinGuideVisible(false)
+    setShowJoinGuide(false)
   }, [shouldShowOnboardingMemberGuide])
 
   useEffect(() => {
-    if (!showJoinGuide) return
+    if (!showJoinGuide || !isJoinGuideVisible) return
 
     const timerId = window.setTimeout(() => {
       dismissJoinGuide()
@@ -105,7 +118,7 @@ export function GroupDetailPage() {
     return () => {
       window.clearTimeout(timerId)
     }
-  }, [dismissJoinGuide, showJoinGuide])
+  }, [dismissJoinGuide, isJoinGuideVisible, showJoinGuide])
 
   useEffect(() => {
     if (!shouldMarkJoined) return
@@ -278,7 +291,7 @@ export function GroupDetailPage() {
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
         onLeaveGroup={() => setLeaveDialogOpen(true)}
         showJoinGuide={showJoinGuide}
-        onDismissJoinGuide={dismissJoinGuide}
+        isJoinGuideVisible={isJoinGuideVisible}
       />
 
       <Container className="pt-3 pb-3 border-b border-border">

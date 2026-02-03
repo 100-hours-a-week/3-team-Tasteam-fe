@@ -30,7 +30,7 @@ type GroupDetailHeaderProps = {
   onNotificationSettings?: () => void
   onLeaveGroup?: () => void
   showJoinGuide?: boolean
-  onDismissJoinGuide?: () => void
+  isJoinGuideVisible?: boolean
   className?: string
 }
 
@@ -44,7 +44,7 @@ export function GroupDetailHeader({
   onNotificationSettings,
   onLeaveGroup,
   showJoinGuide = false,
-  onDismissJoinGuide,
+  isJoinGuideVisible = false,
   className,
 }: GroupDetailHeaderProps) {
   const JoinIcon = isJoined ? UserCheck : UserPlus
@@ -71,18 +71,24 @@ export function GroupDetailHeader({
                 </Button>
                 {showJoinGuide && (
                   <>
-                    <div className="pointer-events-none absolute inset-0 rounded-md border-2 border-primary" />
-                    <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-md border border-primary/30 bg-background px-3 py-2 text-xs shadow-sm">
-                      <p className="text-foreground">
-                        그룹 멤버 추가 아이콘으로 팀원을 초대해보세요.
+                    <div
+                      className={cn(
+                        'pointer-events-none absolute inset-0 rounded-md border-[3px] border-primary transition-opacity duration-[250ms]',
+                        isJoinGuideVisible ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        'absolute right-0 top-full z-20 mt-2 w-44 rounded-md bg-primary px-2 py-2 shadow-sm transition-all duration-[250ms]',
+                        isJoinGuideVisible
+                          ? 'translate-y-0 opacity-100'
+                          : '-translate-y-1 opacity-0 pointer-events-none',
+                      )}
+                    >
+                      <p className="text-[14px] leading-tight whitespace-pre-line text-center text-white">
+                        그룹 멤버 추가 아이콘으로
+                        {'\n'}팀원을 초대해보세요.
                       </p>
-                      <button
-                        type="button"
-                        className="text-primary mt-1 text-[11px] font-medium"
-                        onClick={onDismissJoinGuide}
-                      >
-                        확인
-                      </button>
                     </div>
                   </>
                 )}
