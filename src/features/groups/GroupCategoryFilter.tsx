@@ -61,18 +61,18 @@ export function GroupCategoryFilter(props: GroupCategoryFilterProps) {
           value={value != null ? String(value) : ''}
           onValueChange={(nextValue) => onChange(nextValue ? Number(nextValue) : null)}
           variant="pill"
-          size="sm"
-          className="flex w-max gap-1 py-1"
+          size="default"
+          className="flex w-max gap-2 py-2"
         >
           {cats.map((cat) => (
             <ToggleGroupItem
               key={cat.id}
               value={String(cat.id)}
               className={cn(
-                'rounded-full px-5 h-7 border border-transparent bg-muted text-foreground',
+                'rounded-full px-6 h-9 text-base border border-transparent bg-muted text-foreground',
                 'hover:bg-[#FFAE42] hover:text-white',
                 'data-[state=on]:bg-[#FFAE42] data-[state=on]:text-white',
-                'max-w-[10em] overflow-hidden text-ellipsis whitespace-nowrap',
+                'max-w-[12em] overflow-hidden text-ellipsis whitespace-nowrap',
               )}
             >
               {cat.name.length > 10 ? `${cat.name.slice(0, 10)}...` : cat.name}
@@ -91,15 +91,15 @@ export function GroupCategoryFilter(props: GroupCategoryFilterProps) {
         value={value ?? ''}
         onValueChange={(nextValue) => onChange(nextValue || null)}
         variant="pill"
-        size="sm"
-        className="flex w-max gap-1 py-1"
+        size="default"
+        className="flex w-max gap-2 py-2"
       >
         {(categories as string[]).map((category) => (
           <ToggleGroupItem
             key={category}
             value={category}
             className={cn(
-              'rounded-full px-5 h-7 border border-transparent bg-muted text-foreground',
+              'rounded-full px-6 h-9 text-base border border-transparent bg-muted text-foreground',
               'hover:bg-[#FFAE42] hover:text-white',
               'data-[state=on]:bg-[#FFAE42] data-[state=on]:text-white',
             )}

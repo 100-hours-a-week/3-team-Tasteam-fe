@@ -22,15 +22,15 @@ export function RestaurantMetaRow({
     <Component
       onClick={onClick}
       className={cn(
-        'flex items-start gap-4 px-4 py-3',
+        'flex items-start gap-4 px-4 py-4',
         onClick && 'hover:bg-accent transition-colors cursor-pointer',
         className,
       )}
     >
-      <Icon className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+      <Icon className="h-6 w-6 text-muted-foreground shrink-0 mt-0.5" />
       <div className="flex flex-1 min-w-0 flex-col gap-1.5">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <span className="text-sm break-words leading-relaxed">{value}</span>
+        <span className="text-base font-medium text-muted-foreground">{label}</span>
+        <span className="text-base break-words leading-relaxed">{value}</span>
       </div>
     </Component>
   )

@@ -78,7 +78,7 @@ export function RestaurantDetailPage() {
   }, [restaurantId])
 
   const [isReviewsLoading, setIsReviewsLoading] = React.useState(true)
-  const [reviewsError, setReviewsError] = React.useState(false)
+  const [, setReviewsError] = React.useState(false)
   const [previewReviews, setPreviewReviews] = React.useState<ReviewListItemDto[]>([])
   const [isMenusLoading, setIsMenusLoading] = React.useState(true)
   const [menusError, setMenusError] = React.useState(false)
@@ -351,7 +351,7 @@ export function RestaurantDetailPage() {
           <div className="bg-primary/5 rounded-lg p-4 border border-primary/10 mb-4">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-primary">AI 특징 요약</span>
+              <span className="text-base font-bold text-primary">AI 특징 요약</span>
             </div>
             {isRestaurantLoading ? (
               <div className="space-y-2">
@@ -360,8 +360,8 @@ export function RestaurantDetailPage() {
                 <Skeleton className="h-4 w-2/3" />
               </div>
             ) : (
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {restaurant.feature || '특징 정보가 없습니다.'}
+              <p className="text-base leading-relaxed text-muted-foreground">
+                {restaurant.feature || '아직 준비 중이에요.'}
               </p>
             )}
           </div>
@@ -371,22 +371,37 @@ export function RestaurantDetailPage() {
       {/* Details Tabs */}
       <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="w-full">
         <Container>
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="info">정보</TabsTrigger>
-            <TabsTrigger value="menus">메뉴</TabsTrigger>
-            <TabsTrigger value="reviews">리뷰</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-3 rounded-2xl bg-muted/40 p-1.5 h-12 transition-colors items-center">
+            <TabsTrigger
+              value="info"
+              className="h-full flex items-center justify-center text-base leading-none rounded-xl transition-all duration-200 ease-out data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground hover:bg-muted/60 hover:text-foreground"
+            >
+              정보
+            </TabsTrigger>
+            <TabsTrigger
+              value="menus"
+              className="h-full flex items-center justify-center text-base leading-none rounded-xl transition-all duration-200 ease-out data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground hover:bg-muted/60 hover:text-foreground"
+            >
+              메뉴
+            </TabsTrigger>
+            <TabsTrigger
+              value="reviews"
+              className="h-full flex items-center justify-center text-base leading-none rounded-xl transition-all duration-200 ease-out data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground hover:bg-muted/60 hover:text-foreground"
+            >
+              리뷰
+            </TabsTrigger>
           </TabsList>
         </Container>
 
         <TabsContent value="info" className="mt-4">
-          <Container className="space-y-6">
+          <Container className="space-y-4">
             {/* Business Hours */}
-            <Card className="p-4 space-y-4">
-              <h3 className="flex items-center gap-2 font-semibold">
-                <Clock className="h-5 w-5" />
+            <Card className="p-5 space-y-4">
+              <h3 className="flex items-center gap-2 text-base font-medium text-muted-foreground">
+                <Clock className="h-6 w-6 shrink-0" />
                 영업 시간
               </h3>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-3 text-base">
                 {isRestaurantLoading ? (
                   <>
                     <div className="flex justify-between">
@@ -471,9 +486,9 @@ export function RestaurantDetailPage() {
             </Card>
 
             {/* Contact & Location */}
-            <Card className="divide-y overflow-hidden pt-3 pb-3">
+            <Card className="divide-y overflow-hidden pt-2 pb-2 px-4">
               {isRestaurantLoading ? (
-                <div className="p-4 space-y-3">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Skeleton className="h-4 w-12" />
                     <Skeleton className="h-4 w-40" />
@@ -489,18 +504,18 @@ export function RestaurantDetailPage() {
                     icon={MapPin}
                     label="주소"
                     value={restaurant.address || '정보 없음'}
-                    className="pb-0"
+                    className="pt-5 pb-2 px-2"
                   />
                   <RestaurantMetaRow
                     icon={Phone}
                     label="전화번호"
                     value={restaurant.phone || '정보 없음'}
-                    className="pt-4"
+                    className="pt-5 pb-5 px-2"
                   />
                 </>
               )}
             </Card>
-            <p className="text-xs text-muted-foreground text-center pt-2 pb-2">
+            <p className="text-sm text-muted-foreground text-center pt-2 pb-2">
               실제 영업시간과 매장 정보는 매장 상황에 따라 다를 수 있습니다.
             </p>
           </Container>
@@ -575,9 +590,9 @@ export function RestaurantDetailPage() {
                       menuCategoryRefsMap.current[category.id] = el
                     }}
                   >
-                    <Card className="p-4 space-y-3">
+                    <Card className="p-5 space-y-4">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold">{category.name}</h3>
+                        <h3 className="text-xl font-bold">{category.name}</h3>
                       </div>
                       {category.menus.length > 0 ? (
                         <div className="space-y-0">
@@ -588,27 +603,27 @@ export function RestaurantDetailPage() {
                               : category.menus.slice(0, MENU_ITEM_FOLD_LIMIT)
                             ).map((menu) => (
                               <div
-                                key={menu.id}
-                                className="flex items-start gap-3 py-4 first:pt-0 last:pb-0"
+                                key={`${category.id}-${menu.id}`}
+                                className="flex items-start gap-4 py-5 first:pt-0 last:pb-0"
                               >
-                                <div className="flex-1 space-y-1">
+                                <div className="flex-1 min-w-0 space-y-1.5">
                                   <div className="flex items-center gap-2">
-                                    <p className="font-medium">{menu.name}</p>
+                                    <p className="text-lg font-medium">{menu.name}</p>
                                     {menu.isRecommended && (
-                                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
+                                      <span className="text-sm px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
                                         추천
                                       </span>
                                     )}
                                   </div>
                                   {menu.description && (
-                                    <p className="text-xs text-muted-foreground line-clamp-2">
+                                    <p className="text-base text-muted-foreground line-clamp-2">
                                       {menu.description}
                                     </p>
                                   )}
-                                  <p className="text-sm font-semibold">{formatPrice(menu.price)}</p>
+                                  <p className="text-lg font-semibold">{formatPrice(menu.price)}</p>
                                 </div>
                                 {menu.imageUrl ? (
-                                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
+                                  <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-muted">
                                     <img
                                       src={menu.imageUrl}
                                       alt={menu.name}
@@ -646,7 +661,7 @@ export function RestaurantDetailPage() {
             ) : (
               <Card className="p-4 text-sm text-muted-foreground">등록된 메뉴가 없습니다.</Card>
             )}
-            <p className="text-xs text-muted-foreground text-center pt-4 pb-2">
+            <p className="text-sm text-muted-foreground text-center pt-4 pb-2">
               실제 메뉴와 가격은 매장 상황에 따라 다를 수 있습니다.
             </p>
           </Container>
@@ -665,12 +680,7 @@ export function RestaurantDetailPage() {
                     </>
                   ) : (
                     <>
-                      <h2 className="text-2xl font-bold mb-1">
-                        총 {restaurant.reviewCount}개 리뷰
-                      </h2>
-                      <p className="text-sm text-muted-foreground">
-                        방문객들의 생생한 후기를 확인해보세요
-                      </p>
+                      <h2 className="text-xl font-bold">총 {restaurant.reviewCount}개 리뷰</h2>
                     </>
                   )}
                 </div>
@@ -689,7 +699,7 @@ export function RestaurantDetailPage() {
                   </>
                 ) : (
                   <>
-                    <div className="flex justify-between items-center text-sm font-medium">
+                    <div className="flex justify-between items-center text-base font-medium">
                       <span className="flex items-center gap-1 text-primary">
                         <ThumbsUp className="h-4 w-4" /> 긍정 {restaurant.sentiment.positive}%
                       </span>
@@ -715,7 +725,7 @@ export function RestaurantDetailPage() {
               <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-bold text-primary">리뷰 AI 요약</span>
+                  <span className="text-base font-bold text-primary">리뷰 AI 요약</span>
                 </div>
                 {isRestaurantLoading ? (
                   <div className="space-y-2">
@@ -723,15 +733,18 @@ export function RestaurantDetailPage() {
                     <Skeleton className="h-4 w-5/6" />
                   </div>
                 ) : (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {restaurant.aiSummary || '요약 정보가 없습니다.'}
+                  <p className="text-base leading-relaxed text-muted-foreground">
+                    {restaurant.aiSummary ||
+                      (restaurant.reviewCount === 0
+                        ? '아직 리뷰가 없어요. 첫 리뷰를 작성해 보세요!'
+                        : '아직 준비 중이에요.')}
                   </p>
                 )}
               </div>
             </Card>
 
             {/* Review List */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {isReviewsLoading ? (
                 <>
                   <Skeleton className="h-24 w-full" />
@@ -740,22 +753,19 @@ export function RestaurantDetailPage() {
                 </>
               ) : previewReviews.length > 0 ? (
                 previewReviews.map((review) => <ReviewCard key={review.id} review={review} />)
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  {reviewsError ? '리뷰를 불러오지 못했습니다.' : '리뷰가 없습니다.'}
-                </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Load More */}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate(`/restaurants/${restaurantId}/reviews`)}
-            >
-              리뷰 더보기
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
+            {restaurant.reviewCount > 3 && (
+              <Button
+                variant="outline"
+                className="w-full text-base"
+                onClick={() => navigate(`/restaurants/${restaurantId}/reviews`)}
+              >
+                리뷰 더보기
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
           </Container>
         </TabsContent>
       </Tabs>
