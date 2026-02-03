@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Container } from '@/widgets/container'
@@ -40,6 +40,7 @@ const CATEGORY_OPTIONS = [
   '고깃집',
 ]
 const ALL_CATEGORY = '전체'
+const JOIN_GUIDE_AUTO_CLOSE_MS = 3000
 
 const EMPTY_GROUP: GroupDetailHeaderData = {
   name: '',
@@ -73,8 +74,38 @@ export function GroupDetailPage() {
     location.state && typeof location.state === 'object'
       ? (location.state as { joined?: boolean })
       : undefined
+  const isFromOnboardingFlow =
+    location.state && typeof location.state === 'object'
+      ? (location.state as { fromOnboarding?: boolean }).fromOnboarding === true
+      : false
 
   const shouldMarkJoined = Boolean(joinedState?.joined)
+  const shouldShowOnboardingMemberGuide =
+    new URLSearchParams(location.search).get('onboardingMemberGuide') === 'true'
+  const [showJoinGuide, setShowJoinGuide] = useState(shouldShowOnboardingMemberGuide)
+
+  const dismissJoinGuide = useCallback(() => {
+    setShowJoinGuide(false)
+    if (shouldShowOnboardingMemberGuide) {
+      navigate(location.pathname, { replace: true, state: location.state })
+    }
+  }, [location.pathname, location.state, navigate, shouldShowOnboardingMemberGuide])
+
+  useEffect(() => {
+    setShowJoinGuide(shouldShowOnboardingMemberGuide)
+  }, [shouldShowOnboardingMemberGuide])
+
+  useEffect(() => {
+    if (!showJoinGuide) return
+
+    const timerId = window.setTimeout(() => {
+      dismissJoinGuide()
+    }, JOIN_GUIDE_AUTO_CLOSE_MS)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [dismissJoinGuide, showJoinGuide])
 
   useEffect(() => {
     if (!shouldMarkJoined) return
@@ -225,7 +256,13 @@ export function GroupDetailPage() {
         group={group ?? EMPTY_GROUP}
         isJoined={isJoined || shouldMarkJoined}
         isLoading={isGroupLoading}
-        onBack={() => navigate(-1)}
+        onBack={() => {
+          if (isFromOnboardingFlow) {
+            navigate(ROUTES.home, { replace: true })
+            return
+          }
+          navigate(-1)
+        }}
         onJoin={() => {
           if (!groupId) return
           const targetRoute =
@@ -240,6 +277,8 @@ export function GroupDetailPage() {
         }}
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
         onLeaveGroup={() => setLeaveDialogOpen(true)}
+        showJoinGuide={showJoinGuide}
+        onDismissJoinGuide={dismissJoinGuide}
       />
 
       <Container className="pt-3 pb-3 border-b border-border">

@@ -29,6 +29,8 @@ type GroupDetailHeaderProps = {
   onMoreAction?: () => void
   onNotificationSettings?: () => void
   onLeaveGroup?: () => void
+  showJoinGuide?: boolean
+  onDismissJoinGuide?: () => void
   className?: string
 }
 
@@ -41,6 +43,8 @@ export function GroupDetailHeader({
   onMoreAction,
   onNotificationSettings,
   onLeaveGroup,
+  showJoinGuide = false,
+  onDismissJoinGuide,
   className,
 }: GroupDetailHeaderProps) {
   const JoinIcon = isJoined ? UserCheck : UserPlus
@@ -55,15 +59,34 @@ export function GroupDetailHeader({
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-1.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onJoin}
-                aria-label={joinLabel}
-                disabled={isJoined}
-              >
-                <JoinIcon className="h-5 w-5" />
-              </Button>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onJoin}
+                  aria-label={joinLabel}
+                  disabled={isJoined}
+                >
+                  <JoinIcon className="h-5 w-5" />
+                </Button>
+                {showJoinGuide && (
+                  <>
+                    <div className="pointer-events-none absolute inset-0 rounded-md border-2 border-primary" />
+                    <div className="absolute right-0 top-full z-20 mt-2 w-52 rounded-md border border-primary/30 bg-background px-3 py-2 text-xs shadow-sm">
+                      <p className="text-foreground">
+                        그룹 멤버 추가 아이콘으로 팀원을 초대해보세요.
+                      </p>
+                      <button
+                        type="button"
+                        className="text-primary mt-1 text-[11px] font-medium"
+                        onClick={onDismissJoinGuide}
+                      >
+                        확인
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <Button variant="ghost" size="icon" onClick={onMoreAction} aria-label="더보기 메뉴">
                 <Layers className="h-5 w-5" />
               </Button>
