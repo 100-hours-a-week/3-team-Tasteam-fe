@@ -3,17 +3,37 @@ import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
+import { formatDisplayNumber } from '@/shared/lib/formatDisplayNumber'
+import type { ImageResource } from '@/shared/types/common'
 
 type HorizontalRestaurantCardProps = {
   id: number
   name: string
   category: string
   address?: string
-  distance: string
-  image: string
+  distance?: number | string
+  image?: ImageResource | string | null
   tags?: string[]
   onClick?: (id: string) => void
   className?: string
+}
+
+const resolveImageUrl = (image?: ImageResource | string | null) => {
+  if (!image) return ''
+  return typeof image === 'string' ? image : image.url
+}
+
+const formatDistanceLabel = (distance?: number | string) => {
+  if (distance == null) return ''
+  if (typeof distance === 'string') return distance
+  if (!Number.isFinite(distance)) return ''
+
+  if (distance < 1000) {
+    return `${formatDisplayNumber(distance)}m`
+  }
+
+  const km = distance / 1000
+  return `${formatDisplayNumber(km)}km`
 }
 
 export function HorizontalRestaurantCard({
@@ -27,6 +47,9 @@ export function HorizontalRestaurantCard({
   onClick,
   className,
 }: HorizontalRestaurantCardProps) {
+  const distanceLabel = formatDistanceLabel(distance)
+  const imageUrl = resolveImageUrl(image)
+
   return (
     <Card
       className={cn(
@@ -36,7 +59,7 @@ export function HorizontalRestaurantCard({
       onClick={() => onClick?.(String(id))}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-        <ImageWithFallback src={image} alt={name} className="object-cover w-full h-full" />
+        <ImageWithFallback src={imageUrl} alt={name} className="object-cover w-full h-full" />
       </div>
       <div className="px-4 pb-4 pt-1 space-y-1">
         <div className="flex items-start justify-between gap-2">
@@ -46,7 +69,7 @@ export function HorizontalRestaurantCard({
           <span className="min-w-0 truncate">{address ?? category}</span>
           <div className="flex items-center gap-1 shrink-0">
             <MapPin className="h-3 w-3" />
-            <span>{distance}</span>
+            <span>{distanceLabel}</span>
           </div>
         </div>
         {tags.length > 0 && (
