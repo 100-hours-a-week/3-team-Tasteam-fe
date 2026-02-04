@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Montserrat:wght@700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -248,6 +248,27 @@ body {
     font-weight: 500;
     line-height: 1.25;
     color: rgb(68 68 68 / 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+.desktop-side-signature {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .desktop-side-signature {
+    display: block;
+    position: fixed;
+    left: 14px;
+    bottom: 12px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: rgb(90 92 95 / 90%);
+    letter-spacing: 0.01em;
     pointer-events: none;
     z-index: 0;
   }
