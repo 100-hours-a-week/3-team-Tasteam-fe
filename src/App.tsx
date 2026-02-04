@@ -67,6 +67,9 @@ function App() {
           setShowLocationModal(false)
         }}
       />
+      <div className="desktop-side-signature" aria-hidden>
+        Kkalsam
+      </div>
       <AppRouter
         onOnboardingComplete={(_nextPath) => {
           window.localStorage.setItem('hasSeenOnboarding', 'true')
