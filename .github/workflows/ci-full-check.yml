@@ -55,13 +55,30 @@ jobs:
       # CI 결과 알림 (PR은 항상)
       - name: Notify CI result to Discord
         if: always()
-        uses: sarisia/actions-status-discord@v1
-        with:
-          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 Develop, Main PR CI ${{ job.status }}"
-          description: |
-            **결과:** ${{ job.status }}
-            **브랜치:** ${{ github.ref_name }}
-            **작성자:** ${{ github.actor }}
-            **커밋:** ${{ github.sha }}
-          color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            TITLE="프론트엔드 Develop, Main PR CI 성공 ✅"
+            COLOR=65280
+          else
+            TITLE="프론트엔드 Develop, Main PR CI 실패 💔💀"
+            COLOR=16711680
+          fi
+
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{
+                 \"embeds\": [{
+                   \"title\": \"$TITLE\",
+                   \"color\": $COLOR,
+                   \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+                   \"fields\": [
+                     {\"name\": \"결과\", \"value\": \"${{ job.status }}\", \"inline\": true},
+                     {\"name\": \"브랜치\", \"value\": \"${{ github.ref_name }}\", \"inline\": true},
+                     {\"name\": \"작성자\", \"value\": \"${{ github.actor }}\", \"inline\": true},
+                     {\"name\": \"커밋\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": false},
+                     {\"name\": \"이벤트\", \"value\": \"PR 체크\", \"inline\": false},
+                     {\"name\": \"워크플로우\", \"value\": \"[실행 로그 보기](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": false}
+                   ]
+                 }]
+               }" \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
