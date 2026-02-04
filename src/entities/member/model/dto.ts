@@ -108,6 +108,7 @@ export type MemberGroupDetailSummaryItemDto = {
   groupName: string
   groupAddress: string
   groupDetailAddress?: string | null
+  logoImageUrl?: string | null
   groupLogoImageUrl?: string | null
   groupMemberCount: number
   subGroups: MemberSubgroupDetailSummaryItemDto[]
