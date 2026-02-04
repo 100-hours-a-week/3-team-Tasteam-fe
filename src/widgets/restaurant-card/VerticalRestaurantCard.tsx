@@ -55,13 +55,12 @@ export function VerticalRestaurantCard({
   return (
     <div className={cn('space-y-2', className)}>
       {reason && (
-        <Badge
-          variant="secondary"
-          className="text-xs inline-flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-foreground/80"
-        >
-          <Sparkles className="h-3 w-3" />
-          AI 리뷰 한줄 요약: {reason}
-        </Badge>
+        <div className="w-full rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1.5">
+          <p className="flex items-start gap-1.5 text-xs text-foreground/80 leading-relaxed">
+            <Sparkles className="h-3 w-3 shrink-0 mt-0.5" />
+            <span className="min-w-0 break-all">AI 리뷰 한줄 요약: {reason}</span>
+          </p>
+        </div>
       )}
       <Card
         className={cn('overflow-hidden cursor-pointer transition-all hover:shadow-md p-0 gap-2')}
