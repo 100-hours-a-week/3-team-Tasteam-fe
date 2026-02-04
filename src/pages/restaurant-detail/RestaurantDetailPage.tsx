@@ -83,9 +83,9 @@ export function RestaurantDetailPage() {
   const [isMenusLoading, setIsMenusLoading] = React.useState(true)
   const [menusError, setMenusError] = React.useState(false)
   const [menuCategories, setMenuCategories] = React.useState<MenuCategoryDto[]>([])
-  const [selectedMenuCategoryId, setSelectedMenuCategoryId] = React.useState<number | null>(null)
+  const [selectedCategoryIndex, setSelectedCategoryIndex] = React.useState<number | null>(null)
   const [activeDetailTab, setActiveDetailTab] = React.useState('info')
-  const [expandedMenuCategoryIds, setExpandedMenuCategoryIds] = React.useState<Set<number>>(
+  const [expandedMenuCategoryIndices, setExpandedMenuCategoryIndices] = React.useState<Set<number>>(
     () => new Set(),
   )
   const menuCategoryRefsMap = useRef<Record<number, HTMLDivElement | null>>({})
@@ -96,32 +96,39 @@ export function RestaurantDetailPage() {
   const STICKY_BAR_BOTTOM = 120
   useEffect(() => {
     if (activeDetailTab !== 'menus' || menuCategories.length === 0) return
+
     const refs = menuCategoryRefsMap.current
     let rafId = 0
+
     const onScroll = () => {
+      cancelAnimationFrame(rafId)
       rafId = requestAnimationFrame(() => {
         const withTop = menuCategories
-          .map((c) => {
-            const el = refs[c.id]
+          .map((_, idx) => {
+            const el = refs[idx]
             if (!el) return null
-            return { id: c.id, top: el.getBoundingClientRect().top }
+            return { index: idx, top: el.getBoundingClientRect().top }
           })
-          .filter((x): x is { id: number; top: number } => x != null)
+          .filter((x): x is { index: number; top: number } => x != null)
+
         if (withTop.length === 0) return
+
         withTop.sort((a, b) => a.top - b.top)
         const pastLine = withTop.filter((x) => x.top <= STICKY_BAR_BOTTOM)
-        const currentId = pastLine.length > 0 ? pastLine[pastLine.length - 1].id : withTop[0].id
-        setSelectedMenuCategoryId(currentId)
+        const currentIndex =
+          pastLine.length > 0 ? pastLine[pastLine.length - 1].index : withTop[0].index
+        setSelectedCategoryIndex(currentIndex)
       })
     }
-    const runAfterRefs = () => {
-      const t = setTimeout(onScroll, menuCategories.length > 8 ? 100 : 50)
-      return () => clearTimeout(t)
-    }
-    const cleanupDelay = runAfterRefs()
+
+    const initTimer = setTimeout(() => {
+      onScroll()
+    }, 100)
+
     window.addEventListener('scroll', onScroll, { passive: true })
+
     return () => {
-      cleanupDelay()
+      clearTimeout(initTimer)
       window.removeEventListener('scroll', onScroll)
       cancelAnimationFrame(rafId)
     }
@@ -160,7 +167,11 @@ export function RestaurantDetailPage() {
           data?: { categories?: MenuCategoryDto[] }
           categories?: MenuCategoryDto[]
         }
-        setMenuCategories(raw.data?.categories ?? raw.categories ?? [])
+        const categories = raw.data?.categories ?? raw.categories ?? []
+        setMenuCategories(categories)
+        if (categories.length > 0) {
+          setSelectedCategoryIndex(0)
+        }
       })
       .catch(() => {
         setMenuCategories([])
@@ -527,15 +538,18 @@ export function RestaurantDetailPage() {
               <div className="sticky top-14 z-10 -mx-4 px-4 py-2 bg-background flex items-center gap-2">
                 <div className="flex-1 min-w-0 overflow-x-auto">
                   <GroupCategoryFilter
-                    categories={menuCategories.map((c) => ({ id: c.id, name: c.name }))}
-                    value={selectedMenuCategoryId ?? menuCategories[0]?.id ?? null}
-                    onChange={(id: number | null) => {
-                      if (id == null) return
-                      setSelectedMenuCategoryId(id)
-                      menuCategoryRefsMap.current[id]?.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start',
-                      })
+                    categories={menuCategories.map((c, idx) => ({ id: idx, name: c.name }))}
+                    value={selectedCategoryIndex ?? 0}
+                    onChange={(index: number | null) => {
+                      if (index == null) return
+                      setSelectedCategoryIndex(index)
+                      const targetEl = menuCategoryRefsMap.current[index]
+                      if (targetEl) {
+                        targetEl.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start',
+                        })
+                      }
                     }}
                   />
                 </div>
@@ -582,12 +596,12 @@ export function RestaurantDetailPage() {
               <Card className="p-4 text-sm text-muted-foreground">메뉴를 불러오지 못했습니다.</Card>
             ) : menuCategories.length > 0 ? (
               <>
-                {menuCategories.map((category) => (
+                {menuCategories.map((category, categoryIndex) => (
                   <div
-                    key={category.id}
-                    data-category-id={category.id}
+                    key={`category-${categoryIndex}`}
+                    data-category-index={categoryIndex}
                     ref={(el) => {
-                      menuCategoryRefsMap.current[category.id] = el
+                      menuCategoryRefsMap.current[categoryIndex] = el
                     }}
                   >
                     <Card className="p-5 space-y-4">
@@ -597,13 +611,13 @@ export function RestaurantDetailPage() {
                       {category.menus.length > 0 ? (
                         <div className="space-y-0">
                           <div className="divide-y divide-border">
-                            {(expandedMenuCategoryIds.has(category.id) ||
+                            {(expandedMenuCategoryIndices.has(categoryIndex) ||
                             category.menus.length <= MENU_ITEM_FOLD_LIMIT
                               ? category.menus
                               : category.menus.slice(0, MENU_ITEM_FOLD_LIMIT)
-                            ).map((menu) => (
+                            ).map((menu, menuIndex) => (
                               <div
-                                key={`${category.id}-${menu.id}`}
+                                key={`${categoryIndex}-${menu.id}-${menuIndex}`}
                                 className="flex items-start gap-4 py-5 first:pt-0 last:pb-0"
                               >
                                 <div className="flex-1 min-w-0 space-y-1.5">
@@ -635,14 +649,14 @@ export function RestaurantDetailPage() {
                             ))}
                           </div>
                           {category.menus.length > MENU_ITEM_FOLD_LIMIT &&
-                            !expandedMenuCategoryIds.has(category.id) && (
+                            !expandedMenuCategoryIndices.has(categoryIndex) && (
                               <div className="pt-3">
                                 <button
                                   type="button"
                                   className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors border-t border-border"
                                   onClick={() =>
-                                    setExpandedMenuCategoryIds((prev) =>
-                                      new Set(prev).add(category.id),
+                                    setExpandedMenuCategoryIndices((prev) =>
+                                      new Set(prev).add(categoryIndex),
                                     )
                                   }
                                 >
