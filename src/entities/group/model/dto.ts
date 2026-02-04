@@ -39,7 +39,8 @@ export type GroupRequestCreateResponseDto = SuccessResponse<{
 export type GroupDetailDto = {
   groupId: number
   name: string
-  logoImage: ImageResource | null
+  logoImage?: ImageResource | null
+  logoImageUrl?: string | null
   address: string
   detailAddress: string | null
   emailDomain: string | null
