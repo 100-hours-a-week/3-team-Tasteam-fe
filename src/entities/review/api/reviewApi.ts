@@ -91,7 +91,10 @@ export const getRestaurantReviews = (
     method: 'GET',
     url: `/api/v1/restaurants/${restaurantId}/reviews${buildQuery(params ?? {})}`,
   }).then((res) => {
-    const payload = 'data' in res ? res.data : res
+    const payload: BackendReviewListPayload | undefined =
+      res && typeof res === 'object' && ('items' in res || 'pagination' in res)
+        ? res
+        : (res as { data?: BackendReviewListPayload }).data
     return normalizeReviewListResponse(payload)
   })
 
