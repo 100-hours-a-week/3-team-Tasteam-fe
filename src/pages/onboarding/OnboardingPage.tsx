@@ -9,6 +9,7 @@ import { requestLocationPermission } from '@/shared/lib/geolocation'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { GroupImage } from '@/shared/ui/group-image'
 import { Input } from '@/shared/ui/input'
 import { Progress } from '@/shared/ui/progress'
 import { Container } from '@/widgets/container'
@@ -30,6 +31,7 @@ type MockGroup = {
   id: number
   name: string
   members: number
+  logoImageUrl?: string | null
   tags?: string[]
 }
 
@@ -151,6 +153,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
       id: group.groupId,
       name: group.name,
       members: group.memberCount,
+      logoImageUrl: group.logoImageUrl,
       tags: [],
     }))
   }, [normalizedQuery, searchedGroups])
@@ -267,10 +270,25 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
                               selectedGroupId === String(group.id) && 'bg-primary/10',
                             )}
                           >
-                            <p className="text-sm font-semibold">{group.name}</p>
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              멤버 {group.members}명
-                            </p>
+                            <div className="flex items-center gap-3">
+                              <div className="h-11 w-11 overflow-hidden rounded-md bg-muted">
+                                <GroupImage
+                                  image={
+                                    group.logoImageUrl
+                                      ? { id: String(group.id), url: group.logoImageUrl }
+                                      : null
+                                  }
+                                  name={group.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold">{group.name}</p>
+                                <p className="text-muted-foreground mt-1 text-xs">
+                                  멤버 {group.members}명
+                                </p>
+                              </div>
+                            </div>
                             {group.tags && group.tags.length > 0 ? (
                               <div className="mt-2 flex flex-wrap gap-1.5">
                                 {group.tags.map((tag) => (
