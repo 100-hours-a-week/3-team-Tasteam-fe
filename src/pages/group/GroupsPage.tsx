@@ -69,7 +69,7 @@ export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: Group
           name: group.groupName,
           description,
           memberCount: group.groupMemberCount,
-          imageUrl: group.groupLogoImageUrl,
+          imageUrl: group.logoImageUrl ?? group.groupLogoImageUrl,
           subgroups: (group.subGroups ?? []).map((subgroup) => ({
             id: String(subgroup.subGroupId),
             name: subgroup.subGroupName,
