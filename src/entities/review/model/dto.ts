@@ -4,6 +4,10 @@ import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type ReviewListItemDto = {
   id: number
+  groupId?: number
+  subgroupId?: number | null
+  groupName?: string
+  subgroupName?: string | null
   author: {
     nickname: string
   }

@@ -1,12 +1,16 @@
 import { ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/lib/utils'
+import { ROUTES } from '@/shared/config/routes'
 import type { ReviewListItemDto, ReviewDetailDto } from '../model/dto'
 
 type ReviewDtoProps = {
   review: ReviewListItemDto | ReviewDetailDto
+  /** 음식점 상세 페이지에서만 true. true일 때 그룹/하위그룹명을 링크로 표시 */
+  enableGroupLinks?: boolean
   className?: string
 }
 
@@ -93,11 +97,46 @@ export function ReviewCard(props: ReviewCardProps) {
     )
   }
 
-  const { review, className } = props
+  const { review, enableGroupLinks = false, className } = props
   const images = getImages(review)
+
+  const groupName =
+    'groupName' in review && review.groupName != null && review.groupName !== ''
+      ? review.groupName
+      : null
+  const subgroupName =
+    'subgroupName' in review && review.subgroupName != null && review.subgroupName !== ''
+      ? review.subgroupName
+      : null
+  const groupId = 'groupId' in review ? review.groupId : undefined
+  const subgroupId = 'subgroupId' in review ? review.subgroupId : undefined
+  const hasGroupInfo = groupName != null
 
   return (
     <Card className={cn('p-4 gap-0', className)}>
+      {hasGroupInfo && (
+        <p className="text-xs text-muted-foreground mb-5 flex flex-wrap items-center gap-x-1 gap-y-0.5">
+          {enableGroupLinks && groupId != null ? (
+            <Link to={ROUTES.groupDetail(String(groupId))} className="hover:text-primary">
+              {groupName}
+            </Link>
+          ) : (
+            <span>{groupName}</span>
+          )}
+          {subgroupName != null && (
+            <>
+              <span className="shrink-0">{' > '}</span>
+              {enableGroupLinks && subgroupId != null ? (
+                <Link to={ROUTES.subgroupDetail(String(subgroupId))} className="hover:text-primary">
+                  {subgroupName}
+                </Link>
+              ) : (
+                <span>{subgroupName}</span>
+              )}
+            </>
+          )}
+        </p>
+      )}
       <div className="flex items-start gap-3 mb-3">
         <Avatar className="h-10 w-10">
           <AvatarFallback>{review.author.nickname.slice(0, 2)}</AvatarFallback>
