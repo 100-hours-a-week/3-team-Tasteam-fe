@@ -16,7 +16,7 @@ export default defineConfig({
       minify: !isLocal,
       registerType: 'autoUpdate',
       workbox: {
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/admin/],
         skipWaiting: true,
         clientsClaim: true,
         ...(isLocal && { mode: 'development' as const }),

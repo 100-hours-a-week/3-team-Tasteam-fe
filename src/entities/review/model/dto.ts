@@ -4,6 +4,10 @@ import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type ReviewListItemDto = {
   id: number
+  groupId?: number
+  subgroupId?: number | null
+  groupName?: string
+  subgroupName?: string | null
   author: {
     id: number
     nickname: string
@@ -13,6 +17,17 @@ export type ReviewListItemDto = {
   keywords: string[]
   thumbnailImages: ImageResource[]
   createdAt: IsoDateTimeString
+  /** 하위그룹 리뷰 목록 등에서 제공 */
+  restaurantId?: number | null
+  restaurantName?: string | null
+  /** 그룹 맥락 표시용 로고 이미지 URL */
+  groupLogoImageUrl?: string | null
+  /** 그룹 주소 (음식점 상세 리뷰 맥락 표시용) */
+  groupAddress?: string | null
+  /** 음식점 맥락 표시용 대표 이미지 URL */
+  restaurantImageUrl?: string | null
+  /** 음식점 주소 (하위그룹 리뷰 맥락 표시용) */
+  restaurantAddress?: string | null
 }
 
 export type ReviewListResponseDto = SuccessResponse<CursorPageResponse<ReviewListItemDto>>

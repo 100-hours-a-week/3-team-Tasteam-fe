@@ -34,9 +34,17 @@ export function SubgroupList({ subgroups, onSubgroupClick, className }: Subgroup
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-              <div className="transition-transform duration-200 ease-out group-hover:scale-[1.03]">
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
-              </div>
+              {subgroup.imageUrl ? (
+                <img
+                  src={subgroup.imageUrl}
+                  alt={`${subgroup.name} 하위 그룹 이미지`}
+                  className="h-full w-full object-cover transition-transform duration-200 ease-out group-hover:scale-[1.03]"
+                />
+              ) : (
+                <div className="transition-transform duration-200 ease-out group-hover:scale-[1.03]">
+                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                </div>
+              )}
             </div>
             <div className="min-w-0">
               <p className="truncate font-medium">{subgroup.name}</p>

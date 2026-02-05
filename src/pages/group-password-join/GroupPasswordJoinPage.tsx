@@ -52,7 +52,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
         setGroupInfo({
           id: data.groupId,
           name: data.name,
-          imageUrl: data.logoImage?.url ?? undefined,
+          imageUrl: data.logoImageUrl ?? data.logoImage?.url ?? undefined,
         })
       } catch {
         if (cancelled) return

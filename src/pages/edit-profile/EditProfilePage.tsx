@@ -48,9 +48,9 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
         if (memberData) {
           setMember(memberData)
           setNickname(memberData.nickname)
-          setBio('')
+          setBio(memberData.introduction ?? '')
           setInitialNickname(memberData.nickname)
-          setInitialBio('')
+          setInitialBio(memberData.introduction ?? '')
         }
       })
       .catch(() => {
@@ -73,6 +73,10 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
       toast.error('닉네임을 입력해주세요')
       return
     }
+    if (/\s/.test(nickname)) {
+      toast.error('닉네임에는 공백을 사용할 수 없습니다')
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -83,7 +87,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
         profileImageFileUuid = results[0].fileUuid
       }
 
-      await updateMeProfile({ nickname, bio, profileImageFileUuid })
+      await updateMeProfile({ nickname, introduction: bio, profileImageFileUuid })
       toast.success('프로필이 수정되었습니다')
       navigate('/profile', { replace: true })
     } catch {
@@ -128,7 +132,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
             <div className="relative">
               <Avatar className="w-24 h-24">
                 <AvatarImage
-                  src={profilePreviewUrl ?? member.profileImage?.url}
+                  src={profilePreviewUrl ?? member.profileImageUrl ?? undefined}
                   alt={member.nickname}
                 />
                 <AvatarFallback className="text-2xl">{member.nickname[0]}</AvatarFallback>
@@ -150,7 +154,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
             <Input
               id="nickname"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={(e) => setNickname(e.target.value.replace(/\s/g, ''))}
               placeholder="닉네임을 입력하세요"
               maxLength={20}
             />
