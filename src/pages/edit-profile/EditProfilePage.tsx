@@ -87,7 +87,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
         profileImageFileUuid = results[0].fileUuid
       }
 
-      await updateMeProfile({ nickname, bio, profileImageFileUuid })
+      await updateMeProfile({ nickname, introduction: bio, profileImageFileUuid })
       toast.success('프로필이 수정되었습니다')
       navigate('/profile', { replace: true })
     } catch {
