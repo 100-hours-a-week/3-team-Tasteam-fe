@@ -80,7 +80,7 @@ export type MemberProfileUpdateRequestDto = {
   nickname?: string
   profileImageFileUuid?: string
   email?: string
-  bio?: string
+  introduction?: string
 }
 
 export type MemberGroupSummaryItemDto = {
