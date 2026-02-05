@@ -73,6 +73,10 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
       toast.error('닉네임을 입력해주세요')
       return
     }
+    if (/\s/.test(nickname)) {
+      toast.error('닉네임에는 공백을 사용할 수 없습니다')
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -150,7 +154,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
             <Input
               id="nickname"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={(e) => setNickname(e.target.value.replace(/\s/g, ''))}
               placeholder="닉네임을 입력하세요"
               maxLength={20}
             />
