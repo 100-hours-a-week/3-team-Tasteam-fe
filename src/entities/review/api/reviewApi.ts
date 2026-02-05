@@ -73,6 +73,16 @@ const normalizeReviewListResponse = (
     contentPreview: item.contentPreview ?? item.content ?? '',
     isRecommended: Boolean(item.isRecommended),
     keywords: item.keywords ?? [],
+    images:
+      item.images?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      item.thumbnailImages?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      (item.thumbnailImage
+        ? [{ id: String(item.thumbnailImage.id), url: item.thumbnailImage.url }]
+        : item.thumbnailImageUrl
+          ? [{ id: item.thumbnailImageUrl, url: item.thumbnailImageUrl }]
+          : item.imageUrl
+            ? [{ id: item.imageUrl, url: item.imageUrl }]
+            : undefined),
     thumbnailImage: toThumbnailImage(item),
     createdAt: item.createdAt ?? new Date().toISOString(),
   }))
