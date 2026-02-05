@@ -11,6 +11,7 @@ import type {
   RestaurantCreateResponseDto,
   RestaurantUpdateRequestDto,
   RestaurantUpdateResponseDto,
+  RestaurantMenuResponseDto,
 } from '../model/dto'
 
 export const getRestaurant = (restaurantId: number) =>
@@ -104,4 +105,16 @@ export const deleteRestaurant = (restaurantId: number) =>
   request<void>({
     method: 'DELETE',
     url: `/api/v1/restaurants/${restaurantId}`,
+  })
+
+export const getRestaurantMenus = (
+  restaurantId: number,
+  params?: {
+    includeEmptyCategories?: boolean
+    recommendedFirst?: boolean
+  },
+) =>
+  request<RestaurantMenuResponseDto>({
+    method: 'GET',
+    url: `/api/v1/restaurants/${restaurantId}/menus${buildQuery(params ?? {})}`,
   })

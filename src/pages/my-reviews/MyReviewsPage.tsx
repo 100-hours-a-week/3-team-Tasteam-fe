@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { getMyReviews } from '@/entities/member/api/memberApi'
-import { ReviewCard } from '@/entities/review/ui'
+import { SimpleReviewCard } from '@/entities/review/ui'
 
 type Review = {
   id: string
@@ -87,11 +87,13 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
                   className="text-left w-full"
                   onClick={() => onRestaurantClick?.(review.restaurantName)}
                 >
-                  <ReviewCard
+                  <SimpleReviewCard
+                    variant="me"
                     id={review.id}
-                    userName={review.restaurantName}
+                    restaurantName={review.restaurantName}
                     date={review.createdAt}
                     content={review.content}
+                    images={review.imageUrls}
                     className="pr-10"
                   />
                 </button>

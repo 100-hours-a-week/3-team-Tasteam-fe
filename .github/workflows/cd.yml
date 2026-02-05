@@ -70,7 +70,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 빌드 실패 ❌"
+          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 빌드 실패 💔"
           description: |
             **결과:** 빌드 실패
             **브랜치:** ${{ github.ref_name }}
@@ -129,7 +129,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 배포 ${{ job.status == 'success' && '성공 ✅' || '실패 ❌' }}"
+          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 배포 ${{ job.status == 'success' && '성공 ❤️' || '실패 💔💀' }}"
           description: |
             **결과:** ${{ job.status }}
             **브랜치:** ${{ github.ref_name }}

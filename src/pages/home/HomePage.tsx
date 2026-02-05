@@ -1,12 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Search, Flame, Sparkles } from 'lucide-react'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
-import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
-import { MainRestaurantCard } from '@/entities/restaurant/ui'
+import { LocationHeader } from '@/widgets/location-header'
+import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
+import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/restaurant-card'
+import { Input } from '@/shared/ui/input'
 import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main/api/mainApi'
-import type { MainResponse } from '@/entities/main/model/types'
+import { useAppLocation } from '@/entities/location'
+import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
+import type {
+  MainPageResponseDto,
+  MainSectionDto,
+  MainSectionItemDto,
+} from '@/entities/main/model/types'
+import { toMainPageData } from '@/entities/main/model/mapper'
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -16,63 +26,240 @@ type HomePageProps = {
 
 export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
-  const [mainData, setMainData] = useState<MainResponse | null>(null)
+  const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
+  const [isMainLoading, setIsMainLoading] = useState(true)
+  const [hasLoadedMain, setHasLoadedMain] = useState(false)
+  const { location, status, requestCurrentLocation } = useAppLocation()
+  const hasRefreshedRef = useRef(false)
+  const latitude = location?.latitude ?? 37.5665
+  const longitude = location?.longitude ?? 126.978
 
   useEffect(() => {
-    getMainPage({ latitude: 37.5, longitude: 127.0 })
+    queueMicrotask(() => setIsMainLoading(true))
+    getMainPage({ latitude, longitude })
       .then(setMainData)
       .catch(() => {})
-  }, [])
+      .finally(() => {
+        setIsMainLoading(false)
+        setHasLoadedMain(true)
+      })
+  }, [latitude, longitude])
+
+  useEffect(() => {
+    if (hasRefreshedRef.current) return
+    if (status === 'loading') return
+
+    hasRefreshedRef.current = true
+    void (async () => {
+      const permission = await getGeolocationPermissionState()
+      if (permission !== 'granted') return
+      queueMicrotask(() => {
+        void requestCurrentLocation()
+      })
+    })()
+  }, [requestCurrentLocation, status])
+
+  const mainPageData = toMainPageData(mainData)
+  const sections = mainPageData.sections
+  const resolvedSections = sections
+
+  const newSection = resolvedSections.find((section) => section.type === 'NEW')
+  const hotSection = resolvedSections.find((section) => section.type === 'HOT')
+
+  const renderHorizontal = (section?: MainSectionDto) => {
+    const items = section?.items ?? []
+    if (isMainLoading && items.length === 0) {
+      if (hasLoadedMain) {
+        return (
+          <div className="px-4 py-6 min-h-[12rem] flex items-center justify-center">
+            <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
+          </div>
+        )
+      }
+      return (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex w-max gap-3 px-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="w-[260px] shrink-0">
+                <div className="h-48 bg-background rounded-lg" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+    if (items.length === 0) {
+      return (
+        <div className="px-4 py-6 min-h-[12rem] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
+        </div>
+      )
+    }
+    return (
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex w-max gap-3 px-4">
+          {items.map((item: MainSectionItemDto) => (
+            <div key={item.restaurantId} className="w-[260px] shrink-0">
+              <HorizontalRestaurantCard
+                id={item.restaurantId}
+                name={item.name}
+                category={item.category}
+                distance={item.distanceMeter}
+                image={item.thumbnailImageUrl}
+                tags={[]}
+                onClick={onRestaurantClick}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const renderVertical = (section?: MainSectionDto) => {
+    const items = section?.items ?? []
+    if (isMainLoading && items.length === 0) {
+      if (hasLoadedMain) {
+        return (
+          <Container>
+            <div className="min-h-[13rem] flex items-center justify-center">
+              <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
+            </div>
+          </Container>
+        )
+      }
+      return (
+        <Container>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-52 bg-background rounded-lg" />
+            ))}
+          </div>
+        </Container>
+      )
+    }
+    if (items.length === 0) {
+      return (
+        <Container>
+          <div className="min-h-[13rem] flex items-center justify-center">
+            <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
+          </div>
+        </Container>
+      )
+    }
+    return (
+      <Container>
+        <div className="space-y-4">
+          {items.map((item: MainSectionItemDto) => (
+            <VerticalRestaurantCard
+              key={item.restaurantId}
+              id={item.restaurantId}
+              name={item.name}
+              category={item.category}
+              distance={item.distanceMeter}
+              image={item.thumbnailImageUrl}
+              tags={[]}
+              reason={item.reviewSummary}
+              onClick={onRestaurantClick}
+            />
+          ))}
+        </div>
+      </Container>
+    )
+  }
 
   return (
     <div className="pb-20">
-      <TopAppBar title="Tasteam" />
+      <LocationHeader
+        district={status === 'loading' ? '현재 위치 확인 중...' : location?.district}
+        address={location?.address}
+      />
 
-      {/* 검색바 숨김
-      <Container className="pt-4 pb-6">
-        <div className="relative">
+      <Container className="py-4">
+        <div
+          className="relative cursor-pointer"
+          onClick={() => {
+            if (onSearchClick) {
+              onSearchClick()
+              return
+            }
+            navigate(ROUTES.search)
+          }}
+        >
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            placeholder="음식점, 지역, 음식 종류 검색"
-            className="pl-9 bg-secondary"
+            placeholder="메뉴, 가게, 태그 검색"
+            className="pl-9 bg-background border"
             readOnly
           />
         </div>
       </Container>
-      */}
 
-      {mainData?.data?.sections?.map(
-        (section) =>
-          section.items?.length > 0 && (
-            <section key={section.type} className="space-y-4 mb-8">
-              <Container>
-                <h2 className="text-lg font-semibold">{section.title}</h2>
-              </Container>
-              <Container className="overflow-x-auto pb-2 scrollbar-hide">
-                <div className="flex w-max gap-3">
-                  {section.items.map((item) => (
-                    <div key={item.restaurantId} className="w-[280px] shrink-0">
-                      <MainRestaurantCard item={item} onClick={onRestaurantClick} />
-                    </div>
-                  ))}
-                </div>
-              </Container>
-            </section>
-          ),
-      )}
-
-      {/* 내 그룹 숨김
-      <section className="space-y-4 mb-8">
+      <section className="mb-8">
         <Container>
-          <h2 className="text-lg font-semibold">내 그룹</h2>
+          <HeroRecommendationCard
+            title="오늘 점심 뭐먹지?"
+            description="AI가 추천하는 맞춤 맛집을 확인해보세요"
+            image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
+            onCTAClick={() => navigate(ROUTES.todayLunch)}
+          />
         </Container>
-        <Container className="space-y-3">
-          {myGroups.map((group) => (
-            <GroupCard key={group.id} {...group} onClick={() => onGroupClick?.(group.id)} />
-          ))}
+      </section>
+
+      {/* QuickActions - 추후 기능 추가 시 활성화
+      <section className="mb-8">
+        <Container>
+          <div className="grid grid-cols-4 gap-2">
+            {quickActions.map((action) => (
+              <QuickActionButton
+                key={action.action}
+                icon={action.icon}
+                label={action.label}
+                onClick={() => handleQuickAction(action.action)}
+              />
+            ))}
+          </div>
         </Container>
       </section>
       */}
+
+      {/* CategoryChips - 추후 기능 추가 시 활성화
+      <section className="mb-8">
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 px-4">
+            {categories.map((category) => (
+              <CategoryChip
+                key={category.id}
+                label={category.label}
+                icon={<span className="text-sm">{category.icon}</span>}
+                isActive={selectedCategory === category.id}
+                onClick={() => handleCategoryClick(category.id)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+      */}
+
+      <section className="mb-8">
+        <Container className="mb-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">신규 개장</h2>
+          </div>
+        </Container>
+        {renderHorizontal(newSection)}
+      </section>
+
+      <section className="mb-8">
+        <Container className="mb-4">
+          <div className="flex items-center gap-2">
+            <Flame className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">이번주 Hot</h2>
+          </div>
+        </Container>
+        {renderVertical(hotSection)}
+      </section>
 
       <BottomTabBar
         currentTab="home"

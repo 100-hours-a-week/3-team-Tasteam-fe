@@ -5,6 +5,7 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupEmailVerificationForm } from '@/features/groups'
 import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member/api/memberApi'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import { getGroup } from '@/entities/group/api/groupApi'
 
 type GroupEmailJoinPageProps = {
@@ -25,6 +26,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) {
   const { id } = useParams()
   const groupId = id ? Number(id) : null
+  const { refresh } = useMemberGroups()
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -57,7 +59,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         setGroupInfo({
           id: data.groupId,
           name: data.name,
-          imageUrl: data.logoImage?.url ?? undefined,
+          imageUrl: data.logoImageUrl ?? data.logoImage?.url ?? undefined,
         })
       } catch {
         if (cancelled) return
@@ -212,6 +214,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         }
         setHelperStatus('success')
         setHelperText('이메일 인증이 완료되었습니다.')
+        refresh()
         onJoin?.(String(groupId))
       })
       .catch((error) => {

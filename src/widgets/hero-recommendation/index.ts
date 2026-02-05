@@ -1,0 +1,1 @@
+export { HeroRecommendationCard } from './HeroRecommendationCard'

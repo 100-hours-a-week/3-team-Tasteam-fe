@@ -5,12 +5,14 @@ import { cn } from '@/shared/lib/utils'
 type GroupEmailJoinGroupInfoProps = {
   name: string
   imageUrl?: string
+  subtitle?: string
   className?: string
 }
 
 export function GroupEmailJoinGroupInfo({
   name,
   imageUrl,
+  subtitle = '그룹 이메일 인증 가입',
   className,
 }: GroupEmailJoinGroupInfoProps) {
   return (
@@ -21,7 +23,7 @@ export function GroupEmailJoinGroupInfo({
           <AvatarFallback className="text-base">{name.slice(0, 2)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">그룹 이메일 인증 가입</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
           <h2 className="text-lg font-semibold truncate">{name}</h2>
         </div>
       </CardContent>

@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupPasswordJoinForm } from '@/features/groups'
 import { getGroup } from '@/entities/group/api/groupApi'
 import { verifyGroupPassword } from '@/entities/member/api/memberApi'
+import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 
 type GroupPasswordJoinPageProps = {
   onBack?: () => void
@@ -23,6 +24,7 @@ type GroupInfo = {
 export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageProps) {
   const { id } = useParams()
   const groupId = id ? Number(id) : null
+  const { refresh } = useMemberGroups()
   const [password, setPassword] = useState('')
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [isJoining, setIsJoining] = useState(false)
@@ -48,7 +50,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
         setGroupInfo({
           id: data.groupId,
           name: data.name,
-          imageUrl: data.logoImage?.url ?? undefined,
+          imageUrl: data.logoImageUrl ?? data.logoImage?.url ?? undefined,
         })
       } catch {
         if (cancelled) return
@@ -96,6 +98,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
         }
         setHelperStatus('success')
         setHelperText('비밀번호 인증이 완료되었습니다.')
+        refresh()
         onJoin?.(String(groupId))
       })
       .catch((error) => {
@@ -136,7 +139,11 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
       <TopAppBar title="그룹 비밀번호 가입" showBackButton onBack={onBack} />
 
       <Container className="flex-1 py-6 space-y-6">
-        <GroupEmailJoinGroupInfo name={groupInfo.name} imageUrl={groupInfo.imageUrl} />
+        <GroupEmailJoinGroupInfo
+          name={groupInfo.name}
+          imageUrl={groupInfo.imageUrl}
+          subtitle="그룹 비밀번호 인증 가입"
+        />
         {isGroupLoading ? (
           <p className="text-sm text-muted-foreground">그룹 정보를 불러오는 중입니다.</p>
         ) : groupError ? (

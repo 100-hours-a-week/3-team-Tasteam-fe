@@ -7,12 +7,11 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { ProfileImage } from '@/shared/ui/profile-image'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
 // import { RestaurantCard } from '@/entities/restaurant/ui'
-import { ReviewCard } from '@/entities/review/ui'
+import { DetailReviewCard } from '@/entities/review/ui'
 import {
   getSubgroup,
   getSubgroupMembers,
@@ -51,7 +50,7 @@ export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { isAuthenticated, openLogin } = useAuth()
-  const { isSubgroupMember, isLoaded, summaries } = useMemberGroups()
+  const { isSubgroupMember, isLoaded, summaries, refresh } = useMemberGroups()
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [subgroup, setSubgroup] = useState<SubgroupDetailDto | null>(null)
@@ -193,6 +192,7 @@ export function SubgroupsPage() {
       await joinSubgroup(subgroup.groupId, Number(id), password)
 
       alert('가입되었습니다!')
+      refresh()
       setIsJoinDialogOpen(false)
       setPassword('')
       // 필요한 경우 페이지 새로고침 또는 상태 업데이트 로직 추가 가능
@@ -224,7 +224,8 @@ export function SubgroupsPage() {
     try {
       await leaveSubgroup(subgroupId)
       alert('하위 그룹에서 나왔습니다.')
-      navigate(-1)
+      refresh()
+      navigate(ROUTES.groups, { replace: true })
     } catch (error: unknown) {
       const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
       if (code === 'AUTHENTICATION_REQUIRED') {
@@ -280,46 +281,70 @@ export function SubgroupsPage() {
 
       {/* SubGroup Header */}
       <Container className="pt-4 pb-6">
-        {/* Parent Group Badge */}
-        <div className="flex items-center gap-1 mb-3">
+        {/* Parent Group Badge: 그룹명 > 하위그룹명 (각각 말줄임, 그룹명만 클릭 가능) */}
+        <div className="flex items-center gap-1 mb-3 min-w-0 overflow-hidden">
           {isSubgroupLoading ? (
-            <Skeleton className="h-4 w-20" />
+            <>
+              <Skeleton className="h-4 w-20 shrink-0" />
+              <span className="mx-0.5 text-muted-foreground/50">&gt;</span>
+              <Skeleton className="h-4 w-24 shrink-0" />
+            </>
           ) : (
-            <button
-              onClick={handleGroupNameClick}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-              disabled={!parentGroupName}
-            >
-              {parentGroupName || '그룹'}
-            </button>
-          )}
-          <span className="mx-0.5 text-muted-foreground/50">&gt;</span>
-          {isSubgroupLoading ? (
-            <Skeleton className="h-4 w-24" />
-          ) : (
-            <span className="text-sm font-medium text-foreground">
-              {subgroup?.name || '하위 그룹'}
-            </span>
+            <>
+              <button
+                onClick={handleGroupNameClick}
+                className="text-sm font-medium text-foreground hover:text-primary transition-colors truncate min-w-0 max-w-[40%] text-left"
+                disabled={!parentGroupName}
+                title={parentGroupName || '그룹'}
+              >
+                {parentGroupName || '그룹'}
+              </button>
+              <span className="mx-0.5 text-muted-foreground/50 flex-shrink-0">&gt;</span>
+              <span
+                className="text-sm font-medium text-foreground truncate min-w-0 flex-1 block"
+                title={subgroup?.name || '하위 그룹'}
+              >
+                {subgroup?.name || '하위 그룹'}
+              </span>
+            </>
           )}
         </div>
 
         <Card className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
               {isSubgroupLoading ? (
-                <>
-                  <Skeleton className="h-6 w-40 mb-2" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </>
+                <Skeleton className="h-14 w-14 rounded-full shrink-0" />
               ) : (
-                <>
-                  <h1 className="text-xl font-bold mb-2">{subgroup?.name || '하위 그룹'}</h1>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {subgroup?.description || '설명이 없습니다.'}
-                  </p>
-                </>
+                <Avatar className="h-14 w-14 shrink-0 border border-border">
+                  <AvatarImage
+                    src={subgroup?.profileImageUrl ?? subgroup?.thumnailImage?.url}
+                    alt={subgroup?.name ?? '하위 그룹'}
+                  />
+                  <AvatarFallback>{(subgroup?.name ?? '하위').slice(0, 2)}</AvatarFallback>
+                </Avatar>
               )}
+              <div className="flex-1 min-w-0 overflow-hidden">
+                {isSubgroupLoading ? (
+                  <>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </>
+                ) : (
+                  <>
+                    <h1
+                      className="text-xl font-bold mb-2 truncate"
+                      title={subgroup?.name || '하위 그룹'}
+                    >
+                      {subgroup?.name || '하위 그룹'}
+                    </h1>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {subgroup?.description || '설명이 없습니다.'}
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
             {isMember && (
               <DropdownMenu>
@@ -406,72 +431,26 @@ export function SubgroupsPage() {
         </Card>
       </Container>
 
-      {/* Tabs */}
-      <Tabs defaultValue="restaurants" className="w-full">
-        <Container>
-          <TabsList className="w-full grid grid-cols-1">
-            {/* V2에서 맛집 탭 추가 */}
-            {/* <TabsTrigger value="restaurants">맛집</TabsTrigger> */}
-            <TabsTrigger value="reviews">리뷰</TabsTrigger>
-          </TabsList>
-        </Container>
-
-        {/* V2에서 맛집 탭 추가 */}
-        {/* <TabsContent value="restaurants" className="mt-4">
-          <Container className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">하위 그룹 맛집 리스트</h3>
-            </div>
-            <div className="grid gap-4">
-              {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  맛집 정보를 불러오는 중...
-                </div>
-              ) : restaurants.length > 0 ? (
-                restaurants.map((restaurant: any) => (
-                  <RestaurantCard
-                    key={restaurant.id}
-                    {...restaurant}
-                    // isSaved={savedRestaurants[restaurant.id]}
-                    // onSave={() => handleSaveToggle(restaurant.id)}
-                    onClick={() => navigate(ROUTES.restaurantDetail(restaurant.id))}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  등록된 맛집이 없습니다.
-                </div>
-              )}
-            </div>
-          </Container>
-        </TabsContent> */}
-
-        <TabsContent value="reviews" className="mt-4">
-          <Container className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">하위 그룹 리뷰</h3>
-            </div>
-
-            <div className="space-y-3">
-              {isSubgroupLoading ? (
-                <>
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-24 w-full" />
-                </>
-              ) : error ? (
-                <div className="text-center py-12 text-muted-foreground">{error}</div>
-              ) : reviews.length > 0 ? (
-                reviews.map((review) => <ReviewCard key={review.id} review={review} />)
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  등록된 리뷰가 없습니다.
-                </div>
-              )}
-            </div>
-          </Container>
-        </TabsContent>
-      </Tabs>
+      {/* 리뷰 목록 */}
+      <Container className="mt-4 space-y-4">
+        <div className="space-y-3">
+          {isSubgroupLoading ? (
+            <>
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </>
+          ) : error ? (
+            <div className="text-center py-12 text-muted-foreground">{error}</div>
+          ) : reviews.length > 0 ? (
+            reviews.map((review) => (
+              <DetailReviewCard key={review.id} variant="group" review={review} />
+            ))
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">등록된 리뷰가 없습니다.</div>
+          )}
+        </div>
+      </Container>
 
       {FEATURE_FLAGS.enableChat && (
         <Button

@@ -69,6 +69,7 @@ export function GroupsPage({ onGroupClick }: GroupsPageProps) {
         name: group.groupName,
         description,
         memberCount: group.groupMemberCount,
+        groupLogoImageUrl: group.logoImageUrl ?? group.groupLogoImageUrl,
         memberAvatars: [],
       }
     })

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Container } from '@/widgets/container'
@@ -39,6 +39,9 @@ const CATEGORY_OPTIONS = [
   '주점',
   '고깃집',
 ]
+const ALL_CATEGORY = '전체'
+const JOIN_GUIDE_AUTO_CLOSE_MS = 2200
+const JOIN_GUIDE_FADE_OUT_MS = 250
 
 const EMPTY_GROUP: GroupDetailHeaderData = {
   name: '',
@@ -66,14 +69,56 @@ export function GroupDetailPage() {
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const [isGroupLoaded, setIsGroupLoaded] = useState(false)
   const groupId = id ? Number(id) : null
-  const { summaries, isLoaded } = useMemberGroups()
+  const { summaries, isLoaded, refresh } = useMemberGroups()
 
   const joinedState =
     location.state && typeof location.state === 'object'
       ? (location.state as { joined?: boolean })
       : undefined
+  const isFromOnboardingFlow =
+    location.state && typeof location.state === 'object'
+      ? (location.state as { fromOnboarding?: boolean }).fromOnboarding === true
+      : false
 
   const shouldMarkJoined = Boolean(joinedState?.joined)
+  const shouldShowOnboardingMemberGuide =
+    new URLSearchParams(location.search).get('onboardingMemberGuide') === 'true'
+  const [showJoinGuide, setShowJoinGuide] = useState(shouldShowOnboardingMemberGuide)
+  const [isJoinGuideVisible, setIsJoinGuideVisible] = useState(shouldShowOnboardingMemberGuide)
+
+  const dismissJoinGuide = useCallback(() => {
+    setIsJoinGuideVisible(false)
+    window.setTimeout(() => {
+      setShowJoinGuide(false)
+      if (shouldShowOnboardingMemberGuide) {
+        navigate(location.pathname, { replace: true, state: location.state })
+      }
+    }, JOIN_GUIDE_FADE_OUT_MS)
+  }, [location.pathname, location.state, navigate, shouldShowOnboardingMemberGuide])
+
+  useEffect(() => {
+    if (shouldShowOnboardingMemberGuide) {
+      setShowJoinGuide(true)
+      window.setTimeout(() => {
+        setIsJoinGuideVisible(true)
+      }, 0)
+      return
+    }
+    setIsJoinGuideVisible(false)
+    setShowJoinGuide(false)
+  }, [shouldShowOnboardingMemberGuide])
+
+  useEffect(() => {
+    if (!showJoinGuide || !isJoinGuideVisible) return
+
+    const timerId = window.setTimeout(() => {
+      dismissJoinGuide()
+    }, JOIN_GUIDE_AUTO_CLOSE_MS)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [dismissJoinGuide, isJoinGuideVisible, showJoinGuide])
 
   useEffect(() => {
     if (!shouldMarkJoined) return
@@ -91,11 +136,11 @@ export function GroupDetailPage() {
         if (cancelled) return
         const names = list.map((item) => item.name)
         setCategories(names)
-        setSelectedCategory((prev) => prev ?? names[0] ?? null)
+        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
       } catch {
         if (cancelled) return
         setCategories(CATEGORY_OPTIONS)
-        setSelectedCategory((prev) => prev ?? CATEGORY_OPTIONS[0] ?? null)
+        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
       } finally {
         if (!cancelled) {
           setIsCategoryLoading(false)
@@ -146,7 +191,7 @@ export function GroupDetailPage() {
         if (cancelled) return
         setGroup({
           name: groupRes.name,
-          profileImage: groupRes.logoImage?.url ?? undefined,
+          profileImage: groupRes.logoImageUrl ?? groupRes.logoImage?.url ?? undefined,
           addressLine: groupRes.address,
           addressDetail: groupRes.detailAddress ?? undefined,
           memberCount: groupRes.memberCount ?? 0,
@@ -175,7 +220,7 @@ export function GroupDetailPage() {
 
   useEffect(() => {
     if (!groupId || Number.isNaN(groupId)) return
-    if (!selectedCategory || !isGroupLoaded) return
+    if (!isGroupLoaded) return
     if (isLocationLoading) return
     if (!locationPosition) {
       setRestaurants([])
@@ -191,7 +236,8 @@ export function GroupDetailPage() {
           latitude: locationPosition.latitude,
           longitude: locationPosition.longitude,
           size: 10,
-          categories: selectedCategory,
+          categories:
+            selectedCategory && selectedCategory !== ALL_CATEGORY ? selectedCategory : undefined,
         })
         if (cancelled) return
         setRestaurants(restaurantRes.items ?? [])
@@ -223,7 +269,13 @@ export function GroupDetailPage() {
         group={group ?? EMPTY_GROUP}
         isJoined={isJoined || shouldMarkJoined}
         isLoading={isGroupLoading}
-        onBack={() => navigate(-1)}
+        onBack={() => {
+          if (isFromOnboardingFlow) {
+            navigate(ROUTES.home, { replace: true })
+            return
+          }
+          navigate(-1)
+        }}
         onJoin={() => {
           if (!groupId) return
           const targetRoute =
@@ -238,15 +290,21 @@ export function GroupDetailPage() {
         }}
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
         onLeaveGroup={() => setLeaveDialogOpen(true)}
+        showJoinGuide={showJoinGuide}
+        isJoinGuideVisible={isJoinGuideVisible}
       />
 
       <Container className="pt-3 pb-3 border-b border-border">
         <GroupCategoryFilter
-          categories={categories.length ? categories : CATEGORY_OPTIONS}
+          categories={[
+            ALL_CATEGORY,
+            ...(categories.length ? categories : CATEGORY_OPTIONS).filter(
+              (category) => category !== ALL_CATEGORY,
+            ),
+          ]}
           value={selectedCategory}
-          onChange={(value) => {
-            const fallback = categories[0] ?? CATEGORY_OPTIONS[0] ?? null
-            setSelectedCategory(value ?? fallback)
+          onChange={(value: string | null) => {
+            setSelectedCategory(value ?? ALL_CATEGORY)
           }}
         />
       </Container>
@@ -303,6 +361,7 @@ export function GroupDetailPage() {
                 leaveGroup(groupId)
                   .then(() => {
                     toast.success('그룹에서 탈퇴했습니다')
+                    refresh()
                   })
                   .catch(() => {
                     toast.error('그룹 탈퇴에 실패했습니다')
