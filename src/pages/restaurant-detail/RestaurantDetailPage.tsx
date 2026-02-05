@@ -766,7 +766,9 @@ export function RestaurantDetailPage() {
                   <Skeleton className="h-24 w-full" />
                 </>
               ) : previewReviews.length > 0 ? (
-                previewReviews.map((review) => <ReviewCard key={review.id} review={review} />)
+                previewReviews.map((review) => (
+                  <ReviewCard key={review.id} review={review} enableGroupLinks />
+                ))
               ) : null}
             </div>
 

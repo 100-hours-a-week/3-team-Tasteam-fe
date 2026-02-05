@@ -12,6 +12,10 @@ import type {
 
 type BackendReviewListItem = {
   id: number
+  groupId?: number | null
+  subgroupId?: number | null
+  groupName?: string | null
+  subgroupName?: string | null
   author?: { nickname?: string | null } | null
   contentPreview?: string | null
   content?: string | null
@@ -69,6 +73,10 @@ const normalizeReviewListResponse = (
 
   const items = (payload.items ?? []).map<ReviewListItemDto>((item) => ({
     id: item.id,
+    groupId: item.groupId ?? undefined,
+    subgroupId: item.subgroupId ?? undefined,
+    groupName: item.groupName ?? undefined,
+    subgroupName: item.subgroupName ?? undefined,
     author: { nickname: item.author?.nickname ?? '알 수 없음' },
     contentPreview: item.contentPreview ?? item.content ?? '',
     isRecommended: Boolean(item.isRecommended),
