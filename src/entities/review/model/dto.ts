@@ -10,6 +10,7 @@ export type ReviewListItemDto = {
   contentPreview: string
   isRecommended: boolean
   keywords: string[]
+  images?: ImageResource[]
   thumbnailImage: ImageResource | null
   createdAt: IsoDateTimeString
 }

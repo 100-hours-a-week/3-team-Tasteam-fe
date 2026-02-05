@@ -36,10 +36,19 @@ function formatDate(isoString: string): string {
 }
 
 function getImages(review: ReviewListItemDto | ReviewDetailDto): string[] {
-  if ('images' in review) {
+  if ('images' in review && Array.isArray(review.images) && review.images.length > 0) {
     return review.images.map((img) => img.url)
   }
-  return review.thumbnailImage ? [review.thumbnailImage.url] : []
+
+  if ('thumbnailImages' in review && Array.isArray((review as any).thumbnailImages)) {
+    return (review as any).thumbnailImages.map((img: { url: string }) => img.url)
+  }
+
+  if ('thumbnailImage' in review && review.thumbnailImage) {
+    return [review.thumbnailImage.url]
+  }
+
+  return []
 }
 
 function getContent(review: ReviewListItemDto | ReviewDetailDto): string {
