@@ -282,26 +282,32 @@ export function SubgroupsPage() {
 
       {/* SubGroup Header */}
       <Container className="pt-4 pb-6">
-        {/* Parent Group Badge */}
-        <div className="flex items-center gap-1 mb-3">
+        {/* Parent Group Badge: 그룹명 > 하위그룹명 (각각 말줄임, 그룹명만 클릭 가능) */}
+        <div className="flex items-center gap-1 mb-3 min-w-0 overflow-hidden">
           {isSubgroupLoading ? (
-            <Skeleton className="h-4 w-20" />
+            <>
+              <Skeleton className="h-4 w-20 shrink-0" />
+              <span className="mx-0.5 text-muted-foreground/50">&gt;</span>
+              <Skeleton className="h-4 w-24 shrink-0" />
+            </>
           ) : (
-            <button
-              onClick={handleGroupNameClick}
-              className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-              disabled={!parentGroupName}
-            >
-              {parentGroupName || '그룹'}
-            </button>
-          )}
-          <span className="mx-0.5 text-muted-foreground/50">&gt;</span>
-          {isSubgroupLoading ? (
-            <Skeleton className="h-4 w-24" />
-          ) : (
-            <span className="text-sm font-medium text-foreground">
-              {subgroup?.name || '하위 그룹'}
-            </span>
+            <>
+              <button
+                onClick={handleGroupNameClick}
+                className="text-sm font-medium text-foreground hover:text-primary transition-colors truncate min-w-0 max-w-[40%] text-left"
+                disabled={!parentGroupName}
+                title={parentGroupName || '그룹'}
+              >
+                {parentGroupName || '그룹'}
+              </button>
+              <span className="mx-0.5 text-muted-foreground/50 flex-shrink-0">&gt;</span>
+              <span
+                className="text-sm font-medium text-foreground truncate min-w-0 flex-1 block"
+                title={subgroup?.name || '하위 그룹'}
+              >
+                {subgroup?.name || '하위 그룹'}
+              </span>
+            </>
           )}
         </div>
 
@@ -319,7 +325,7 @@ export function SubgroupsPage() {
                   <AvatarFallback>{(subgroup?.name ?? '하위').slice(0, 2)}</AvatarFallback>
                 </Avatar>
               )}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 {isSubgroupLoading ? (
                   <>
                     <Skeleton className="h-6 w-40 mb-2" />
@@ -328,8 +334,13 @@ export function SubgroupsPage() {
                   </>
                 ) : (
                   <>
-                    <h1 className="text-xl font-bold mb-2">{subgroup?.name || '하위 그룹'}</h1>
-                    <p className="text-sm text-muted-foreground mb-3">
+                    <h1
+                      className="text-xl font-bold mb-2 truncate"
+                      title={subgroup?.name || '하위 그룹'}
+                    >
+                      {subgroup?.name || '하위 그룹'}
+                    </h1>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                       {subgroup?.description || '설명이 없습니다.'}
                     </p>
                   </>
