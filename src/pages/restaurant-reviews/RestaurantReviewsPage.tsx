@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
-import { ReviewCard } from '@/entities/review/ui'
+import { SimpleReviewCard } from '@/entities/review/ui'
 import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
 
@@ -147,7 +147,7 @@ export function RestaurantReviewsPage() {
           <div className="space-y-4">
             {reviews.map((review, index) => (
               <div key={review.id} ref={index === reviews.length - 1 ? lastElementRef : null}>
-                <ReviewCard review={review} />
+                <SimpleReviewCard variant="restaurant" review={review} />
               </div>
             ))}
 

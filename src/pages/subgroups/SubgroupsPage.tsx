@@ -7,12 +7,11 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/widgets/container'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
 // import { RestaurantCard } from '@/entities/restaurant/ui'
-import { ReviewCard } from '@/entities/review/ui'
+import { DetailReviewCard } from '@/entities/review/ui'
 import {
   getSubgroup,
   getSubgroupMembers,
@@ -432,72 +431,26 @@ export function SubgroupsPage() {
         </Card>
       </Container>
 
-      {/* Tabs */}
-      <Tabs defaultValue="restaurants" className="w-full">
-        <Container>
-          <TabsList className="w-full grid grid-cols-1">
-            {/* V2에서 맛집 탭 추가 */}
-            {/* <TabsTrigger value="restaurants">맛집</TabsTrigger> */}
-            <TabsTrigger value="reviews">리뷰</TabsTrigger>
-          </TabsList>
-        </Container>
-
-        {/* V2에서 맛집 탭 추가 */}
-        {/* <TabsContent value="restaurants" className="mt-4">
-          <Container className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">하위 그룹 맛집 리스트</h3>
-            </div>
-            <div className="grid gap-4">
-              {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  맛집 정보를 불러오는 중...
-                </div>
-              ) : restaurants.length > 0 ? (
-                restaurants.map((restaurant: any) => (
-                  <RestaurantCard
-                    key={restaurant.id}
-                    {...restaurant}
-                    // isSaved={savedRestaurants[restaurant.id]}
-                    // onSave={() => handleSaveToggle(restaurant.id)}
-                    onClick={() => navigate(ROUTES.restaurantDetail(restaurant.id))}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  등록된 맛집이 없습니다.
-                </div>
-              )}
-            </div>
-          </Container>
-        </TabsContent> */}
-
-        <TabsContent value="reviews" className="mt-4">
-          <Container className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">하위 그룹 리뷰</h3>
-            </div>
-
-            <div className="space-y-3">
-              {isSubgroupLoading ? (
-                <>
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-24 w-full" />
-                </>
-              ) : error ? (
-                <div className="text-center py-12 text-muted-foreground">{error}</div>
-              ) : reviews.length > 0 ? (
-                reviews.map((review) => <ReviewCard key={review.id} review={review} />)
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  등록된 리뷰가 없습니다.
-                </div>
-              )}
-            </div>
-          </Container>
-        </TabsContent>
-      </Tabs>
+      {/* 리뷰 목록 */}
+      <Container className="mt-4 space-y-4">
+        <div className="space-y-3">
+          {isSubgroupLoading ? (
+            <>
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </>
+          ) : error ? (
+            <div className="text-center py-12 text-muted-foreground">{error}</div>
+          ) : reviews.length > 0 ? (
+            reviews.map((review) => (
+              <DetailReviewCard key={review.id} variant="group" review={review} />
+            ))
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">등록된 리뷰가 없습니다.</div>
+          )}
+        </div>
+      </Container>
 
       {FEATURE_FLAGS.enableChat && (
         <Button

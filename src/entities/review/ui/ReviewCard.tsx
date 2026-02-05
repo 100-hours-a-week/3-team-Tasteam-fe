@@ -1,4 +1,4 @@
-import { ThumbsUp, ThumbsDown } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Image as ImageIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Card } from '@/shared/ui/card'
@@ -65,6 +65,7 @@ function getContent(review: ReviewListItemDto | ReviewDetailDto): string {
 export function ReviewCard(props: ReviewCardProps) {
   if (isSimpleProps(props)) {
     const { userName, userAvatar, date, content, images, className } = props
+    const hasImages = images != null && images.length > 0
     return (
       <Card className={cn('p-4 gap-0', className)}>
         <div className="flex items-start gap-3 mb-3">
@@ -75,24 +76,18 @@ export function ReviewCard(props: ReviewCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
               <h4 className="truncate">{userName}</h4>
-              <span className="text-xs text-muted-foreground shrink-0">{date}</span>
+              <span className="flex items-center gap-1.5 shrink-0">
+                {hasImages && (
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" aria-label="사진 있음" />
+                )}
+                <span className="text-xs text-muted-foreground">{date}</span>
+              </span>
             </div>
           </div>
         </div>
-        <p className="text-sm leading-relaxed mb-3">{content}</p>
-        {images && images.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {images.map((image, idx) => (
-              <div key={idx} className="w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
-                <img
-                  src={image}
-                  alt={`리뷰 이미지 ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <p className="text-sm leading-relaxed line-clamp-2 text-muted-foreground" title={content}>
+          {content}
+        </p>
       </Card>
     )
   }

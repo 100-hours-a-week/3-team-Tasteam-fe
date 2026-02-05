@@ -27,6 +27,12 @@ type BackendReviewListItem = {
   thumbnailImageUrl?: string | null
   imageUrl?: string | null
   createdAt?: string | null
+  restaurantId?: number | null
+  restaurantName?: string | null
+  groupLogoImageUrl?: string | null
+  groupAddress?: string | null
+  restaurantImageUrl?: string | null
+  restaurantAddress?: string | null
 }
 
 type BackendReviewListPayload = {
@@ -93,6 +99,12 @@ const normalizeReviewListResponse = (
             : undefined),
     thumbnailImage: toThumbnailImage(item),
     createdAt: item.createdAt ?? new Date().toISOString(),
+    restaurantId: item.restaurantId ?? undefined,
+    restaurantName: item.restaurantName ?? undefined,
+    groupLogoImageUrl: item.groupLogoImageUrl ?? undefined,
+    groupAddress: item.groupAddress ?? undefined,
+    restaurantImageUrl: item.restaurantImageUrl ?? undefined,
+    restaurantAddress: item.restaurantAddress ?? undefined,
   }))
 
   return {

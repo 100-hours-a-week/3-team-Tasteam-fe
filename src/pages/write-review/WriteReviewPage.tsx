@@ -222,7 +222,7 @@ export function WriteReviewPage() {
           <div className="relative">
             <button
               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="w-full px-4 py-4 border border-input rounded-xl flex items-center justify-between gap-2 text-sm bg-card hover:bg-accent/50 transition-colors shadow-sm min-w-0"
+              className="w-full px-4 py-4 border border-input rounded-xl flex items-center justify-between gap-2 text-sm bg-card hover:bg-accent/50 transition-colors shadow-sm min-w-0 text-left"
             >
               <GroupSubgroupLabel
                 groupName={selectedGroupName || category}
