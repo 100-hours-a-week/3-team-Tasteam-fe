@@ -11,7 +11,51 @@ import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
 import { cn } from '@/shared/lib/utils'
 import { getMyGroupSummaries } from '@/entities/member/api/memberApi'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
-import type { MemberGroupSummaryItemDto } from '@/entities/member/model/dto'
+/** 드롭다운용 그룹/하위그룹 옵션 (평탄화) */
+type GroupOption =
+  | { type: 'group'; groupId: number; groupName: string }
+  | {
+      type: 'subgroup'
+      groupId: number
+      groupName: string
+      subgroupId: number
+      subGroupName: string
+    }
+
+/** 그룹명·하위그룹명 각각 최대 너비 + 말줄임 (그룹명 최대 40%, 하위그룹명 나머지) */
+function GroupSubgroupLabel({
+  groupName,
+  subGroupName,
+  className = '',
+}: {
+  groupName: string
+  subGroupName?: string | null
+  className?: string
+}) {
+  if (subGroupName == null || subGroupName === '') {
+    return (
+      <span className={cn('block min-w-0 w-full truncate', className)} title={groupName}>
+        {groupName}
+      </span>
+    )
+  }
+  const fullTitle = `${groupName} > ${subGroupName}`
+  return (
+    <span
+      className={cn('flex items-center gap-1 min-w-0 overflow-hidden', className)}
+      title={fullTitle}
+    >
+      <span className="truncate min-w-0 max-w-[40%]" title={groupName}>
+        {groupName}
+      </span>
+      <span className="flex-shrink-0 text-muted-foreground"> &gt; </span>
+      <span className="truncate min-w-0 flex-1" title={subGroupName}>
+        {subGroupName}
+      </span>
+    </span>
+  )
+}
+
 import type { ReviewKeywordItemDto } from '@/entities/review/model/dto'
 
 export function WriteReviewPage() {
@@ -19,8 +63,11 @@ export function WriteReviewPage() {
   const navigate = useNavigate()
 
   const [restaurantName, setRestaurantName] = useState('로딩 중...')
-  const [groups, setGroups] = useState<MemberGroupSummaryItemDto[]>([])
+  const [groupOptions, setGroupOptions] = useState<GroupOption[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
+  const [selectedSubgroupId, setSelectedSubgroupId] = useState<number | null>(null)
+  const [selectedGroupName, setSelectedGroupName] = useState<string>('')
+  const [selectedSubgroupName, setSelectedSubgroupName] = useState<string | null>(null)
   const [category, setCategory] = useState('그룹 불러오는 중...')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const {
@@ -83,18 +130,45 @@ export function WriteReviewPage() {
   useEffect(() => {
     getMyGroupSummaries()
       .then((list) => {
-        setGroups(list)
-        if (list.length > 0) {
-          setSelectedGroupId(list[0].groupId)
-          setCategory(list[0].groupName)
+        const options: GroupOption[] = []
+        for (const g of list) {
+          options.push({ type: 'group', groupId: g.groupId, groupName: g.groupName })
+          for (const sg of g.subGroups ?? []) {
+            options.push({
+              type: 'subgroup',
+              groupId: g.groupId,
+              groupName: g.groupName,
+              subgroupId: sg.subGroupId,
+              subGroupName: sg.subGroupName,
+            })
+          }
+        }
+        setGroupOptions(options)
+        if (options.length > 0) {
+          const first = options[0]
+          setSelectedGroupId(first.groupId)
+          setSelectedSubgroupId(first.type === 'subgroup' ? first.subgroupId : null)
+          setSelectedGroupName(first.groupName)
+          setSelectedSubgroupName(first.type === 'subgroup' ? first.subGroupName : null)
+          setCategory(
+            first.type === 'subgroup'
+              ? `${first.groupName} > ${first.subGroupName}`
+              : first.groupName,
+          )
         } else {
           setSelectedGroupId(null)
+          setSelectedSubgroupId(null)
+          setSelectedGroupName('')
+          setSelectedSubgroupName(null)
           setCategory('소속 그룹 없음')
         }
       })
       .catch(() => {
-        setGroups([])
+        setGroupOptions([])
         setSelectedGroupId(null)
+        setSelectedSubgroupId(null)
+        setSelectedGroupName('')
+        setSelectedSubgroupName(null)
         setCategory('그룹 불러오기 실패')
       })
   }, [])
@@ -149,6 +223,7 @@ export function WriteReviewPage() {
 
       await createReview(Number(restaurantId), {
         groupId: selectedGroupId,
+        subgroupId: selectedSubgroupId ?? undefined,
         content: reviewText,
         isRecommended: isRecommended,
         keywordIds: selectedKeywordIds,
@@ -180,9 +255,13 @@ export function WriteReviewPage() {
           <div className="relative">
             <button
               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="w-full px-4 py-4 border border-input rounded-xl flex items-center justify-between text-sm bg-card hover:bg-accent/50 transition-colors shadow-sm"
+              className="w-full px-4 py-4 border border-input rounded-xl flex items-center justify-between gap-2 text-sm bg-card hover:bg-accent/50 transition-colors shadow-sm min-w-0"
             >
-              <span>{category}</span>
+              <GroupSubgroupLabel
+                groupName={selectedGroupName || category}
+                subGroupName={selectedSubgroupName}
+                className="min-w-0 flex-1"
+              />
               <ChevronDown
                 className={cn(
                   'w-4 h-4 text-muted-foreground transition-transform',
@@ -192,25 +271,42 @@ export function WriteReviewPage() {
             </button>
 
             {showCategoryDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {groups.length === 0 ? (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-64 overflow-y-auto">
+                {groupOptions.length === 0 ? (
                   <div className="px-4 py-3.5 text-sm text-muted-foreground">
                     선택 가능한 그룹이 없습니다
                   </div>
                 ) : (
-                  groups.map((group) => (
-                    <button
-                      key={group.groupId}
-                      onClick={() => {
-                        setCategory(group.groupName)
-                        setSelectedGroupId(group.groupId)
-                        setShowCategoryDropdown(false)
-                      }}
-                      className="w-full px-4 py-3.5 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0 border-border"
-                    >
-                      {group.groupName}
-                    </button>
-                  ))
+                  groupOptions.map((opt) => {
+                    const label =
+                      opt.type === 'subgroup'
+                        ? `${opt.groupName} > ${opt.subGroupName}`
+                        : opt.groupName
+                    const key =
+                      opt.type === 'subgroup'
+                        ? `sub-${opt.groupId}-${opt.subgroupId}`
+                        : `grp-${opt.groupId}`
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setCategory(label)
+                          setSelectedGroupId(opt.groupId)
+                          setSelectedSubgroupId(opt.type === 'subgroup' ? opt.subgroupId : null)
+                          setSelectedGroupName(opt.groupName)
+                          setSelectedSubgroupName(opt.type === 'subgroup' ? opt.subGroupName : null)
+                          setShowCategoryDropdown(false)
+                        }}
+                        title={label}
+                        className="w-full px-4 py-3.5 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0 border-border min-w-0 overflow-hidden"
+                      >
+                        <GroupSubgroupLabel
+                          groupName={opt.groupName}
+                          subGroupName={opt.type === 'subgroup' ? opt.subGroupName : null}
+                        />
+                      </button>
+                    )
+                  })
                 )}
               </div>
             )}
