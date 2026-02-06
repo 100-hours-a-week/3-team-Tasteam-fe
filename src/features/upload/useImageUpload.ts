@@ -9,10 +9,12 @@ import {
   MAX_FILENAME_LENGTH,
 } from '@/entities/upload/model/types'
 import type { UploadPurpose } from '@/entities/upload/model/types'
+import { optimizeImage } from '@/shared/lib/imageOptimization'
 
 type ImageFile = {
   file: File
   previewUrl: string
+  optimizedFile?: File
 }
 
 type UploadResult = {
@@ -28,6 +30,7 @@ type UseImageUploadOptions = {
 export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions) {
   const [files, setFiles] = useState<ImageFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
   const [uploadErrors, setUploadErrors] = useState<string[]>([])
 
   const clearErrors = useCallback(() => {
@@ -35,7 +38,7 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
   }, [])
 
   const addFiles = useCallback(
-    (fileList: FileList | File[]) => {
+    async (fileList: FileList | File[]) => {
       const incoming = Array.from(fileList)
       const errors: string[] = []
 
@@ -72,14 +75,48 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
           setUploadErrors([`최대 ${maxFiles}개까지 업로드 가능합니다`])
           return prev
         }
-        const toAdd = valid.slice(0, remaining).map((file) => ({
-          file,
-          previewUrl: URL.createObjectURL(file),
-        }))
-        return [...prev, ...toAdd]
+        return prev
       })
+
+      const remaining = maxFiles - files.length
+      if (remaining <= 0) {
+        setUploadErrors([`최대 ${maxFiles}개까지 업로드 가능합니다`])
+        return
+      }
+
+      const toOptimize = valid.slice(0, remaining)
+      setIsOptimizing(true)
+
+      try {
+        const optimizedImages = await Promise.all(
+          toOptimize.map(async (file) => {
+            try {
+              const optimized = await optimizeImage(file, purpose)
+              return {
+                file,
+                previewUrl: URL.createObjectURL(file),
+                optimizedFile: optimized,
+              }
+            } catch (error) {
+              console.error('Image optimization failed for', file.name, error)
+              return {
+                file,
+                previewUrl: URL.createObjectURL(file),
+                optimizedFile: file,
+              }
+            }
+          }),
+        )
+
+        setFiles((prev) => [...prev, ...optimizedImages])
+      } catch (error) {
+        console.error('Failed to optimize images:', error)
+        setUploadErrors(['이미지 최적화에 실패했습니다'])
+      } finally {
+        setIsOptimizing(false)
+      }
     },
-    [maxFiles],
+    [maxFiles, files.length, purpose],
   )
 
   const removeFile = useCallback((index: number) => {
@@ -102,19 +139,21 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
 
     setIsUploading(true)
     try {
+      const filesToUpload = files.map((f) => f.optimizedFile || f.file)
+
       const grantResponse = await createUploadGrant({
         purpose,
-        files: files.map((f) => ({
-          fileName: f.file.name,
-          contentType: f.file.type,
-          size: f.file.size,
+        files: filesToUpload.map((f) => ({
+          fileName: f.name,
+          contentType: f.type,
+          size: f.size,
         })),
       })
 
       const uploads = grantResponse.data.uploads
 
       await Promise.all(
-        uploads.map((grant, i) => uploadFileToS3(grant.url, grant.fields, files[i].file)),
+        uploads.map((grant, i) => uploadFileToS3(grant.url, grant.fields, filesToUpload[i])),
       )
 
       return uploads.map((grant) => ({
@@ -132,6 +171,7 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
   return {
     files,
     isUploading,
+    isOptimizing,
     uploadErrors,
     clearErrors,
     addFiles,
