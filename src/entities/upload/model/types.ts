@@ -28,3 +28,11 @@ export type UploadGrant = {
   expiresAt: IsoDateTimeString
   objectKey: string
 }
+
+export const OPTIMIZATION_CONFIGS = {
+  PROFILE_IMAGE: { maxWidth: 100, maxHeight: 100, quality: 0.85, maxSizeMB: 0.5 },
+  REVIEW_IMAGE: { maxWidth: 1200, quality: 0.9, maxSizeMB: 2 },
+  GROUP_IMAGE: { maxWidth: 800, maxHeight: 800, quality: 0.85, maxSizeMB: 1 },
+  RESTAURANT_IMAGE: { maxWidth: 1200, quality: 0.9, maxSizeMB: 2 },
+  COMMON_ASSET: { maxWidth: 1200, quality: 0.9, maxSizeMB: 2 },
+} as const
