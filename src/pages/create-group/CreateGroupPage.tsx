@@ -29,6 +29,7 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
   const {
     files: groupImages,
     isUploading,
+    isOptimizing,
     uploadErrors,
     clearErrors,
     addFiles,
@@ -164,10 +165,16 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
           <Button
             className="w-full"
             onClick={handleSubmit}
-            disabled={!name.trim() || isLoading || isUploading}
+            disabled={!name.trim() || isLoading || isUploading || isOptimizing}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {isUploading ? '이미지 업로드 중...' : isLoading ? '생성 중...' : '그룹 만들기'}
+            {isOptimizing
+              ? '이미지 최적화 중...'
+              : isUploading
+                ? '이미지 업로드 중...'
+                : isLoading
+                  ? '생성 중...'
+                  : '그룹 만들기'}
           </Button>
         </div>
       </Container>
