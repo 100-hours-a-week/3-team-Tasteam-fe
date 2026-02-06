@@ -84,21 +84,26 @@ export const leaveSubgroup = (subgroupId: number) =>
 export const getSubgroupReviews = (
   subgroupId: number,
   params?: { cursor?: string; size?: number },
-) =>
+): Promise<ReviewListResponseDto> =>
   request<
     | ReviewListResponseDto
     | {
-        items: ReviewListResponseDto['data']['items']
-        pagination: ReviewListResponseDto['data']['pagination']
+        data?: {
+          items: ReviewListResponseDto['items']
+          pagination: ReviewListResponseDto['pagination']
+        }
       }
   >({
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}/reviews${buildQuery(params ?? {})}`,
   }).then((res) => {
-    if ('data' in res) {
-      return res.data ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
+    if ('data' in res && res.data) {
+      return res.data
     }
-    return res ?? { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
+    if ('items' in res && 'pagination' in res) {
+      return res as ReviewListResponseDto
+    }
+    return { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
   })
 
 export const getSubgroupMembers = async (

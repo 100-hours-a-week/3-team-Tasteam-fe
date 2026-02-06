@@ -130,7 +130,7 @@ export function SubgroupsPage() {
         try {
           const reviewRes = await getSubgroupReviews(subgroupId, { size: 10 })
           if (!cancelled) {
-            setReviews(reviewRes.items ?? [])
+            setReviews(reviewRes?.items ?? [])
           }
         } catch {
           if (!cancelled) {
