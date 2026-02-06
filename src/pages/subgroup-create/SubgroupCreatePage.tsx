@@ -26,11 +26,19 @@ type SubgroupCreatePageProps = {
 
 export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps) {
   const { isAuthenticated, openLogin } = useAuth()
-  const { files, isUploading, uploadErrors, clearErrors, addFiles, uploadAll, reset } =
-    useImageUpload({
-      purpose: 'PROFILE_IMAGE',
-      maxFiles: 1,
-    })
+  const {
+    files,
+    isUploading,
+    isOptimizing,
+    uploadErrors,
+    clearErrors,
+    addFiles,
+    uploadAll,
+    reset,
+  } = useImageUpload({
+    purpose: 'PROFILE_IMAGE',
+    maxFiles: 1,
+  })
   const { refresh } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
@@ -219,10 +227,16 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
           <Button
             className="w-full"
             onClick={handleSubmit}
-            disabled={!isFormValid || isSubmitting || isUploading}
+            disabled={!isFormValid || isSubmitting || isUploading || isOptimizing}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {isUploading ? '이미지 업로드 중...' : isSubmitting ? '생성 중...' : '생성하기'}
+            {isOptimizing
+              ? '이미지 최적화 중...'
+              : isUploading
+                ? '이미지 업로드 중...'
+                : isSubmitting
+                  ? '생성 중...'
+                  : '생성하기'}
           </Button>
           {submitError ? <p className="text-xs text-destructive">{submitError}</p> : null}
         </div>

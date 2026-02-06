@@ -29,6 +29,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
   const {
     files: profileImages,
     isUploading,
+    isOptimizing,
     uploadErrors,
     clearErrors,
     addFiles,
@@ -183,9 +184,15 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
             variant="default"
             className="w-full h-11 font-medium"
             onClick={handleSave}
-            disabled={!isChanged || isLoading || isUploading}
+            disabled={!isChanged || isLoading || isUploading || isOptimizing}
           >
-            {isUploading ? '이미지 업로드 중...' : isLoading ? '저장 중...' : '저장하기'}
+            {isOptimizing
+              ? '이미지 최적화 중...'
+              : isUploading
+                ? '이미지 업로드 중...'
+                : isLoading
+                  ? '저장 중...'
+                  : '저장하기'}
           </Button>
         </Container>
       </div>

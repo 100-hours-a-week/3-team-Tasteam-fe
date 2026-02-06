@@ -40,6 +40,7 @@ export function WriteReviewPage() {
   const {
     files: selectedImages,
     isUploading,
+    isOptimizing,
     uploadErrors,
     clearErrors,
     addFiles,
@@ -282,7 +283,12 @@ export function WriteReviewPage() {
 
         {/* Image Upload */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold px-1">사진 추가 (최대 5장)</label>
+          <label className="text-sm font-semibold px-1">
+            사진 추가 (최대 5장)
+            {isOptimizing && (
+              <span className="ml-2 text-xs text-muted-foreground">이미지 최적화 중...</span>
+            )}
+          </label>
           <div className="border border-input rounded-xl p-4 bg-card shadow-sm">
             <div
               ref={scrollRef}
@@ -296,7 +302,12 @@ export function WriteReviewPage() {
               )}
             >
               {selectedImages.length < 5 && (
-                <label className="flex-shrink-0 w-24 h-24 border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all">
+                <label
+                  className={cn(
+                    'flex-shrink-0 w-24 h-24 border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all',
+                    isOptimizing && 'opacity-50 cursor-not-allowed',
+                  )}
+                >
                   <Plus className="w-5 h-5 text-muted-foreground mb-1" />
                   <span className="text-[10px] text-muted-foreground">사진 추가</span>
                   <input
@@ -305,6 +316,7 @@ export function WriteReviewPage() {
                     multiple
                     onChange={handleImagesUpload}
                     className="hidden"
+                    disabled={isOptimizing}
                   />
                 </label>
               )}
@@ -406,13 +418,15 @@ export function WriteReviewPage() {
           <Button
             className="w-full py-6 rounded-xl text-base font-bold shadow-lg"
             onClick={handleSubmit}
-            disabled={isSubmitting || isUploading}
+            disabled={isSubmitting || isUploading || isOptimizing}
           >
-            {isUploading
-              ? '이미지 업로드 중...'
-              : isSubmitting
-                ? '리뷰 저장 중...'
-                : '리뷰 등록 완료'}
+            {isOptimizing
+              ? '이미지 최적화 중...'
+              : isUploading
+                ? '이미지 업로드 중...'
+                : isSubmitting
+                  ? '리뷰 저장 중...'
+                  : '리뷰 등록 완료'}
           </Button>
         </div>
       </Container>
