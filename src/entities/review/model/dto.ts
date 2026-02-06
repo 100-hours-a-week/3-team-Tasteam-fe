@@ -1,6 +1,5 @@
 import type { SuccessResponse } from '@/shared/types/api'
 import type { ImageResource, IsoDateTimeString } from '@/shared/types/common'
-import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type ReviewListItemDto = {
   id: number
@@ -9,13 +8,15 @@ export type ReviewListItemDto = {
   groupName?: string
   subgroupName?: string | null
   author: {
+    id: number
     nickname: string
   }
   contentPreview: string
   isRecommended: boolean
   keywords: string[]
+  thumbnailImages: ImageResource[]
   images?: ImageResource[]
-  thumbnailImage: ImageResource | null
+  thumbnailImage?: ImageResource | null
   createdAt: IsoDateTimeString
   /** 하위그룹 리뷰 목록 등에서 제공 */
   restaurantId?: number | null
@@ -30,7 +31,14 @@ export type ReviewListItemDto = {
   restaurantAddress?: string | null
 }
 
-export type ReviewListResponseDto = CursorPageResponse<ReviewListItemDto>
+export type ReviewListResponseDto = {
+  items: ReviewListItemDto[]
+  pagination: {
+    nextCursor: string | null
+    size: number
+    hasNext: boolean
+  }
+}
 
 export type ReviewDetailDto = {
   id: number

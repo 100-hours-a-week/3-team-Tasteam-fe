@@ -7,44 +7,6 @@ import { SimpleReviewCard } from '@/entities/review/ui'
 import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
 import type { ReviewListItemDto } from '@/entities/review/model/dto'
 
-// ReviewListItemDto 형식에 맞춘 목업 데이터
-const mockReviews: ReviewListItemDto[] = [
-  {
-    id: 1,
-    author: { nickname: '김철수' },
-    contentPreview:
-      '정말 신선하고 맛있었어요! 셰프님도 친절하시고 분위기도 좋았습니다. 다음에 또 방문하고 싶네요.',
-    isRecommended: true,
-    keywords: ['맛있어요', '친절해요'],
-    thumbnailImage: {
-      id: 'img-1',
-      url: 'https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400',
-    },
-    createdAt: '2024-01-20T12:00:00Z',
-  },
-  {
-    id: 2,
-    author: { nickname: '이영희' },
-    contentPreview: '런치 세트가 가성비가 좋아요. 점심 시간에는 웨이팅이 있으니 예약 추천합니다.',
-    isRecommended: true,
-    keywords: ['가성비', '예약필수'],
-    thumbnailImage: null,
-    createdAt: '2024-01-18T12:00:00Z',
-  },
-  {
-    id: 3,
-    author: { nickname: '박민수' },
-    contentPreview: '오마카세 B 코스를 먹었는데 정말 훌륭했습니다. 특히 참치가 일품이었어요!',
-    isRecommended: true,
-    keywords: ['오마카세', '참치맛집'],
-    thumbnailImage: {
-      id: 'img-3',
-      url: 'https://images.unsplash.com/photo-1583623025817-d180a2221d0a?w=400',
-    },
-    createdAt: '2024-01-15T12:00:00Z',
-  },
-]
-
 export function RestaurantReviewsPage() {
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -62,52 +24,20 @@ export function RestaurantReviewsPage() {
 
     setIsLoading(true)
 
-    const handleMockFallback = async () => {
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      setReviews((prev) => {
-        const newItems = mockReviews.map((review) => ({
-          ...review,
-          id: review.id + prev.length, // 고유 ID 생성
-        }))
-
-        if (prev.length + newItems.length >= 30) {
-          setHasNextPage(false)
-        }
-
-        return [...prev, ...newItems]
-      })
-      setIsInitialLoading(false)
-    }
-
     try {
       const response = await getRestaurantReviews(Number(restaurantId), {
         cursor: nextCursor || undefined,
         size: 10,
       })
-
-      const anyRes = response as {
-        items?: ReviewListItemDto[]
-        pagination?: { nextCursor: string | null; hasNext: boolean; size: number }
-        data?: {
-          items?: ReviewListItemDto[]
-          pagination?: { nextCursor: string | null; hasNext: boolean; size: number }
-        }
-      }
-
-      const items = anyRes.items ?? anyRes.data?.items
-      const pagination = anyRes.pagination ?? anyRes.data?.pagination
-
-      if (items && items.length > 0 && pagination) {
-        setReviews((prev) => [...prev, ...items])
-        setNextCursor(pagination.nextCursor)
-        setHasNextPage(pagination.hasNext)
+      if (response.items && response.items.length > 0 && response.pagination) {
+        setReviews((prev) => [...prev, ...response.items])
+        setNextCursor(response.pagination.nextCursor)
+        setHasNextPage(response.pagination.hasNext)
       } else {
-        // API는 성공했으나 데이터가 없는 경우 목업 사용
-        await handleMockFallback()
+        setHasNextPage(false)
       }
     } catch (error) {
-      // API 호출 실패 시 목업 사용
-      await handleMockFallback()
+      setHasNextPage(false)
     } finally {
       setIsLoading(false)
       setIsInitialLoading(false)

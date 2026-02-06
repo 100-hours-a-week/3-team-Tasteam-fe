@@ -28,6 +28,6 @@ export type ReviewListItem = {
   contentPreview: string
   isRecommended: boolean
   keywords: string[]
-  thumbnailImage: ImageResource
+  thumbnailImages: ImageResource[]
   createdAt: IsoDateTimeString
 }

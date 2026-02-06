@@ -21,6 +21,7 @@ import {
 import { Label } from '@/shared/ui/label'
 import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup/api/subgroupApi'
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { useAuth } from '@/entities/user/model/useAuth'
 import type { ErrorResponse } from '@/shared/types/api'
 
 type Group = {
@@ -47,6 +48,7 @@ export function SubgroupListPage({
   onBack,
 }: SubgroupListPageProps) {
   const navigate = useNavigate()
+  const { isAuthenticated, openLogin } = useAuth()
   const { refresh, isSubgroupMember, isLoaded } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupIdParam = searchParams.get('groupId')
@@ -141,6 +143,10 @@ export function SubgroupListPage({
   const handleJoin = async (subgroupId: string) => {
     const target = groups.find((group) => group.id === subgroupId)
     if (!target || target.isJoined) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
     if (!groupId || Number.isNaN(groupId)) {
       toast.error('그룹 정보를 찾을 수 없습니다.')
       return
@@ -159,7 +165,7 @@ export function SubgroupListPage({
         markJoined(subgroupId, false)
         toast.error('이미 가입된 하위그룹입니다.')
       } else if (code === 'AUTHENTICATION_REQUIRED') {
-        toast.error('로그인이 필요합니다.')
+        openLogin()
       } else if (code === 'NO_PERMISSION') {
         toast.error('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
       } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
@@ -183,6 +189,14 @@ export function SubgroupListPage({
     if (!pendingJoinGroup) return
     if (!passwordValue.trim()) {
       setPasswordError('비밀번호를 입력해주세요')
+      return
+    }
+    if (!isAuthenticated) {
+      setPasswordModalOpen(false)
+      setPendingJoinGroup(null)
+      setPasswordValue('')
+      setPasswordError('')
+      openLogin()
       return
     }
     if (!groupId || Number.isNaN(groupId)) {
@@ -217,7 +231,11 @@ export function SubgroupListPage({
         return
       }
       if (code === 'AUTHENTICATION_REQUIRED') {
-        toast.error('로그인이 필요합니다.')
+        setPasswordModalOpen(false)
+        setPendingJoinGroup(null)
+        setPasswordValue('')
+        setPasswordError('')
+        openLogin()
       } else if (code === 'NO_PERMISSION') {
         toast.error('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
       } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {

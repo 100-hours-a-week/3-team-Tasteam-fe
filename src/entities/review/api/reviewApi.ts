@@ -83,10 +83,20 @@ const normalizeReviewListResponse = (
     subgroupId: item.subgroupId ?? undefined,
     groupName: item.groupName ?? undefined,
     subgroupName: item.subgroupName ?? undefined,
-    author: { nickname: item.author?.nickname ?? '알 수 없음' },
+    author: { id: item.id, nickname: item.author?.nickname ?? '알 수 없음' },
     contentPreview: item.contentPreview ?? item.content ?? '',
     isRecommended: Boolean(item.isRecommended),
     keywords: item.keywords ?? [],
+    thumbnailImages:
+      item.thumbnailImages?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      item.images?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      (item.thumbnailImage
+        ? [{ id: String(item.thumbnailImage.id), url: item.thumbnailImage.url }]
+        : item.thumbnailImageUrl
+          ? [{ id: item.thumbnailImageUrl, url: item.thumbnailImageUrl }]
+          : item.imageUrl
+            ? [{ id: item.imageUrl, url: item.imageUrl }]
+            : []),
     images:
       item.images?.map((image) => ({ id: String(image.id), url: image.url })) ??
       item.thumbnailImages?.map((image) => ({ id: String(image.id), url: image.url })) ??

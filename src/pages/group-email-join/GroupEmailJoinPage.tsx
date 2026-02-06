@@ -7,6 +7,7 @@ import { GroupEmailJoinGroupInfo, GroupEmailVerificationForm } from '@/features/
 import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member/api/memberApi'
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import { getGroup } from '@/entities/group/api/groupApi'
+import { useAuth } from '@/entities/user/model/useAuth'
 
 type GroupEmailJoinPageProps = {
   onBack?: () => void
@@ -26,6 +27,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) {
   const { id } = useParams()
   const groupId = id ? Number(id) : null
+  const { openLogin } = useAuth()
   const { refresh } = useMemberGroups()
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -155,6 +157,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         if (code === 'UNAUTHORIZED') {
           setHelperStatus('error')
           setHelperText('로그인이 필요합니다.')
+          openLogin()
           return
         }
         if (code === 'GROUP_NOT_FOUND') {
@@ -227,6 +230,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         if (codeValue === 'UNAUTHORIZED') {
           setHelperStatus('error')
           setHelperText('로그인이 필요합니다.')
+          openLogin()
           return
         }
         if (codeValue === 'GROUP_NOT_FOUND') {
