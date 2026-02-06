@@ -20,6 +20,19 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         ...(isLocal && { mode: 'development' as const }),
+        runtimeCaching: [
+          {
+            urlPattern: /\.(png|jpg|jpeg|webp|svg)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60,
+              },
+            },
+          },
+        ],
       },
       manifest: {
         name: 'Tasteam',
