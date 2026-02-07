@@ -11,21 +11,36 @@ import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
 import { cn } from '@/shared/lib/utils'
 import { getMyGroupSummaries } from '@/entities/member/api/memberApi'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
-import type { MemberGroupSummaryItemDto } from '@/entities/member/model/dto'
+import { GroupSubgroupLabel } from '@/shared/ui/group-subgroup-label'
 import type { ReviewKeywordItemDto } from '@/entities/review/model/dto'
+
+/** 드롭다운용 그룹/하위그룹 옵션 (평탄화) */
+type GroupOption =
+  | { type: 'group'; groupId: number; groupName: string }
+  | {
+      type: 'subgroup'
+      groupId: number
+      groupName: string
+      subgroupId: number
+      subGroupName: string
+    }
 
 export function WriteReviewPage() {
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   const [restaurantName, setRestaurantName] = useState('로딩 중...')
-  const [groups, setGroups] = useState<MemberGroupSummaryItemDto[]>([])
+  const [groupOptions, setGroupOptions] = useState<GroupOption[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
+  const [selectedSubgroupId, setSelectedSubgroupId] = useState<number | null>(null)
+  const [selectedGroupName, setSelectedGroupName] = useState<string>('')
+  const [selectedSubgroupName, setSelectedSubgroupName] = useState<string | null>(null)
   const [category, setCategory] = useState('그룹 불러오는 중...')
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const {
     files: selectedImages,
     isUploading,
+    isOptimizing,
     uploadErrors,
     clearErrors,
     addFiles,
@@ -83,18 +98,45 @@ export function WriteReviewPage() {
   useEffect(() => {
     getMyGroupSummaries()
       .then((list) => {
-        setGroups(list)
-        if (list.length > 0) {
-          setSelectedGroupId(list[0].groupId)
-          setCategory(list[0].groupName)
+        const options: GroupOption[] = []
+        for (const g of list) {
+          options.push({ type: 'group', groupId: g.groupId, groupName: g.groupName })
+          for (const sg of g.subGroups ?? []) {
+            options.push({
+              type: 'subgroup',
+              groupId: g.groupId,
+              groupName: g.groupName,
+              subgroupId: sg.subGroupId,
+              subGroupName: sg.subGroupName,
+            })
+          }
+        }
+        setGroupOptions(options)
+        if (options.length > 0) {
+          const first = options[0]
+          setSelectedGroupId(first.groupId)
+          setSelectedSubgroupId(first.type === 'subgroup' ? first.subgroupId : null)
+          setSelectedGroupName(first.groupName)
+          setSelectedSubgroupName(first.type === 'subgroup' ? first.subGroupName : null)
+          setCategory(
+            first.type === 'subgroup'
+              ? `${first.groupName} > ${first.subGroupName}`
+              : first.groupName,
+          )
         } else {
           setSelectedGroupId(null)
+          setSelectedSubgroupId(null)
+          setSelectedGroupName('')
+          setSelectedSubgroupName(null)
           setCategory('소속 그룹 없음')
         }
       })
       .catch(() => {
-        setGroups([])
+        setGroupOptions([])
         setSelectedGroupId(null)
+        setSelectedSubgroupId(null)
+        setSelectedGroupName('')
+        setSelectedSubgroupName(null)
         setCategory('그룹 불러오기 실패')
       })
   }, [])
@@ -149,6 +191,7 @@ export function WriteReviewPage() {
 
       await createReview(Number(restaurantId), {
         groupId: selectedGroupId,
+        subgroupId: selectedSubgroupId ?? undefined,
         content: reviewText,
         isRecommended: isRecommended,
         keywordIds: selectedKeywordIds,
@@ -180,9 +223,13 @@ export function WriteReviewPage() {
           <div className="relative">
             <button
               onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-              className="w-full px-4 py-4 border border-input rounded-xl flex items-center justify-between text-sm bg-card hover:bg-accent/50 transition-colors shadow-sm"
+              className="w-full px-4 py-4 border border-input rounded-xl flex items-center justify-between gap-2 text-sm bg-card hover:bg-accent/50 transition-colors shadow-sm min-w-0 text-left"
             >
-              <span>{category}</span>
+              <GroupSubgroupLabel
+                groupName={selectedGroupName || category}
+                subGroupName={selectedSubgroupName}
+                className="min-w-0 flex-1"
+              />
               <ChevronDown
                 className={cn(
                   'w-4 h-4 text-muted-foreground transition-transform',
@@ -192,25 +239,42 @@ export function WriteReviewPage() {
             </button>
 
             {showCategoryDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {groups.length === 0 ? (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-64 overflow-y-auto">
+                {groupOptions.length === 0 ? (
                   <div className="px-4 py-3.5 text-sm text-muted-foreground">
                     선택 가능한 그룹이 없습니다
                   </div>
                 ) : (
-                  groups.map((group) => (
-                    <button
-                      key={group.groupId}
-                      onClick={() => {
-                        setCategory(group.groupName)
-                        setSelectedGroupId(group.groupId)
-                        setShowCategoryDropdown(false)
-                      }}
-                      className="w-full px-4 py-3.5 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0 border-border"
-                    >
-                      {group.groupName}
-                    </button>
-                  ))
+                  groupOptions.map((opt) => {
+                    const label =
+                      opt.type === 'subgroup'
+                        ? `${opt.groupName} > ${opt.subGroupName}`
+                        : opt.groupName
+                    const key =
+                      opt.type === 'subgroup'
+                        ? `sub-${opt.groupId}-${opt.subgroupId}`
+                        : `grp-${opt.groupId}`
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setCategory(label)
+                          setSelectedGroupId(opt.groupId)
+                          setSelectedSubgroupId(opt.type === 'subgroup' ? opt.subgroupId : null)
+                          setSelectedGroupName(opt.groupName)
+                          setSelectedSubgroupName(opt.type === 'subgroup' ? opt.subGroupName : null)
+                          setShowCategoryDropdown(false)
+                        }}
+                        title={label}
+                        className="w-full px-4 py-3.5 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0 border-border min-w-0 overflow-hidden"
+                      >
+                        <GroupSubgroupLabel
+                          groupName={opt.groupName}
+                          subGroupName={opt.type === 'subgroup' ? opt.subGroupName : null}
+                        />
+                      </button>
+                    )
+                  })
                 )}
               </div>
             )}
@@ -219,7 +283,12 @@ export function WriteReviewPage() {
 
         {/* Image Upload */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold px-1">사진 추가 (최대 5장)</label>
+          <label className="text-sm font-semibold px-1">
+            사진 추가 (최대 5장)
+            {isOptimizing && (
+              <span className="ml-2 text-xs text-muted-foreground">이미지 최적화 중...</span>
+            )}
+          </label>
           <div className="border border-input rounded-xl p-4 bg-card shadow-sm">
             <div
               ref={scrollRef}
@@ -233,7 +302,12 @@ export function WriteReviewPage() {
               )}
             >
               {selectedImages.length < 5 && (
-                <label className="flex-shrink-0 w-24 h-24 border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all">
+                <label
+                  className={cn(
+                    'flex-shrink-0 w-24 h-24 border-2 border-dashed border-muted-foreground/20 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-accent/50 hover:border-primary/50 transition-all',
+                    isOptimizing && 'opacity-50 cursor-not-allowed',
+                  )}
+                >
                   <Plus className="w-5 h-5 text-muted-foreground mb-1" />
                   <span className="text-[10px] text-muted-foreground">사진 추가</span>
                   <input
@@ -242,6 +316,7 @@ export function WriteReviewPage() {
                     multiple
                     onChange={handleImagesUpload}
                     className="hidden"
+                    disabled={isOptimizing}
                   />
                 </label>
               )}
@@ -343,13 +418,15 @@ export function WriteReviewPage() {
           <Button
             className="w-full py-6 rounded-xl text-base font-bold shadow-lg"
             onClick={handleSubmit}
-            disabled={isSubmitting || isUploading}
+            disabled={isSubmitting || isUploading || isOptimizing}
           >
-            {isUploading
-              ? '이미지 업로드 중...'
-              : isSubmitting
-                ? '리뷰 저장 중...'
-                : '리뷰 등록 완료'}
+            {isOptimizing
+              ? '이미지 최적화 중...'
+              : isUploading
+                ? '이미지 업로드 중...'
+                : isSubmitting
+                  ? '리뷰 저장 중...'
+                  : '리뷰 등록 완료'}
           </Button>
         </div>
       </Container>

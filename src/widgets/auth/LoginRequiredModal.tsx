@@ -22,7 +22,7 @@ export const LoginRequiredModal = ({ open, onLogin, onClose }: LoginRequiredModa
         <AlertDialogHeader>
           <AlertDialogTitle>로그인이 필요해요</AlertDialogTitle>
           <AlertDialogDescription>
-            세션이 만료되었습니다. 다시 로그인해 주세요.
+            로그인이 필요한 기능이에요. 로그인하시겠어요?
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

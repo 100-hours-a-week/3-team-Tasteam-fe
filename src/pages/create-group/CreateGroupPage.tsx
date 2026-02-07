@@ -10,6 +10,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent } from '@/shared/ui/card'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
+import { useAuth } from '@/entities/user/model/useAuth'
 
 type CreateGroupPageProps = {
   onSubmit?: (data: { name: string; description: string; tags: string[]; imageId?: string }) => void
@@ -19,6 +20,7 @@ type CreateGroupPageProps = {
 const SUGGESTED_TAGS = ['한식', '양식', '일식', '중식', '카페', '브런치', '술집', '야식']
 
 export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
+  const { isAuthenticated, openLogin } = useAuth()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -27,6 +29,7 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
   const {
     files: groupImages,
     isUploading,
+    isOptimizing,
     uploadErrors,
     clearErrors,
     addFiles,
@@ -53,6 +56,10 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
 
   const handleSubmit = async () => {
     if (!name.trim()) return
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -158,10 +165,16 @@ export function CreateGroupPage({ onSubmit, onBack }: CreateGroupPageProps) {
           <Button
             className="w-full"
             onClick={handleSubmit}
-            disabled={!name.trim() || isLoading || isUploading}
+            disabled={!name.trim() || isLoading || isUploading || isOptimizing}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {isUploading ? '이미지 업로드 중...' : isLoading ? '생성 중...' : '그룹 만들기'}
+            {isOptimizing
+              ? '이미지 최적화 중...'
+              : isUploading
+                ? '이미지 업로드 중...'
+                : isLoading
+                  ? '생성 중...'
+                  : '그룹 만들기'}
           </Button>
         </div>
       </Container>

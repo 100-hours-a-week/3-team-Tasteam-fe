@@ -12,6 +12,10 @@ import type {
 
 type BackendReviewListItem = {
   id: number
+  groupId?: number | null
+  subgroupId?: number | null
+  groupName?: string | null
+  subgroupName?: string | null
   author?: { nickname?: string | null } | null
   contentPreview?: string | null
   content?: string | null
@@ -23,6 +27,12 @@ type BackendReviewListItem = {
   thumbnailImageUrl?: string | null
   imageUrl?: string | null
   createdAt?: string | null
+  restaurantId?: number | null
+  restaurantName?: string | null
+  groupLogoImageUrl?: string | null
+  groupAddress?: string | null
+  restaurantImageUrl?: string | null
+  restaurantAddress?: string | null
 }
 
 type BackendReviewListPayload = {
@@ -69,12 +79,42 @@ const normalizeReviewListResponse = (
 
   const items = (payload.items ?? []).map<ReviewListItemDto>((item) => ({
     id: item.id,
-    author: { nickname: item.author?.nickname ?? '알 수 없음' },
+    groupId: item.groupId ?? undefined,
+    subgroupId: item.subgroupId ?? undefined,
+    groupName: item.groupName ?? undefined,
+    subgroupName: item.subgroupName ?? undefined,
+    author: { id: item.id, nickname: item.author?.nickname ?? '알 수 없음' },
     contentPreview: item.contentPreview ?? item.content ?? '',
     isRecommended: Boolean(item.isRecommended),
     keywords: item.keywords ?? [],
+    thumbnailImages:
+      item.thumbnailImages?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      item.images?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      (item.thumbnailImage
+        ? [{ id: String(item.thumbnailImage.id), url: item.thumbnailImage.url }]
+        : item.thumbnailImageUrl
+          ? [{ id: item.thumbnailImageUrl, url: item.thumbnailImageUrl }]
+          : item.imageUrl
+            ? [{ id: item.imageUrl, url: item.imageUrl }]
+            : []),
+    images:
+      item.images?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      item.thumbnailImages?.map((image) => ({ id: String(image.id), url: image.url })) ??
+      (item.thumbnailImage
+        ? [{ id: String(item.thumbnailImage.id), url: item.thumbnailImage.url }]
+        : item.thumbnailImageUrl
+          ? [{ id: item.thumbnailImageUrl, url: item.thumbnailImageUrl }]
+          : item.imageUrl
+            ? [{ id: item.imageUrl, url: item.imageUrl }]
+            : undefined),
     thumbnailImage: toThumbnailImage(item),
     createdAt: item.createdAt ?? new Date().toISOString(),
+    restaurantId: item.restaurantId ?? undefined,
+    restaurantName: item.restaurantName ?? undefined,
+    groupLogoImageUrl: item.groupLogoImageUrl ?? undefined,
+    groupAddress: item.groupAddress ?? undefined,
+    restaurantImageUrl: item.restaurantImageUrl ?? undefined,
+    restaurantAddress: item.restaurantAddress ?? undefined,
   }))
 
   return {

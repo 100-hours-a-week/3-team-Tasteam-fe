@@ -73,13 +73,13 @@ export function GroupDetailHeader({
                   <>
                     <div
                       className={cn(
-                        'pointer-events-none absolute inset-0 rounded-md border-[3px] border-primary transition-opacity duration-[250ms]',
+                        'pointer-events-none absolute inset-0 rounded-md border-[3px] border-primary transition-opacity [transition-duration:250ms]',
                         isJoinGuideVisible ? 'opacity-100' : 'opacity-0',
                       )}
                     />
                     <div
                       className={cn(
-                        'absolute right-0 top-full z-20 mt-2 w-44 rounded-md bg-primary px-2 py-2 shadow-sm transition-all duration-[250ms]',
+                        'absolute right-0 top-full z-20 mt-2 w-44 rounded-md bg-primary px-2 py-2 shadow-sm transition-all [transition-duration:250ms]',
                         isJoinGuideVisible
                           ? 'translate-y-0 opacity-100'
                           : '-translate-y-1 opacity-0 pointer-events-none',

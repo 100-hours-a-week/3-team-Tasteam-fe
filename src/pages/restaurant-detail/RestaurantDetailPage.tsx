@@ -23,7 +23,7 @@ import {
 } from '@/shared/ui/carousel'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { RestaurantMetaRow } from '@/entities/restaurant/ui'
-import { ReviewCard } from '@/entities/review/ui'
+import { DetailReviewCard } from '@/entities/review/ui'
 import { Container } from '@/widgets/container'
 import { cn } from '@/shared/lib/utils'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
@@ -766,7 +766,9 @@ export function RestaurantDetailPage() {
                   <Skeleton className="h-24 w-full" />
                 </>
               ) : previewReviews.length > 0 ? (
-                previewReviews.map((review) => <ReviewCard key={review.id} review={review} />)
+                previewReviews.map((review) => (
+                  <DetailReviewCard key={review.id} variant="restaurant" review={review} />
+                ))
               ) : null}
             </div>
 

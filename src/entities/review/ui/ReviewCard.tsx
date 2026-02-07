@@ -1,12 +1,16 @@
-import { ThumbsUp, ThumbsDown } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Image as ImageIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/lib/utils'
+import { ROUTES } from '@/shared/config/routes'
 import type { ReviewListItemDto, ReviewDetailDto } from '../model/dto'
 
 type ReviewDtoProps = {
   review: ReviewListItemDto | ReviewDetailDto
+  /** 음식점 상세 페이지에서만 true. true일 때 그룹/하위그룹명을 링크로 표시 */
+  enableGroupLinks?: boolean
   className?: string
 }
 
@@ -36,10 +40,19 @@ function formatDate(isoString: string): string {
 }
 
 function getImages(review: ReviewListItemDto | ReviewDetailDto): string[] {
-  if ('images' in review) {
+  if ('images' in review && Array.isArray(review.images) && review.images.length > 0) {
     return review.images.map((img) => img.url)
   }
-  return review.thumbnailImage ? [review.thumbnailImage.url] : []
+
+  if ('thumbnailImages' in review && Array.isArray((review as any).thumbnailImages)) {
+    return (review as any).thumbnailImages.map((img: { url: string }) => img.url)
+  }
+
+  if ('thumbnailImage' in review && review.thumbnailImage) {
+    return [review.thumbnailImage.url]
+  }
+
+  return []
 }
 
 function getContent(review: ReviewListItemDto | ReviewDetailDto): string {
@@ -52,6 +65,7 @@ function getContent(review: ReviewListItemDto | ReviewDetailDto): string {
 export function ReviewCard(props: ReviewCardProps) {
   if (isSimpleProps(props)) {
     const { userName, userAvatar, date, content, images, className } = props
+    const hasImages = images != null && images.length > 0
     return (
       <Card className={cn('p-4 gap-0', className)}>
         <div className="flex items-start gap-3 mb-3">
@@ -62,33 +76,62 @@ export function ReviewCard(props: ReviewCardProps) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
               <h4 className="truncate">{userName}</h4>
-              <span className="text-xs text-muted-foreground shrink-0">{date}</span>
+              <span className="flex items-center gap-1.5 shrink-0">
+                {hasImages && (
+                  <ImageIcon className="h-4 w-4 text-muted-foreground" aria-label="사진 있음" />
+                )}
+                <span className="text-xs text-muted-foreground">{date}</span>
+              </span>
             </div>
           </div>
         </div>
-        <p className="text-sm leading-relaxed mb-3">{content}</p>
-        {images && images.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-            {images.map((image, idx) => (
-              <div key={idx} className="w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
-                <img
-                  src={image}
-                  alt={`리뷰 이미지 ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        )}
+        <p className="text-sm leading-relaxed line-clamp-2 text-muted-foreground" title={content}>
+          {content}
+        </p>
       </Card>
     )
   }
 
-  const { review, className } = props
+  const { review, enableGroupLinks = false, className } = props
   const images = getImages(review)
+
+  const groupName =
+    'groupName' in review && review.groupName != null && review.groupName !== ''
+      ? review.groupName
+      : null
+  const subgroupName =
+    'subgroupName' in review && review.subgroupName != null && review.subgroupName !== ''
+      ? review.subgroupName
+      : null
+  const groupId = 'groupId' in review ? review.groupId : undefined
+  const subgroupId = 'subgroupId' in review ? review.subgroupId : undefined
+  const hasGroupInfo = groupName != null
 
   return (
     <Card className={cn('p-4 gap-0', className)}>
+      {hasGroupInfo && (
+        <p className="text-xs text-muted-foreground mb-5 flex flex-wrap items-center gap-x-1 gap-y-0.5">
+          {enableGroupLinks && groupId != null ? (
+            <Link to={ROUTES.groupDetail(String(groupId))} className="hover:text-primary">
+              {groupName}
+            </Link>
+          ) : (
+            <span>{groupName}</span>
+          )}
+          {subgroupName != null && (
+            <>
+              <span className="shrink-0">{' > '}</span>
+              {enableGroupLinks && subgroupId != null ? (
+                <Link to={ROUTES.subgroupDetail(String(subgroupId))} className="hover:text-primary">
+                  {subgroupName}
+                </Link>
+              ) : (
+                <span>{subgroupName}</span>
+              )}
+            </>
+          )}
+        </p>
+      )}
       <div className="flex items-start gap-3 mb-3">
         <Avatar className="h-10 w-10">
           <AvatarFallback>{review.author.nickname.slice(0, 2)}</AvatarFallback>
