@@ -19,8 +19,8 @@
 - **oauth**
   1. `OAuthCallbackPage.tsx` (+ module CSS) : OAuth 콜백 처리
 
-- **group / groups**
-  1. `GroupsPage.tsx` : 그룹 목록(중복 폴더 존재: `group/`, `groups/`)
+- **group**
+  1. `GroupsPage.tsx` : 그룹 목록
 
 - **group-detail**
   1. `GroupDetailPage.tsx` : 그룹 상세
