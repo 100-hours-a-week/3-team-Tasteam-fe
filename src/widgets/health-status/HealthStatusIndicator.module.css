@@ -1,33 +1,22 @@
 .container {
-  position: fixed;
-  top: 12px;
+  composes: container from '../../shared/styles/statusIndicatorBase.module.css';
   left: 12px;
-  z-index: 9999;
 }
 
 .button {
-  width: 28px;
-  height: 28px;
-  border-radius: 9999px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.6);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  composes: button from '../../shared/styles/statusIndicatorBase.module.css';
 }
 
 .dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 9999px;
+  composes: dot from '../../shared/styles/statusIndicatorBase.module.css';
 }
 
 .ok {
-  background: #16a34a;
+  composes: ok from '../../shared/styles/statusIndicatorBase.module.css';
 }
 
 .bad {
-  background: #dc2626;
+  composes: bad from '../../shared/styles/statusIndicatorBase.module.css';
 }
 
 .checking {
