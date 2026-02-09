@@ -135,6 +135,8 @@
 - **upload**
   - api
     1. `uploadApi.ts` : 파일 업로드 API
+  - lib
+    1. `imageOptimization.ts` : 업로드 목적별 이미지 최적화
   - model
     1. `types.ts` : 업로드 도메인 타입
     2. `dto.ts` : 업로드 서버 DTO

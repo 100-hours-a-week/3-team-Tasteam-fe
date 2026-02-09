@@ -9,7 +9,7 @@ import {
   MAX_FILENAME_LENGTH,
 } from '@/entities/upload/model/types'
 import type { UploadPurpose } from '@/entities/upload/model/types'
-import { optimizeImage } from '@/shared/lib/imageOptimization'
+import { optimizeImage } from '@/entities/upload/lib/imageOptimization'
 
 type ImageFile = {
   file: File
