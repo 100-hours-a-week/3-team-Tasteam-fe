@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, UserCheck, MoreVertical, MessageSquare, Lock, Bell } from 'lucide-react'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
@@ -10,17 +10,17 @@ import { Card } from '@/shared/ui/card'
 import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
-// import { RestaurantCard } from '@/entities/restaurant/ui'
-import { DetailReviewCard } from '@/entities/review/ui'
+// import { RestaurantCard } from '@/entities/restaurant'
+import { DetailReviewCard } from '@/entities/review'
 import {
   getSubgroup,
   getSubgroupMembers,
   getSubgroupReviews,
   joinSubgroup,
   leaveSubgroup,
-} from '@/entities/subgroup/api/subgroupApi'
-import { getGroup } from '@/entities/group/api/groupApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+} from '@/entities/subgroup'
+import { getGroup } from '@/entities/group'
+import { useMemberGroups } from '@/entities/member'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import {
@@ -42,8 +42,8 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { ROUTES } from '@/shared/config/routes'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup/model/dto'
-import type { ReviewListItemDto } from '@/entities/review/model/dto'
+import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup'
+import type { ReviewListItemDto } from '@/entities/review'
 import type { ErrorResponse } from '@/shared/types/api'
 
 export function SubgroupsPage() {

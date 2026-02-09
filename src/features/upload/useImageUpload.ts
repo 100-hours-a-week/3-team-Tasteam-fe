@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { createUploadGrant, uploadFileToS3 } from '@/entities/upload/api/uploadApi'
+import { createUploadGrant, uploadFileToS3 } from '@/entities/upload'
 import {
   ALLOWED_IMAGE_TYPES,
   ALLOWED_IMAGE_EXTENSIONS,
@@ -7,9 +7,9 @@ import {
   MAX_IMAGE_SIZE_BYTES,
   MIN_IMAGE_SIZE_BYTES,
   MAX_FILENAME_LENGTH,
-} from '@/entities/upload/model/types'
-import type { UploadPurpose } from '@/entities/upload/model/types'
-import { optimizeImage } from '@/entities/upload/lib/imageOptimization'
+} from '@/entities/upload'
+import type { UploadPurpose } from '@/entities/upload'
+import { optimizeImage } from '@/entities/upload'
 import { logger } from '@/shared/lib/logger'
 
 type ImageFile = {

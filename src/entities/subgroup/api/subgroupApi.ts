@@ -10,7 +10,7 @@ import type {
   SubgroupMemberDto,
   SubgroupSearchResponseDto,
 } from '../model/dto'
-import type { ReviewListResponseDto } from '@/entities/review/model/dto'
+import type { ReviewListResponseDto } from '@/entities/review'
 import type { SuccessResponse } from '@/shared/types/api'
 
 export const getMySubgroups = (groupId: number, params?: { cursor?: string; size?: number }) =>

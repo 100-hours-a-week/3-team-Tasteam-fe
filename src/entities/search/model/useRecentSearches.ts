@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 import { deleteRecentSearch, getRecentSearches } from '../api/searchApi'
 import type { RecentSearch } from './types'
 

@@ -7,9 +7,9 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { ChatInput } from '@/widgets/chat-input'
 import { ListState } from '@/widgets/list-state'
 import { Button } from '@/shared/ui/button'
-import { ChatMessageBubble, ChatDateDivider } from '@/entities/chat/ui'
-import { getChatMessages } from '@/entities/chat/api/chatApi'
-import type { ChatMessageDto } from '@/entities/chat/model/dto'
+import { ChatMessageBubble, ChatDateDivider } from '@/entities/chat'
+import { getChatMessages } from '@/entities/chat'
+import type { ChatMessageDto } from '@/entities/chat'
 
 export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>()

@@ -20,10 +20,10 @@ import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
-import { searchAll } from '@/entities/search/api/searchApi'
-import { useRecentSearches } from '@/entities/search/model/useRecentSearches'
+import { searchAll } from '@/entities/search'
+import { useRecentSearches } from '@/entities/search'
 import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
-import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search/model/types'
+import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search'
 
 const SEARCH_DEBOUNCE_MS = 700
 

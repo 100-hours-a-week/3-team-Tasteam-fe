@@ -8,9 +8,9 @@ import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
-import { getMe, updateMeProfile } from '@/entities/member/api/memberApi'
+import { getMe, updateMeProfile } from '@/entities/member'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
-import type { MemberProfileDto } from '@/entities/member/model/dto'
+import type { MemberProfileDto } from '@/entities/member'
 
 type EditProfilePageProps = {
   onBack?: () => void

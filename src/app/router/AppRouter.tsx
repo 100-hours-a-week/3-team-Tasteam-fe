@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { RequireAuth } from '@/features/auth/require-auth'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 const HomePage = lazy(() => import('@/pages/home').then((m) => ({ default: m.HomePage })))

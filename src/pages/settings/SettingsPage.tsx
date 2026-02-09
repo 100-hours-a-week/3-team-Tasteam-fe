@@ -8,8 +8,8 @@ import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import { deleteMe } from '@/entities/member/api/memberApi'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { deleteMe } from '@/entities/member'
+import { useAuth } from '@/entities/user'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertDialog,

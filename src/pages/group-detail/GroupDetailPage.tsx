@@ -8,11 +8,11 @@ import {
   GroupDetailHeader,
   type GroupDetailHeaderData,
 } from '@/features/groups'
-import { RestaurantCard } from '@/entities/restaurant/ui'
-import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group/api/groupApi'
-import type { RestaurantListItemDto } from '@/entities/restaurant/model/dto'
-import { getFoodCategories } from '@/entities/restaurant/api/restaurantApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { RestaurantCard } from '@/entities/restaurant'
+import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group'
+import type { RestaurantListItemDto } from '@/entities/restaurant'
+import { getFoodCategories } from '@/entities/restaurant'
+import { useMemberGroups } from '@/entities/member'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {

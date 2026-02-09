@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { Separator } from '@/shared/ui/separator'
-import { getNotifications } from '@/entities/notification/api/notificationApi'
+import { getNotifications } from '@/entities/notification'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 type Notification = {

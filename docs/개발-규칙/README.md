@@ -67,3 +67,4 @@ src/
 
 - `npm run check:fsd`
 - 레이어 역의존(`shared -> entities`, `features -> widgets` 등)을 검사하고 위반 시 실패한다.
+- `entities`는 퍼블릭 API(`@/entities/<slice>`)로만 가져오고, 외부 레이어에서 `api/model/ui` deep import를 금지한다.

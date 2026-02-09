@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
-import { SimpleReviewCard } from '@/entities/review/ui'
-import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
-import type { ReviewListItemDto } from '@/entities/review/model/dto'
+import { SimpleReviewCard } from '@/entities/review'
+import { getRestaurantReviews } from '@/entities/review'
+import type { ReviewListItemDto } from '@/entities/review'
 
 export function RestaurantReviewsPage() {
   const { id: restaurantId } = useParams<{ id: string }>()

@@ -10,7 +10,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent } from '@/shared/ui/card'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 
 type CreateGroupPageProps = {
   onSubmit?: (data: { name: string; description: string; tags: string[]; imageId?: string }) => void

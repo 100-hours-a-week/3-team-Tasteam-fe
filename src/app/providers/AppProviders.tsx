@@ -1,5 +1,5 @@
-import { AuthProvider } from '@/entities/user/model/AuthProvider'
-import { MemberGroupsProvider } from '@/entities/member/model/MemberGroupsProvider'
+import { AuthProvider } from '@/entities/user'
+import { MemberGroupsProvider } from '@/entities/member'
 import { LocationProvider } from '@/entities/location'
 
 export const AppProviders = ({ children }: { children: React.ReactNode }) => {

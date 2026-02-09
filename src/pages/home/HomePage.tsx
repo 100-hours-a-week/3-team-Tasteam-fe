@@ -8,15 +8,11 @@ import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
 import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { Input } from '@/shared/ui/input'
 import { ROUTES } from '@/shared/config/routes'
-import { getMainPage } from '@/entities/main/api/mainApi'
+import { getMainPage } from '@/entities/main'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
-import type {
-  MainPageResponseDto,
-  MainSectionDto,
-  MainSectionItemDto,
-} from '@/entities/main/model/types'
-import { toMainPageData } from '@/entities/main/model/mapper'
+import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
+import { toMainPageData } from '@/entities/main'
 
 type HomePageProps = {
   onSearchClick?: () => void

@@ -21,8 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
-import { getMyReviews } from '@/entities/member/api/memberApi'
-import { SimpleReviewCard } from '@/entities/review/ui'
+import { getMyReviews } from '@/entities/member'
+import { SimpleReviewCard } from '@/entities/review'
 
 type Review = {
   id: string

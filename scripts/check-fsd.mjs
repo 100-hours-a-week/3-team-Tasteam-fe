@@ -56,12 +56,26 @@ for (const filePath of files) {
     const toLayer = specifier.slice(2).split('/')[0]
     if (!layerRank.has(toLayer)) continue
 
+    const segments = specifier.slice(2).split('/')
+    const isDeepEntityImport = toLayer === 'entities' && segments.length > 2
+    if (isDeepEntityImport && fromLayer !== 'entities') {
+      violations.push({
+        file: relativePath,
+        importPath: specifier,
+        fromLayer,
+        toLayer,
+        reason: 'entities public API violation',
+      })
+      continue
+    }
+
     if (layerRank.get(fromLayer) > layerRank.get(toLayer)) {
       violations.push({
         file: relativePath,
         importPath: specifier,
         fromLayer,
         toLayer,
+        reason: 'layer dependency violation',
       })
     }
   }
@@ -71,7 +85,7 @@ if (violations.length > 0) {
   console.error(`FSD boundary violations: ${violations.length}`)
   for (const violation of violations) {
     console.error(
-      `- ${violation.file}: ${violation.importPath} (${violation.fromLayer} -> ${violation.toLayer})`,
+      `- ${violation.file}: ${violation.importPath} (${violation.fromLayer} -> ${violation.toLayer}, ${violation.reason})`,
     )
   }
   process.exit(1)

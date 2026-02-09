@@ -4,10 +4,10 @@ import { Container } from '@/shared/ui/container'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupEmailVerificationForm } from '@/features/groups'
-import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member/api/memberApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
-import { getGroup } from '@/entities/group/api/groupApi'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member'
+import { useMemberGroups } from '@/entities/member'
+import { getGroup } from '@/entities/group'
+import { useAuth } from '@/entities/user'
 
 type GroupEmailJoinPageProps = {
   onBack?: () => void

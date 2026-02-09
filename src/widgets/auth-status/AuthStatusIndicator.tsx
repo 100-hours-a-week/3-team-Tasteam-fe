@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 import styles from './AuthStatusIndicator.module.css'
 
 export const AuthStatusIndicator = () => {

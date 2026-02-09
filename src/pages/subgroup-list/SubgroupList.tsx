@@ -19,9 +19,9 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
-import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup/api/subgroupApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup'
+import { useMemberGroups } from '@/entities/member'
+import { useAuth } from '@/entities/user'
 import type { ErrorResponse } from '@/shared/types/api'
 import { logger } from '@/shared/lib/logger'
 

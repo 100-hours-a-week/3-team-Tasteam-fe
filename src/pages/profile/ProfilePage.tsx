@@ -10,9 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { useAuth } from '@/entities/user/model/useAuth'
-import { getMe } from '@/entities/member/api/memberApi'
-import type { MemberProfileDto } from '@/entities/member/model/dto'
+import { useAuth } from '@/entities/user'
+import { getMe } from '@/entities/member'
+import type { MemberProfileDto } from '@/entities/member'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import {
   AlertDialog,
