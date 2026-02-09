@@ -16,6 +16,7 @@ import { createSubgroup, getSubgroup } from '@/entities/subgroup/api/subgroupApi
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import { useAuth } from '@/entities/user/model/useAuth'
 import type { ErrorResponse } from '@/shared/types/api'
+import { logger } from '@/shared/lib/logger'
 
 const DESCRIPTION_LIMIT = 500
 
@@ -142,7 +143,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       if (axios.isAxiosError<ErrorResponse>(error)) {
         code = error.response?.data?.code
       } else {
-        console.error(error)
+        logger.error(error)
       }
       if (code === 'ALREADY_EXISTS') {
         setSubmitError('이미 존재하는 하위그룹명입니다.')

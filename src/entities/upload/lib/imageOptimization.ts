@@ -1,5 +1,6 @@
 import imageCompression from 'browser-image-compression'
 import { OPTIMIZATION_CONFIGS, type UploadPurpose } from '@/entities/upload/model/types'
+import { logger } from '@/shared/lib/logger'
 
 type OptimizationConfig = (typeof OPTIMIZATION_CONFIGS)[keyof typeof OPTIMIZATION_CONFIGS]
 
@@ -29,7 +30,7 @@ export async function optimizeImage(file: File, purpose: UploadPurpose): Promise
 
     return webpFile
   } catch (error) {
-    console.error('Image optimization failed:', error)
+    logger.error('Image optimization failed:', error)
     return file
   }
 }

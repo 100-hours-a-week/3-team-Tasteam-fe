@@ -23,6 +23,7 @@ import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup
 import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
 import { useAuth } from '@/entities/user/model/useAuth'
 import type { ErrorResponse } from '@/shared/types/api'
+import { logger } from '@/shared/lib/logger'
 
 type Group = {
   id: string
@@ -123,7 +124,7 @@ export function SubgroupListPage({
     if (axios.isAxiosError<ErrorResponse>(error)) {
       return error.response?.data?.code
     }
-    console.error(error)
+    logger.error(error)
     return undefined
   }
 

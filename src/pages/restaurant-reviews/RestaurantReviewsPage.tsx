@@ -36,7 +36,7 @@ export function RestaurantReviewsPage() {
       } else {
         setHasNextPage(false)
       }
-    } catch (error) {
+    } catch {
       setHasNextPage(false)
     } finally {
       setIsLoading(false)

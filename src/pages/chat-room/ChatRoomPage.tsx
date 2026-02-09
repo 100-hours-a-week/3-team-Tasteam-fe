@@ -11,45 +11,6 @@ import { ChatMessageBubble, ChatDateDivider } from '@/entities/chat/ui'
 import { getChatMessages } from '@/entities/chat/api/chatApi'
 import type { ChatMessageDto } from '@/entities/chat/model/dto'
 
-const defaultMessages: ChatMessageDto[] = [
-  {
-    id: 1,
-    memberId: 100,
-    memberNickname: '김철수',
-    memberProfileImageUrl: '',
-    messageType: 'system',
-    content: '김철수님이 입장하셨습니다.',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: 2,
-    memberId: 100,
-    memberNickname: '김철수',
-    memberProfileImageUrl: '',
-    messageType: 'text',
-    content: '안녕하세요! 반갑습니다.',
-    createdAt: new Date(Date.now() - 86400000 + 1000).toISOString(),
-  },
-  {
-    id: 3,
-    memberId: 1,
-    memberNickname: '',
-    memberProfileImageUrl: '',
-    messageType: 'text',
-    content: '네, 안녕하세요!',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: 4,
-    memberId: 101,
-    memberNickname: '이영희',
-    memberProfileImageUrl: '',
-    messageType: 'text',
-    content: '오늘 점심 뭐 드셨나요?',
-    createdAt: new Date(Date.now() - 1800000).toISOString(),
-  },
-]
-
 export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
@@ -81,14 +42,14 @@ export function ChatRoomPage() {
               messageType: item.messageType.toLowerCase() as 'text' | 'image' | 'system',
               content: item.content,
               createdAt: item.createdAt,
-            })) ?? defaultMessages
+            })) ?? []
           setMessages(apiMessages)
         } else {
-          setMessages(defaultMessages)
+          setMessages([])
         }
         scrollToBottom(true)
       } catch {
-        setMessages(defaultMessages)
+        setMessages([])
         toast.error('메시지를 불러오지 못했어요')
       } finally {
         setIsLoading(false)
@@ -97,6 +58,19 @@ export function ChatRoomPage() {
 
     loadInitialMessages()
   }, [roomId])
+
+  const loadOlderMessages = useCallback(async () => {
+    if (isLoadingMore) return
+    setIsLoadingMore(true)
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      setHasMore(false)
+    } catch {
+      toast.error('이전 메시지를 불러오지 못했어요')
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [isLoadingMore])
 
   const handleScroll = useCallback(() => {
     const container = scrollAreaRef.current
@@ -111,20 +85,7 @@ export function ChatRoomPage() {
     if (scrollTop < 100 && !isLoadingMore && hasMore) {
       loadOlderMessages()
     }
-  }, [isLoadingMore, hasMore])
-
-  const loadOlderMessages = async () => {
-    if (isLoadingMore) return
-    setIsLoadingMore(true)
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      setHasMore(false)
-    } catch {
-      toast.error('이전 메시지를 불러오지 못했어요')
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }
+  }, [hasMore, isLoadingMore, loadOlderMessages])
 
   const handleSendMessage = useCallback(
     (text: string) => {
