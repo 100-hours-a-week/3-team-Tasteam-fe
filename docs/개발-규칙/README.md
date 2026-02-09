@@ -62,3 +62,8 @@ src/
     BottomTabBar.tsx
     BottomTabBar.module.css
 ```
+
+## 아키텍처 검증
+
+- `npm run check:fsd`
+- 레이어 역의존(`shared -> entities`, `features -> widgets` 등)을 검사하고 위반 시 실패한다.
