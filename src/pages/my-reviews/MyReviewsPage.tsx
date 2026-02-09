@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileText, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { Button } from '@/shared/ui/button'
 import {

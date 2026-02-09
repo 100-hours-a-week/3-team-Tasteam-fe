@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupEmailVerificationForm } from '@/features/groups'

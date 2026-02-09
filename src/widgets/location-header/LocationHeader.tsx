@@ -1,5 +1,5 @@
 import { MapPin, ChevronRight } from 'lucide-react'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 
 type LocationHeaderProps = {
   district?: string

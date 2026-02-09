@@ -12,7 +12,7 @@ import { Button } from '@/shared/ui/button'
 import { GroupImage } from '@/shared/ui/group-image'
 import { Input } from '@/shared/ui/input'
 import { Progress } from '@/shared/ui/progress'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 
 type OnboardingPageProps = {
   onComplete?: (nextPath?: string) => void

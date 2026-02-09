@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'

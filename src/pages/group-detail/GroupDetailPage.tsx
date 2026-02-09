@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { ROUTES } from '@/shared/config/routes'
 import {
   GroupCategoryFilter,

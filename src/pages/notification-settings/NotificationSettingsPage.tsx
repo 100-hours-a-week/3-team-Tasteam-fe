@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Card } from '@/shared/ui/card'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
