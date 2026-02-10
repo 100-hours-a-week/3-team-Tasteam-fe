@@ -45,6 +45,7 @@ import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup'
 import type { ReviewListItemDto } from '@/entities/review'
 import type { ErrorResponse } from '@/shared/types/api'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
 
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
@@ -62,14 +63,10 @@ export function SubgroupsPage() {
   const [isLeaving, setIsLeaving] = useState(false)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
-  const subgroupId = id ? Number(id) : null
+  const subgroupId = parseNumberParam(id)
   const isSubgroupLoading = isLoading || (!subgroup && !error)
   const isMember =
-    isAuthenticated &&
-    isLoaded &&
-    subgroupId !== null &&
-    !Number.isNaN(subgroupId) &&
-    isSubgroupMember(subgroupId)
+    isAuthenticated && isLoaded && isValidId(subgroupId) && isSubgroupMember(subgroupId)
   const memberCount =
     subgroup && typeof subgroup.memberCount === 'number' ? subgroup.memberCount : 1
   // const restaurants: Array<{
@@ -92,7 +89,7 @@ export function SubgroupsPage() {
   }
 
   useEffect(() => {
-    if (!subgroupId || Number.isNaN(subgroupId)) return
+    if (!isValidId(subgroupId)) return
     let cancelled = false
     const fetchSubgroup = async () => {
       setIsLoading(true)
@@ -215,7 +212,7 @@ export function SubgroupsPage() {
   }
 
   const handleLeaveSubGroup = async () => {
-    if (!subgroupId || Number.isNaN(subgroupId)) return
+    if (!isValidId(subgroupId)) return
     if (!isAuthenticated) {
       openLogin()
       return

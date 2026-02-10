@@ -17,6 +17,7 @@ import { useMemberGroups } from '@/entities/member'
 import { useAuth } from '@/entities/user'
 import type { ErrorResponse } from '@/shared/types/api'
 import { logger } from '@/shared/lib/logger'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
 
 const DESCRIPTION_LIMIT = 500
 
@@ -42,8 +43,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
   })
   const { refresh } = useMemberGroups()
   const [searchParams] = useSearchParams()
-  const groupIdParam = searchParams.get('groupId')
-  const groupId = groupIdParam ? Number(groupIdParam) : null
+  const groupId = parseNumberParam(searchParams.get('groupId'))
   const imagePreviewUrl = files.length > 0 ? files[0].previewUrl : null
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -77,7 +77,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
 
   const isFormValid = useMemo(() => {
     if (!name.trim()) return false
-    if (!groupId || Number.isNaN(groupId)) return false
+    if (!isValidId(groupId)) return false
     if (!isPasswordEnabled) return true
     return Boolean(password.trim()) && confirmPassword === password
   }, [confirmPassword, groupId, isPasswordEnabled, name, password])
@@ -106,7 +106,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
     setIsSubmitting(true)
     setSubmitError(null)
     try {
-      if (!groupId || Number.isNaN(groupId)) {
+      if (!isValidId(groupId)) {
         setSubmitError('그룹 정보를 찾을 수 없습니다.')
         return
       }
@@ -173,7 +173,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
 
       <Container className="flex-1 py-6 overflow-auto">
         <div className="space-y-6">
-          {!groupId || Number.isNaN(groupId) ? (
+          {!isValidId(groupId) ? (
             <p className="text-sm text-destructive">그룹 정보를 찾을 수 없습니다.</p>
           ) : null}
           <SubgroupImageUploader

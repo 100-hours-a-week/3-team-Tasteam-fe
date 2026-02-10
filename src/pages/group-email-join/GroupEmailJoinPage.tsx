@@ -6,8 +6,9 @@ import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupEmailVerificationForm } from '@/features/groups'
 import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member'
 import { useMemberGroups } from '@/entities/member'
-import { getGroup } from '@/entities/group'
+import { useGroupPreview } from '@/entities/group'
 import { useAuth } from '@/entities/user'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
 
 type GroupEmailJoinPageProps = {
   onBack?: () => void
@@ -16,17 +17,11 @@ type GroupEmailJoinPageProps = {
 
 type HelperStatus = 'idle' | 'sent' | 'success' | 'error' | 'expired'
 
-type GroupInfo = {
-  id: number
-  name: string
-  imageUrl?: string
-}
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) {
   const { id } = useParams()
-  const groupId = id ? Number(id) : null
+  const groupId = parseNumberParam(id)
   const { openLogin } = useAuth()
   const { refresh } = useMemberGroups()
   const [email, setEmail] = useState('')
@@ -41,47 +36,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
 
   const isEmailValid = useMemo(() => EMAIL_REGEX.test(email.trim()), [email])
   const showEmailError = email.trim().length > 0 && !isEmailValid
-  const [groupInfo, setGroupInfo] = useState<GroupInfo>({
-    id: 0,
-    name: '그룹 정보를 불러오는 중...',
-    imageUrl: undefined,
-  })
-  const [isGroupLoading, setIsGroupLoading] = useState(false)
-  const [groupError, setGroupError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!groupId || Number.isNaN(groupId)) return
-    let cancelled = false
-    const fetchGroup = async () => {
-      setIsGroupLoading(true)
-      setGroupError(null)
-      try {
-        const data = await getGroup(groupId)
-        if (cancelled) return
-        setGroupInfo({
-          id: data.groupId,
-          name: data.name,
-          imageUrl: data.logoImageUrl ?? data.logoImage?.url ?? undefined,
-        })
-      } catch {
-        if (cancelled) return
-        setGroupError('그룹 정보를 불러오지 못했습니다.')
-        setGroupInfo({
-          id: groupId,
-          name: '그룹 정보를 불러오지 못했습니다.',
-          imageUrl: undefined,
-        })
-      } finally {
-        if (!cancelled) {
-          setIsGroupLoading(false)
-        }
-      }
-    }
-    fetchGroup()
-    return () => {
-      cancelled = true
-    }
-  }, [groupId])
+  const { groupInfo, isLoading: isGroupLoading, error: groupError } = useGroupPreview(groupId)
 
   useEffect(() => {
     if (!hasRequestedCode || timeLeft <= 0 || helperStatus === 'success') return
@@ -110,7 +65,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
   }
 
   const handleSend = () => {
-    if (!groupId || Number.isNaN(groupId) || isGroupLoading || groupError) {
+    if (!isValidId(groupId) || isGroupLoading || groupError) {
       setHelperStatus('error')
       setHelperText('그룹 정보를 불러온 뒤 다시 시도해주세요.')
       return
@@ -179,7 +134,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
   }
 
   const handleJoin = () => {
-    if (!groupId || Number.isNaN(groupId) || isGroupLoading || groupError) {
+    if (!isValidId(groupId) || isGroupLoading || groupError) {
       setHelperStatus('error')
       setHelperText('그룹 정보를 불러온 뒤 다시 시도해주세요.')
       return

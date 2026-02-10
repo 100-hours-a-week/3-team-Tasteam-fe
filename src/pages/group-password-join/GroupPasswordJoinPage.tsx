@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Container } from '@/shared/ui/container'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupPasswordJoinForm } from '@/features/groups'
-import { getGroup } from '@/entities/group'
+import { useGroupPreview } from '@/entities/group'
 import { verifyGroupPassword } from '@/entities/member'
 import { useMemberGroups } from '@/entities/member'
 import { useAuth } from '@/entities/user'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
 
 type GroupPasswordJoinPageProps = {
   onBack?: () => void
@@ -16,15 +17,9 @@ type GroupPasswordJoinPageProps = {
 
 type HelperStatus = 'idle' | 'error' | 'success'
 
-type GroupInfo = {
-  id: number
-  name: string
-  imageUrl?: string
-}
-
 export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageProps) {
   const { id } = useParams()
-  const groupId = id ? Number(id) : null
+  const groupId = parseNumberParam(id)
   const { openLogin } = useAuth()
   const { refresh } = useMemberGroups()
   const [password, setPassword] = useState('')
@@ -32,50 +27,10 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
   const [isJoining, setIsJoining] = useState(false)
   const [helperStatus, setHelperStatus] = useState<HelperStatus>('idle')
   const [helperText, setHelperText] = useState('')
-  const [groupInfo, setGroupInfo] = useState<GroupInfo>({
-    id: 0,
-    name: '그룹 정보를 불러오는 중...',
-    imageUrl: undefined,
-  })
-  const [isGroupLoading, setIsGroupLoading] = useState(false)
-  const [groupError, setGroupError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!groupId || Number.isNaN(groupId)) return
-    let cancelled = false
-    const fetchGroup = async () => {
-      setIsGroupLoading(true)
-      setGroupError(null)
-      try {
-        const data = await getGroup(groupId)
-        if (cancelled) return
-        setGroupInfo({
-          id: data.groupId,
-          name: data.name,
-          imageUrl: data.logoImageUrl ?? data.logoImage?.url ?? undefined,
-        })
-      } catch {
-        if (cancelled) return
-        setGroupError('그룹 정보를 불러오지 못했습니다.')
-        setGroupInfo({
-          id: groupId,
-          name: '그룹 정보를 불러오지 못했습니다.',
-          imageUrl: undefined,
-        })
-      } finally {
-        if (!cancelled) {
-          setIsGroupLoading(false)
-        }
-      }
-    }
-    fetchGroup()
-    return () => {
-      cancelled = true
-    }
-  }, [groupId])
+  const { groupInfo, isLoading: isGroupLoading, error: groupError } = useGroupPreview(groupId)
 
   const handleJoin = () => {
-    if (!groupId || Number.isNaN(groupId) || isGroupLoading || groupError) {
+    if (!isValidId(groupId) || isGroupLoading || groupError) {
       setHelperStatus('error')
       setHelperText('그룹 정보를 불러온 뒤 다시 시도해주세요.')
       return
@@ -130,12 +85,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
   }
 
   const canJoin =
-    !!password.trim() &&
-    !isJoining &&
-    !isGroupLoading &&
-    !groupError &&
-    groupId !== null &&
-    !Number.isNaN(groupId)
+    !!password.trim() && !isJoining && !isGroupLoading && !groupError && isValidId(groupId)
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
