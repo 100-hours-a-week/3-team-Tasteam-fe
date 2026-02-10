@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, UserCheck, MoreVertical, MessageSquare, Lock, Bell } from 'lucide-react'
 import { useAuth } from '@/entities/user'
@@ -44,8 +43,8 @@ import { ROUTES } from '@/shared/config/routes'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup'
 import type { ReviewListItemDto } from '@/entities/review'
-import type { ErrorResponse } from '@/shared/types/api'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
@@ -194,7 +193,7 @@ export function SubgroupsPage() {
       setPassword('')
       // 필요한 경우 페이지 새로고침 또는 상태 업데이트 로직 추가 가능
     } catch (error: unknown) {
-      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
+      const code = getApiErrorCode(error)
       if (code === 'PASSWORD_MISMATCH') {
         alert('가입에 실패했습니다. 비밀번호를 확인해주세요.')
       } else if (code === 'SUBGROUP_ALREADY_JOINED') {
@@ -224,7 +223,7 @@ export function SubgroupsPage() {
       refresh()
       navigate(ROUTES.groups, { replace: true })
     } catch (error: unknown) {
-      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
+      const code = getApiErrorCode(error)
       if (code === 'AUTHENTICATION_REQUIRED') {
         openLogin()
       } else if (code === 'NO_PERMISSION') {

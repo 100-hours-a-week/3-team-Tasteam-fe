@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import axios from 'axios'
 import { useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -15,9 +14,10 @@ import { UploadErrorModal, useImageUpload } from '@/features/upload'
 import { createSubgroup, getSubgroup } from '@/entities/subgroup'
 import { useMemberGroups } from '@/entities/member'
 import { useAuth } from '@/entities/user'
-import type { ErrorResponse } from '@/shared/types/api'
 import { logger } from '@/shared/lib/logger'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { extractResponseData } from '@/shared/lib/apiResponse'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 const DESCRIPTION_LIMIT = 500
 
@@ -123,10 +123,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
         password: isPasswordEnabled ? password.trim() : null,
       })
       toast.success('하위그룹을 생성했습니다.')
-      const createdId =
-        res.data?.id ??
-        (res as { data?: { data?: { id?: number } } })?.data?.data?.id ??
-        (res as { id?: number })?.id
+      const createdId = extractResponseData<{ id?: number }>(res)?.id
       if (typeof createdId === 'number') {
         try {
           await getSubgroup(createdId)
@@ -139,10 +136,8 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       }
       toast.error('하위그룹 생성 응답을 확인할 수 없습니다. 잠시 후 다시 시도해주세요.')
     } catch (error: unknown) {
-      let code: ErrorResponse['code'] | undefined
-      if (axios.isAxiosError<ErrorResponse>(error)) {
-        code = error.response?.data?.code
-      } else {
+      const code = getApiErrorCode(error)
+      if (!code) {
         logger.error(error)
       }
       if (code === 'ALREADY_EXISTS') {

@@ -12,6 +12,7 @@ import type {
 } from '../model/dto'
 import type { ReviewListResponseDto } from '@/entities/review'
 import type { SuccessResponse } from '@/shared/types/api'
+import { extractResponseData } from '@/shared/lib/apiResponse'
 
 export const getMySubgroups = (groupId: number, params?: { cursor?: string; size?: number }) =>
   request<SubgroupListResponseDto>({
@@ -30,10 +31,12 @@ export const getSubgroups = async (
     url: `/api/v1/groups/${groupId}/subgroups${buildQuery(params ?? {})}`,
   })
 
-  if ('data' in response) {
-    return response.data
-  }
-  return response as SubgroupListResponseDto
+  return (
+    extractResponseData<SubgroupListResponseDto>(response) ?? {
+      items: [],
+      pagination: { nextCursor: null, size: 0, hasNext: false },
+    }
+  )
 }
 
 export const searchSubgroups = async (
@@ -51,10 +54,12 @@ export const searchSubgroups = async (
     })}`,
   })
 
-  if ('data' in response) {
-    return response.data
-  }
-  return response as SubgroupSearchResponseDto
+  return (
+    extractResponseData<SubgroupSearchResponseDto>(response) ?? {
+      items: [],
+      pagination: { nextCursor: null, size: 0, hasNext: false },
+    }
+  )
 }
 
 export const getSubgroup = async (subgroupId: number): Promise<SubgroupDetailDto> => {
@@ -62,15 +67,9 @@ export const getSubgroup = async (subgroupId: number): Promise<SubgroupDetailDto
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}`,
   })
-  const payload = (res as { data?: unknown }).data
-  if (payload && typeof payload === 'object') {
-    const nested = (payload as { data?: unknown }).data
-    if (nested && typeof nested === 'object' && 'subgroupId' in nested) {
-      return nested as SubgroupDetailDto
-    }
-    if ('subgroupId' in payload) {
-      return payload as SubgroupDetailDto
-    }
+  const payload = extractResponseData<SubgroupDetailDto>(res)
+  if (payload && typeof payload === 'object' && 'subgroupId' in payload) {
+    return payload
   }
   return res as unknown as SubgroupDetailDto
 }
@@ -97,11 +96,9 @@ export const getSubgroupReviews = (
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}/reviews${buildQuery(params ?? {})}`,
   }).then((res) => {
-    if ('data' in res && res.data) {
-      return res.data
-    }
-    if ('items' in res && 'pagination' in res) {
-      return res as ReviewListResponseDto
+    const payload = extractResponseData<ReviewListResponseDto>(res)
+    if (payload && typeof payload === 'object' && 'items' in payload && 'pagination' in payload) {
+      return payload
     }
     return { items: [], pagination: { nextCursor: null, size: 0, hasNext: false } }
   })

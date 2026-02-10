@@ -9,6 +9,8 @@ import { verifyGroupPassword } from '@/entities/member'
 import { useMemberGroups } from '@/entities/member'
 import { useAuth } from '@/entities/user'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { extractResponseData } from '@/shared/lib/apiResponse'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 type GroupPasswordJoinPageProps = {
   onBack?: () => void
@@ -45,9 +47,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
     setHelperText('')
     verifyGroupPassword(groupId, { code: password.trim() })
       .then((response) => {
-        const payload =
-          (response as { data?: { verified?: boolean } })?.data ??
-          (response as { data?: { data?: { verified?: boolean } } })?.data?.data
+        const payload = extractResponseData<{ verified?: boolean }>(response)
         if (!payload?.verified) {
           setHelperStatus('error')
           setHelperText('비밀번호가 올바르지 않습니다.')
@@ -59,7 +59,7 @@ export function GroupPasswordJoinPage({ onBack, onJoin }: GroupPasswordJoinPageP
         onJoin?.(String(groupId))
       })
       .catch((error) => {
-        const code = error?.response?.data?.code
+        const code = getApiErrorCode(error)
         if (code === 'EMAIL_CODE_MISMATCH') {
           setHelperStatus('error')
           setHelperText('비밀번호가 올바르지 않습니다.')

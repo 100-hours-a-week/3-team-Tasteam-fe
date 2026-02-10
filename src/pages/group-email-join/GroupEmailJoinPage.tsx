@@ -9,6 +9,8 @@ import { useMemberGroups } from '@/entities/member'
 import { useGroupPreview } from '@/entities/group'
 import { useAuth } from '@/entities/user'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { extractResponseData } from '@/shared/lib/apiResponse'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 type GroupEmailJoinPageProps = {
   onBack?: () => void
@@ -88,9 +90,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
     setHelperText('')
     sendGroupEmailVerification(groupId, { email: normalizedEmail })
       .then((response) => {
-        const payload =
-          (response as { data?: { createdAt?: string; expiresAt?: string } })?.data ??
-          (response as { data?: { data?: { createdAt?: string; expiresAt?: string } } })?.data?.data
+        const payload = extractResponseData<{ createdAt?: string; expiresAt?: string }>(response)
         const expiresAt = payload?.expiresAt
         const timeLeftSeconds = expiresAt
           ? Math.max(Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000), 0)
@@ -103,7 +103,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         setCode('')
       })
       .catch((error) => {
-        const code = error?.response?.data?.code
+        const code = getApiErrorCode(error)
         if (code === 'EMAIL_ALREADY_EXISTS') {
           setHelperStatus('error')
           setHelperText('이미 가입된 이메일입니다.')
@@ -162,9 +162,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
     setHelperText('')
     verifyGroupEmailCode(groupId, { code: code.trim() })
       .then((response) => {
-        const payload =
-          (response as { data?: { verified?: boolean } })?.data ??
-          (response as { data?: { data?: { verified?: boolean } } })?.data?.data
+        const payload = extractResponseData<{ verified?: boolean }>(response)
         if (!payload?.verified) {
           setHelperStatus('error')
           setHelperText('인증번호가 올바르지 않습니다.')
@@ -176,7 +174,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         onJoin?.(String(groupId))
       })
       .catch((error) => {
-        const codeValue = error?.response?.data?.code
+        const codeValue = getApiErrorCode(error)
         if (codeValue === 'EMAIL_CODE_MISMATCH') {
           setHelperStatus('error')
           setHelperText('인증번호가 올바르지 않습니다.')

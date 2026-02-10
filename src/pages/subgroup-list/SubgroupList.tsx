@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, Users, Check, Plus, Lock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -22,9 +21,9 @@ import { Label } from '@/shared/ui/label'
 import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup'
 import { useMemberGroups } from '@/entities/member'
 import { useAuth } from '@/entities/user'
-import type { ErrorResponse } from '@/shared/types/api'
 import { logger } from '@/shared/lib/logger'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 type Group = {
   id: string
@@ -121,9 +120,8 @@ export function SubgroupListPage({
   }, [groupId, searchQuery, isLoaded, isSubgroupMember])
 
   const resolveJoinErrorCode = (error: unknown) => {
-    if (axios.isAxiosError<ErrorResponse>(error)) {
-      return error.response?.data?.code
-    }
+    const code = getApiErrorCode(error)
+    if (code) return code
     logger.error(error)
     return undefined
   }
