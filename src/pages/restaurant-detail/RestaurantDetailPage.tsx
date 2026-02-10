@@ -22,16 +22,16 @@ import {
   CarouselPrevious,
 } from '@/shared/ui/carousel'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { RestaurantMetaRow } from '@/entities/restaurant/ui'
-import { DetailReviewCard } from '@/entities/review/ui'
-import { Container } from '@/widgets/container'
+import { RestaurantMetaRow } from '@/entities/restaurant'
+import { DetailReviewCard } from '@/entities/review'
+import { Container } from '@/shared/ui/container'
 import { cn } from '@/shared/lib/utils'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { GroupCategoryFilter } from '@/features/groups'
-import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant/api/restaurantApi'
-import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
-import type { ReviewListItemDto } from '@/entities/review/model/dto'
-import type { MenuCategoryDto } from '@/entities/restaurant/model/dto'
+import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant'
+import { getRestaurantReviews } from '@/entities/review'
+import type { ReviewListItemDto } from '@/entities/review'
+import type { MenuCategoryDto } from '@/entities/restaurant'
 
 export function RestaurantDetailPage() {
   type BusinessHoursWeekItem = {

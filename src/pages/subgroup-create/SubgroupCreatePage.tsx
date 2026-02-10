@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import axios from 'axios'
 import { useSearchParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -12,10 +11,13 @@ import { Textarea } from '@/shared/ui/textarea'
 import { SubgroupImageUploader } from '@/features/subgroups/subgroup-create-image'
 import { SubgroupPasswordSection } from '@/features/subgroups/subgroup-create-password'
 import { UploadErrorModal, useImageUpload } from '@/features/upload'
-import { createSubgroup, getSubgroup } from '@/entities/subgroup/api/subgroupApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
-import { useAuth } from '@/entities/user/model/useAuth'
-import type { ErrorResponse } from '@/shared/types/api'
+import { createSubgroup, getSubgroup } from '@/entities/subgroup'
+import { useMemberGroups } from '@/entities/member'
+import { useAuth } from '@/entities/user'
+import { logger } from '@/shared/lib/logger'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { extractResponseData } from '@/shared/lib/apiResponse'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 const DESCRIPTION_LIMIT = 500
 
@@ -41,8 +43,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
   })
   const { refresh } = useMemberGroups()
   const [searchParams] = useSearchParams()
-  const groupIdParam = searchParams.get('groupId')
-  const groupId = groupIdParam ? Number(groupIdParam) : null
+  const groupId = parseNumberParam(searchParams.get('groupId'))
   const imagePreviewUrl = files.length > 0 ? files[0].previewUrl : null
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -76,7 +77,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
 
   const isFormValid = useMemo(() => {
     if (!name.trim()) return false
-    if (!groupId || Number.isNaN(groupId)) return false
+    if (!isValidId(groupId)) return false
     if (!isPasswordEnabled) return true
     return Boolean(password.trim()) && confirmPassword === password
   }, [confirmPassword, groupId, isPasswordEnabled, name, password])
@@ -105,7 +106,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
     setIsSubmitting(true)
     setSubmitError(null)
     try {
-      if (!groupId || Number.isNaN(groupId)) {
+      if (!isValidId(groupId)) {
         setSubmitError('그룹 정보를 찾을 수 없습니다.')
         return
       }
@@ -122,10 +123,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
         password: isPasswordEnabled ? password.trim() : null,
       })
       toast.success('하위그룹을 생성했습니다.')
-      const createdId =
-        res.data?.id ??
-        (res as { data?: { data?: { id?: number } } })?.data?.data?.id ??
-        (res as { id?: number })?.id
+      const createdId = extractResponseData<{ id?: number }>(res)?.id
       if (typeof createdId === 'number') {
         try {
           await getSubgroup(createdId)
@@ -138,11 +136,9 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
       }
       toast.error('하위그룹 생성 응답을 확인할 수 없습니다. 잠시 후 다시 시도해주세요.')
     } catch (error: unknown) {
-      let code: ErrorResponse['code'] | undefined
-      if (axios.isAxiosError<ErrorResponse>(error)) {
-        code = error.response?.data?.code
-      } else {
-        console.error(error)
+      const code = getApiErrorCode(error)
+      if (!code) {
+        logger.error(error)
       }
       if (code === 'ALREADY_EXISTS') {
         setSubmitError('이미 존재하는 하위그룹명입니다.')
@@ -172,7 +168,7 @@ export function SubgroupCreatePage({ onSubmit, onBack }: SubgroupCreatePageProps
 
       <Container className="flex-1 py-6 overflow-auto">
         <div className="space-y-6">
-          {!groupId || Number.isNaN(groupId) ? (
+          {!isValidId(groupId) ? (
             <p className="text-sm text-destructive">그룹 정보를 찾을 수 없습니다.</p>
           ) : null}
           <SubgroupImageUploader

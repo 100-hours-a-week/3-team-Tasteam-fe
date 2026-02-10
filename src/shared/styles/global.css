@@ -140,16 +140,12 @@
   --color-brand-soft: hsl(34.3 100% 15%);
 }
 
-* {
-  box-sizing: border-box;
-}
-
+*,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-body,
 h1,
 h2,
 h3,

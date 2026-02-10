@@ -11,7 +11,7 @@ import {
   subscribeAccessToken,
   subscribeLoginRequired,
 } from '@/shared/lib/authToken'
-import { logout as logoutApi, refreshAccessToken } from '@/entities/auth/api/authApi'
+import { logout as logoutApi, refreshAccessToken } from '@/entities/auth'
 import { logger } from '@/shared/lib/logger'
 
 const extractAccessToken = (data: { data: { accessToken?: string } }) =>

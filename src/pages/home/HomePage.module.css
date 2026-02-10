@@ -46,21 +46,21 @@
   text-align: center;
 }
 
-.primaryButton {
-  width: min(240px, 100%);
-  height: 44px;
-  border-radius: 12px;
-  background: #f97316;
-  color: #ffffff;
-  font-weight: 600;
-}
-
+.primaryButton,
 .secondaryButton {
   width: min(240px, 100%);
   height: 44px;
   border-radius: 12px;
+  font-weight: 600;
+}
+
+.primaryButton {
+  background: #f97316;
+  color: #ffffff;
+}
+
+.secondaryButton {
   border: 1px solid #fdba74;
   color: #9a3412;
   background: #fff7ed;
-  font-weight: 600;
 }

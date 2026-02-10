@@ -21,6 +21,7 @@ const isLogEnabled = (level: LogLevel): boolean => {
 }
 
 const noop = () => {}
+const nativeConsole = globalThis.console
 
 /**
  * 로그 메서드를 생성합니다.
@@ -45,9 +46,9 @@ const createMethod = (
 
 /// 로거 객체
 export const logger = {
-  error: createMethod(console.error, 'error'),
-  warn: createMethod(console.warn, 'warn'),
-  info: createMethod(console.info, 'info'),
-  debug: createMethod(console.log, 'debug'),
-  log: createMethod(console.log, 'debug'),
+  error: createMethod(nativeConsole.error.bind(nativeConsole), 'error'),
+  warn: createMethod(nativeConsole.warn.bind(nativeConsole), 'warn'),
+  info: createMethod(nativeConsole.info.bind(nativeConsole), 'info'),
+  debug: createMethod(nativeConsole.log.bind(nativeConsole), 'debug'),
+  log: createMethod(nativeConsole.log.bind(nativeConsole), 'debug'),
 }

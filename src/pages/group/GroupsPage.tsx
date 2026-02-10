@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LogIn, Users } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { ROUTES } from '@/shared/config/routes'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { type GroupListItem, GroupListCard } from '@/features/groups'
-import { useAuth } from '@/entities/user/model/useAuth'
-import { getMyGroupDetails } from '@/entities/member/api/memberApi'
-import type { MemberGroupDetailSummaryItemDto } from '@/entities/member/model/dto'
+import { useAuth } from '@/entities/user'
+import { getMyGroupDetails } from '@/entities/member'
+import type { MemberGroupDetailSummaryItemDto } from '@/entities/member'
 
 type GroupsPageProps = {
   onGroupClick?: (groupId: string) => void

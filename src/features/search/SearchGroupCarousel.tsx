@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from '@/shared/ui/carousel'
-import { SearchGroupCard } from '@/entities/group/ui/SearchGroupCard'
-import type { SearchGroupItem } from '@/entities/search/model/types'
+import { SearchGroupCard } from '@/entities/group'
+import type { SearchGroupItem } from '@/entities/search'
 import { cn } from '@/shared/lib/utils'
 
 type SearchGroupCarouselProps = {

@@ -1,26 +1,25 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, UserCheck, MoreVertical, MessageSquare, Lock, Bell } from 'lucide-react'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
-// import { RestaurantCard } from '@/entities/restaurant/ui'
-import { DetailReviewCard } from '@/entities/review/ui'
+// import { RestaurantCard } from '@/entities/restaurant'
+import { DetailReviewCard } from '@/entities/review'
 import {
   getSubgroup,
   getSubgroupMembers,
   getSubgroupReviews,
   joinSubgroup,
   leaveSubgroup,
-} from '@/entities/subgroup/api/subgroupApi'
-import { getGroup } from '@/entities/group/api/groupApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+} from '@/entities/subgroup'
+import { getGroup } from '@/entities/group'
+import { useMemberGroups } from '@/entities/member'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
 import {
@@ -42,9 +41,10 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { ROUTES } from '@/shared/config/routes'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup/model/dto'
-import type { ReviewListItemDto } from '@/entities/review/model/dto'
-import type { ErrorResponse } from '@/shared/types/api'
+import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup'
+import type { ReviewListItemDto } from '@/entities/review'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
@@ -62,14 +62,10 @@ export function SubgroupsPage() {
   const [isLeaving, setIsLeaving] = useState(false)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
-  const subgroupId = id ? Number(id) : null
+  const subgroupId = parseNumberParam(id)
   const isSubgroupLoading = isLoading || (!subgroup && !error)
   const isMember =
-    isAuthenticated &&
-    isLoaded &&
-    subgroupId !== null &&
-    !Number.isNaN(subgroupId) &&
-    isSubgroupMember(subgroupId)
+    isAuthenticated && isLoaded && isValidId(subgroupId) && isSubgroupMember(subgroupId)
   const memberCount =
     subgroup && typeof subgroup.memberCount === 'number' ? subgroup.memberCount : 1
   // const restaurants: Array<{
@@ -92,7 +88,7 @@ export function SubgroupsPage() {
   }
 
   useEffect(() => {
-    if (!subgroupId || Number.isNaN(subgroupId)) return
+    if (!isValidId(subgroupId)) return
     let cancelled = false
     const fetchSubgroup = async () => {
       setIsLoading(true)
@@ -197,7 +193,7 @@ export function SubgroupsPage() {
       setPassword('')
       // 필요한 경우 페이지 새로고침 또는 상태 업데이트 로직 추가 가능
     } catch (error: unknown) {
-      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
+      const code = getApiErrorCode(error)
       if (code === 'PASSWORD_MISMATCH') {
         alert('가입에 실패했습니다. 비밀번호를 확인해주세요.')
       } else if (code === 'SUBGROUP_ALREADY_JOINED') {
@@ -215,7 +211,7 @@ export function SubgroupsPage() {
   }
 
   const handleLeaveSubGroup = async () => {
-    if (!subgroupId || Number.isNaN(subgroupId)) return
+    if (!isValidId(subgroupId)) return
     if (!isAuthenticated) {
       openLogin()
       return
@@ -227,7 +223,7 @@ export function SubgroupsPage() {
       refresh()
       navigate(ROUTES.groups, { replace: true })
     } catch (error: unknown) {
-      const code = axios.isAxiosError<ErrorResponse>(error) ? error.response?.data?.code : undefined
+      const code = getApiErrorCode(error)
       if (code === 'AUTHENTICATION_REQUIRED') {
         openLogin()
       } else if (code === 'NO_PERMISSION') {

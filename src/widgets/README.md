@@ -28,9 +28,7 @@
   1. `ChatInput.tsx` : 채팅 입력창(텍스트 입력, 전송 버튼)
   2. `index.ts` : export
 
-- **container**
-  1. `Container.tsx` : 공통 페이지 폭 레이아웃 래퍼
-  2. `index.ts` : export
+- 공통 페이지 폭 레이아웃 `Container`는 `src/shared/ui/container.tsx`로 이동
 
 - **debug**
   1. `DebugIndicators.tsx` : 개발/디버그용 상태 표시

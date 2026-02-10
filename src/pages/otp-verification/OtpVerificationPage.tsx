@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AlertCircle } from 'lucide-react'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/shared/ui/input-otp'

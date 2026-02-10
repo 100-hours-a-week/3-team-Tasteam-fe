@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { Heart } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
-import { RestaurantCard } from '@/entities/restaurant/ui'
-import { getMyFavoriteRestaurants } from '@/entities/favorite/api/favoriteApi'
+import { RestaurantCard } from '@/entities/restaurant'
+import { getMyFavoriteRestaurants } from '@/entities/favorite'
 
 type FavoriteRestaurant = {
   id: string

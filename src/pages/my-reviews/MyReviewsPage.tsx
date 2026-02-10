@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { FileText, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { Button } from '@/shared/ui/button'
 import {
@@ -21,8 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
-import { getMyReviews } from '@/entities/member/api/memberApi'
-import { SimpleReviewCard } from '@/entities/review/ui'
+import { getMyReviews } from '@/entities/member'
+import { SimpleReviewCard } from '@/entities/review'
 
 type Review = {
   id: string

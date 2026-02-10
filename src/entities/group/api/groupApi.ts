@@ -12,7 +12,7 @@ import type {
   GroupDetailDto,
 } from '../model/dto'
 import type { CursorPageResponse } from '@/shared/types/pagination'
-import type { RestaurantListItemDto } from '@/entities/restaurant/model/dto'
+import type { RestaurantListItemDto } from '@/entities/restaurant'
 
 export const createGroupRequest = (payload: GroupRequestCreateDto) =>
   request<GroupRequestCreateResponseDto>({

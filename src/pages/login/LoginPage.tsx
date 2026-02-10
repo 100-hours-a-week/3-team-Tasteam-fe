@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SocialLoginButtons } from '@/features/auth/social-login/SocialLoginButtons'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Separator } from '@/shared/ui/separator'
 import { Button } from '@/shared/ui/button'
 import { APP_ENV } from '@/shared/config/env'

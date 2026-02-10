@@ -3,8 +3,8 @@ import { ArrowRight, Check, MapPin, Search, ShieldCheck, Soup, Users } from 'luc
 import { ROUTES } from '@/shared/config/routes'
 import { OnboardingProgressDots, OnboardingStepPanel } from '@/features/groups'
 import { useAppLocation } from '@/entities/location'
-import { searchAll } from '@/entities/search/api/searchApi'
-import type { SearchGroupItem } from '@/entities/search/model/types'
+import { searchAll } from '@/entities/search'
+import type { SearchGroupItem } from '@/entities/search'
 import { requestLocationPermission } from '@/shared/lib/geolocation'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
@@ -12,7 +12,7 @@ import { Button } from '@/shared/ui/button'
 import { GroupImage } from '@/shared/ui/group-image'
 import { Input } from '@/shared/ui/input'
 import { Progress } from '@/shared/ui/progress'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 
 type OnboardingPageProps = {
   onComplete?: (nextPath?: string) => void

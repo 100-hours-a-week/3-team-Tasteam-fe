@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 import { request } from '@/shared/api/request'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import styles from './OAuthCallbackPage.module.css'

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Camera, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -10,7 +10,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent } from '@/shared/ui/card'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { useAuth } from '@/entities/user'
 
 type CreateGroupPageProps = {
   onSubmit?: (data: { name: string; description: string; tags: string[]; imageId?: string }) => void
