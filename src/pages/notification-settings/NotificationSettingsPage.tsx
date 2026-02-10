@@ -28,7 +28,6 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
   const [settings, setSettings] = useState({
     pushEnabled: true,
     groupActivity: true,
-    reviewLikes: false,
     groupInvites: true,
     restaurantRecommendations: true,
     marketingEmails: false,
@@ -98,7 +97,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
 
   const handleToggle = (key: keyof typeof settings) => {
     if (!notificationsEnabled) return
-    if (key === 'reviewLikes' || key === 'nightMode') {
+    if (key === 'nightMode') {
       toast.message('해당 옵션은 아직 서버 지원이 없습니다')
       return
     }
@@ -192,21 +191,6 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
                 checked={settings.groupActivity}
                 onCheckedChange={() => handleToggle('groupActivity')}
                 disabled={!settings.pushEnabled || loading}
-              />
-            </div>
-
-            <div className="p-4 flex items-center justify-between gap-3">
-              <div className="flex-1">
-                <Label htmlFor="reviewLikes" className="cursor-pointer">
-                  리뷰 좋아요
-                </Label>
-                <p className="text-sm text-muted-foreground">내 리뷰에 좋아요가 추가될 때</p>
-              </div>
-              <Switch
-                id="reviewLikes"
-                checked={settings.reviewLikes}
-                onCheckedChange={() => handleToggle('reviewLikes')}
-                disabled
               />
             </div>
 

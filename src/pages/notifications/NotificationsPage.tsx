@@ -4,9 +4,7 @@ import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
-import { Card, CardContent } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
-import { Badge } from '@/shared/ui/badge'
 import { Separator } from '@/shared/ui/separator'
 import { getNotifications } from '@/entities/notification'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
@@ -155,37 +153,27 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
 
             <div className="space-y-2">
               {notifications.map((notification, index) => (
-                <div key={notification.id}>
-                  <Card
-                    className={`cursor-pointer transition-colors hover:bg-accent ${
+                <>
+                  <div
+                    key={notification.id}
+                    className={`flex items-center gap-3 py-3 px-4 rounded-lg cursor-pointer transition-colors hover:bg-accent ${
                       !notification.isRead ? 'bg-accent/50' : ''
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <CardContent className="py-4">
-                      <div className="flex gap-3">
-                        <div className="flex-shrink-0 mt-1">
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <p className="font-semibold text-sm">{notification.title}</p>
-                            {!notification.isRead && (
-                              <Badge variant="default" className="h-2 w-2 p-0 rounded-full">
-                                <span className="sr-only">New</span>
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{notification.timestamp}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  {index < notifications.length - 1 && <Separator className="my-2" />}
-                </div>
+                    <div className="flex-shrink-0">{getNotificationIcon(notification.type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{notification.message}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-muted-foreground">
+                        {notification.timestamp}
+                      </span>
+                      {!notification.isRead && <div className="h-2 w-2 rounded-full bg-primary" />}
+                    </div>
+                  </div>
+                  {index < notifications.length - 1 && <Separator />}
+                </>
               ))}
             </div>
           </>
