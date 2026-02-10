@@ -1,5 +1,5 @@
 import imageCompression from 'browser-image-compression'
-import { OPTIMIZATION_CONFIGS, type UploadPurpose } from '@/entities/upload'
+import { OPTIMIZATION_CONFIGS, type UploadPurpose } from '@/entities/upload/model/types'
 import { logger } from '@/shared/lib/logger'
 
 type OptimizationConfig = (typeof OPTIMIZATION_CONFIGS)[keyof typeof OPTIMIZATION_CONFIGS]
