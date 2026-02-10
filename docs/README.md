@@ -18,3 +18,4 @@
 - `docs/개발-규칙/README.md`: FSD 파일/컴포넌트 분리 규칙
 - `docs/개발-규칙/데이터-로딩-정책.md`: 더미 데이터 제거 및 데이터 로딩 정책
 - `docs/트러블-슈팅/layout-shift.md`: Layout Shift 문제와 해결 방법
+- `docs/알림/알림-목록.md`: 알림 목록에서 지원/미지원 항목 정리
