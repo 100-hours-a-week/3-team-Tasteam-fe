@@ -11,7 +11,6 @@ import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/rest
 import { Input } from '@/shared/ui/input'
 import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main'
-import { getBanners } from '@/entities/banner'
 import type { BannerDto } from '@/entities/banner'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
@@ -27,7 +26,6 @@ type HomePageProps = {
 export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
-  const [banners, setBanners] = useState<BannerDto[]>([])
   const [isMainLoading, setIsMainLoading] = useState(true)
   const [hasLoadedMain, setHasLoadedMain] = useState(false)
   const [showSplashPopup, setShowSplashPopup] = useState(false)
@@ -57,19 +55,6 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   }, [latitude, longitude])
 
   useEffect(() => {
-    let cancelled = false
-    getBanners()
-      .then((response) => {
-        if (cancelled) return
-        setBanners(response.data?.banners ?? [])
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
     if (hasRefreshedRef.current) return
     if (status === 'loading') return
 
@@ -84,6 +69,15 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   }, [requestCurrentLocation, status])
 
   const mainPageData = toMainPageData(mainData)
+  const banners: BannerDto[] =
+    mainData?.data?.banners?.items?.map((item) => ({
+      id: item.id,
+      imageUrl: item.imageUrl,
+      title: null,
+      deeplinkUrl: item.landingUrl,
+      bgColor: null,
+      displayOrder: item.order,
+    })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
 

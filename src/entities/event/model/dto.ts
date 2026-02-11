@@ -13,6 +13,7 @@ export type EventDto = {
   status: EventStatus
   createdAt: IsoDateTimeString
   updatedAt: IsoDateTimeString
+  detailImageUrls?: string[]
 }
 
 export type EventListResponseDto = SuccessResponse<{
