@@ -868,7 +868,6 @@ export function RestaurantDetailPage() {
           open={showFavoriteSheet}
           onOpenChange={setShowFavoriteSheet}
           restaurantId={Number(restaurantId)}
-          restaurantName={restaurantData.name}
           onComplete={handleFavoriteComplete}
         />
       )}

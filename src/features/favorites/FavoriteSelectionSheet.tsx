@@ -23,7 +23,6 @@ type FavoriteSelectionSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   restaurantId: number
-  restaurantName: string
   onComplete?: (selectedTargets: string[]) => void
 }
 
@@ -31,7 +30,6 @@ export function FavoriteSelectionSheet({
   open,
   onOpenChange,
   restaurantId,
-  restaurantName,
   onComplete,
 }: FavoriteSelectionSheetProps) {
   const [targets, setTargets] = useState<FavoriteTarget[]>([])
