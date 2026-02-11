@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Flame, Sparkles } from 'lucide-react'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
+import { SplashPopup } from '@/widgets/splash-popup'
 import { Container } from '@/shared/ui/container'
 import { LocationHeader } from '@/widgets/location-header'
 import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
@@ -14,6 +15,13 @@ import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
 import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
 import { toMainPageData } from '@/entities/main'
 
+function shouldShowSplashPopup(): boolean {
+  const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
+  if (!dismissedDate) return true
+  const today = new Date().toDateString()
+  return dismissedDate !== today
+}
+
 type HomePageProps = {
   onSearchClick?: () => void
   onRestaurantClick?: (id: string) => void
@@ -25,6 +33,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
   const [hasLoadedMain, setHasLoadedMain] = useState(false)
+  const [showSplashPopup, setShowSplashPopup] = useState(shouldShowSplashPopup)
   const { location, status, requestCurrentLocation } = useAppLocation()
   const hasRefreshedRef = useRef(false)
   const latitude = location?.latitude ?? 37.5665
@@ -166,6 +175,17 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
 
   return (
     <div className="pb-20">
+      <SplashPopup
+        isOpen={showSplashPopup}
+        onClose={() => setShowSplashPopup(false)}
+        image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
+        title="신규 가입 이벤트"
+        description="Tasteam과 함께 맛집을 찾아보세요! 첫 리뷰 작성 시 특별 쿠폰을 드립니다."
+        link={ROUTES.events}
+        linkText="이벤트 보러가기"
+        onLinkClick={() => navigate(ROUTES.events)}
+      />
+
       <LocationHeader
         district={status === 'loading' ? '현재 위치 확인 중...' : location?.district}
         address={location?.address}
