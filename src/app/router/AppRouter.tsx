@@ -77,6 +77,11 @@ const LocationSelectPage = lazy(() =>
 const TodayLunchPage = lazy(() =>
   import('@/pages/today-lunch').then((m) => ({ default: m.TodayLunchPage })),
 )
+const NoticesPage = lazy(() => import('@/pages/notices').then((m) => ({ default: m.NoticesPage })))
+const EventsPage = lazy(() => import('@/pages/events').then((m) => ({ default: m.EventsPage })))
+const EventDetailPage = lazy(() =>
+  import('@/pages/events').then((m) => ({ default: m.EventDetailPage })),
+)
 
 function ScrollToTop() {
   const location = useLocation()
@@ -241,6 +246,8 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
                 onNotificationSettings={() => navigate('/notifications/settings')}
                 onMyFavorites={() => navigate('/my-page/favorites')}
                 onMyReviews={() => navigate('/my-page/reviews')}
+                onNotices={() => navigate('/notices')}
+                onEvents={() => navigate('/events')}
                 onLogout={async () => {
                   const ok = await logout()
                   if (ok) {
@@ -287,6 +294,9 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             element={<NotificationSettingsPage onBack={() => navigate(-1)} />}
           />
           <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
+          <Route path="/notices" element={<NoticesPage onBack={() => navigate(-1)} />} />
+          <Route path="/events" element={<EventsPage onBack={() => navigate(-1)} />} />
+          <Route path="/events/:id" element={<EventDetailPage onBack={() => navigate(-1)} />} />
 
           <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
           <Route

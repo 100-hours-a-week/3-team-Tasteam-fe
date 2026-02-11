@@ -24,6 +24,8 @@ export const ROUTES = {
   myReviews: '/my-page/reviews',
   notifications: '/notifications',
   notificationSettings: '/notifications/settings',
+  notices: '/notices',
+  events: '/events',
   settings: '/settings',
   restaurantDetail: (id: string) => `/restaurants/${id}`,
   writeReview: (restaurantId: string) => `/restaurants/${restaurantId}/review`,

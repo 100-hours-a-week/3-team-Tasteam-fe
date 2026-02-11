@@ -11,7 +11,15 @@ export type NotificationDto = {
   readAt: IsoDateTimeString | null
 }
 
-export type NotificationListResponseDto = SuccessResponse<NotificationDto[]>
+export type NotificationListResponseDto = SuccessResponse<{
+  items: NotificationDto[]
+  pagination: {
+    page: number
+    size: number
+    totalPages: number
+    totalElements: number
+  }
+}>
 
 export type NotificationReadRequestDto = {
   readAt: IsoDateTimeString

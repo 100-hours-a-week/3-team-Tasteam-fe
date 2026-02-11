@@ -14,6 +14,13 @@ import type { SuccessResponse } from '@/shared/types/api'
 
 type RefreshResponse = SuccessResponse<{ accessToken?: string }>
 
+const PUBLIC_ENDPOINTS = ['/api/v1/main', '/api/v1/promotions', '/api/v1/announcements']
+
+const isPublicEndpoint = (url?: string) => {
+  if (!url) return false
+  return PUBLIC_ENDPOINTS.some((endpoint) => url.includes(endpoint))
+}
+
 /**
  * axios 인스턴스를 생성하는 유틸.
  * withCredentials: true를 통해 httpOnly 쿠키(`refreshToken`)가 자동 포함되고,
@@ -60,12 +67,14 @@ const refreshAccessToken = async (currentToken: string | null) => {
 
 /**
  * 모든 요청 시 Authorization 헤더에 현재 accessToken을 주입.
- * 토큰이 존재하지 않으면 아무것도 하지 않습니다.
+ * PUBLIC 엔드포인트는 토큰을 추가하지 않습니다.
  */
 http.interceptors.request.use(
   (config) => {
+    const isPublic = isPublicEndpoint(config.url)
     const token = getAccessToken()
-    if (token) {
+
+    if (!isPublic && token) {
       config.headers = config.headers ?? {}
       config.headers.Authorization = `Bearer ${token}`
       logger.debug(`[HTTP] ${config.url}로 요청 전송`, {
@@ -74,8 +83,9 @@ http.interceptors.request.use(
         hasAuthHeader: !!config.headers.Authorization,
       })
     } else {
-      logger.debug(`[HTTP] ${config.url}로 요청 전송 (토큰 없음)`, {
+      logger.debug(`[HTTP] ${config.url}로 요청 전송 (${isPublic ? 'PUBLIC' : '토큰 없음'})`, {
         method: config.method,
+        isPublic,
       })
     }
     return config
@@ -89,6 +99,7 @@ http.interceptors.request.use(
 /**
  * 401 Unauthorized를 만날 경우 refreshToken으로 accessToken을 재발급 받고,
  * 원래 요청을 새 토큰으로 재시도. refresh 토큰 호출은 재귀 방지를 위해 제외.
+ * PUBLIC 엔드포인트는 토큰 리프레시를 시도하지 않습니다.
  */
 http.interceptors.response.use(
   (response) => {
@@ -113,13 +124,20 @@ http.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean }
     const status = errorResponse?.status
     const isRefreshCall = originalRequest?.url?.includes(API_ENDPOINTS.tokenRefresh)
+    const isPublic = isPublicEndpoint(originalRequest?.url)
 
     logger.debug('[인증] 인터셉터 401 확인:', {
       status,
       isRetry: originalRequest?._retry,
       isRefreshCall,
+      isPublic,
       getRefreshEnabled: getRefreshEnabled(),
     })
+
+    if (isPublic) {
+      logger.debug('[인증] PUBLIC 엔드포인트, 리프레시 스킵')
+      return Promise.reject(error)
+    }
 
     if (status === 401 && errorData?.code === 'REFRESH_TOKEN_NOT_FOUND') {
       logger.debug('[인증] REFRESH_TOKEN_NOT_FOUND 에러, accessToken 제거')
