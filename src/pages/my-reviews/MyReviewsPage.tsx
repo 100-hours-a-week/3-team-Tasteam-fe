@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FileText, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { FileText, MoreVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { getMyReviews } from '@/entities/member'
+import { deleteReview } from '@/entities/review'
 import { SimpleReviewCard } from '@/entities/review'
 
 type Review = {
@@ -34,12 +35,11 @@ type Review = {
 }
 
 type MyReviewsPageProps = {
-  onEditReview?: (id: string) => void
   onRestaurantClick?: (name: string) => void
   onBack?: () => void
 }
 
-export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyReviewsPageProps) {
+export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
@@ -68,10 +68,16 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
       .catch(() => setReviews([]))
   }, [])
 
-  const handleDelete = (id: string) => {
-    setReviews((prev) => prev.filter((r) => r.id !== id))
-    toast.success('리뷰가 삭제되었습니다')
-    setDeleteTargetId(null)
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteReview(Number(id))
+      setReviews((prev) => prev.filter((r) => r.id !== id))
+      toast.success('리뷰가 삭제되었습니다')
+    } catch {
+      toast.error('리뷰 삭제에 실패했습니다')
+    } finally {
+      setDeleteTargetId(null)
+    }
   }
 
   return (
@@ -105,10 +111,6 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEditReview?.(review.id)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        수정
-                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive"
                         onClick={() => setDeleteTargetId(review.id)}
