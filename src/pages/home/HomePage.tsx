@@ -266,6 +266,8 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
               return
             }
             navigate(ROUTES.search)
+          } else if (tab === 'favorites') {
+            navigate(ROUTES.favorites)
           } else if (tab === 'groups') {
             navigate(ROUTES.groups)
           } else if (tab === 'profile') {

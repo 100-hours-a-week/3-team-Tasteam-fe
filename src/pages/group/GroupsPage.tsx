@@ -85,6 +85,7 @@ export function GroupsPage({ onGroupClick, onSubgroupClick, onTabChange }: Group
     onTabChange?.(tab)
 
     if (tab === 'search') navigate(ROUTES.search)
+    if (tab === 'favorites') navigate(ROUTES.favorites)
     if (tab === 'groups') navigate(ROUTES.groups)
     if (tab === 'home') navigate(ROUTES.home)
     if (tab === 'profile') navigate(ROUTES.profile)

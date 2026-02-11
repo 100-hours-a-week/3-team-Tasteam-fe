@@ -40,6 +40,9 @@ const ProfilePage = lazy(() => import('@/pages/profile').then((m) => ({ default:
 const EditProfilePage = lazy(() =>
   import('@/pages/edit-profile').then((m) => ({ default: m.EditProfilePage })),
 )
+const FavoritesPage = lazy(() =>
+  import('@/pages/favorites').then((m) => ({ default: m.FavoritesPage })),
+)
 const MyFavoritesPage = lazy(() =>
   import('@/pages/my-favorites').then((m) => ({ default: m.MyFavoritesPage })),
 )
@@ -143,6 +146,15 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
                 onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
                 onGroupClick={(id) => navigate(`/groups/${id}`)}
               />
+            }
+          />
+
+          <Route
+            path="/favorites"
+            element={
+              <RequireAuth>
+                <FavoritesPage onRestaurantClick={(id) => navigate(`/restaurants/${id}`)} />
+              </RequireAuth>
             }
           />
 
