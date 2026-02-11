@@ -278,6 +278,7 @@ export function ProfilePage({
         onTabChange={(tab: TabId) => {
           if (tab === 'home') navigate(ROUTES.home)
           else if (tab === 'search') navigate(ROUTES.search)
+          else if (tab === 'favorites') navigate(ROUTES.favorites)
           else if (tab === 'groups') navigate(ROUTES.groups)
         }}
       />

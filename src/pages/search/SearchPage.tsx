@@ -316,6 +316,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
         currentTab="search"
         onTabChange={(tab: TabId) => {
           if (tab === 'home') navigate(ROUTES.home)
+          else if (tab === 'favorites') navigate(ROUTES.favorites)
           else if (tab === 'groups') navigate(ROUTES.groups)
           else if (tab === 'profile') navigate(ROUTES.profile)
         }}

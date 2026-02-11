@@ -26,10 +26,12 @@ import { RestaurantMetaRow } from '@/entities/restaurant'
 import { DetailReviewCard } from '@/entities/review'
 import { Container } from '@/shared/ui/container'
 import { cn } from '@/shared/lib/utils'
-import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { GroupCategoryFilter } from '@/features/groups'
 import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant'
 import { getRestaurantReviews } from '@/entities/review'
+import { getRestaurantFavoriteTargets } from '@/entities/favorite'
+import { FavoriteSelectionSheet } from '@/features/favorites'
+import { toast } from 'sonner'
 import type { ReviewListItemDto } from '@/entities/review'
 import type { MenuCategoryDto } from '@/entities/restaurant'
 
@@ -46,7 +48,11 @@ export function RestaurantDetailPage() {
 
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [isSaved, setIsSaved] = React.useState(false)
+  const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
+  const [favoriteStatus, setFavoriteStatus] = React.useState<{
+    personal: boolean
+    subgroups: Array<{ subgroupId: number; isFavorited: boolean }>
+  } | null>(null)
   const [isRestaurantLoading, setIsRestaurantLoading] = React.useState(true)
   const [restaurantData, setRestaurantData] = React.useState<{
     id: number
@@ -75,6 +81,31 @@ export function RestaurantDetailPage() {
         setRestaurantData(null)
       })
       .finally(() => setIsRestaurantLoading(false))
+  }, [restaurantId])
+
+  // 찜 상태 조회
+  React.useEffect(() => {
+    if (!restaurantId) return
+
+    getRestaurantFavoriteTargets(Number(restaurantId))
+      .then((response) => {
+        const data = response.data
+        // targets 배열에서 ME 타입과 SUBGROUP 타입을 찾아서 상태 설정
+        const myTarget = data.targets.find((t) => t.targetType === 'ME')
+        const subgroupTargets = data.targets.filter((t) => t.targetType === 'SUBGROUP')
+
+        setFavoriteStatus({
+          personal: myTarget?.favoriteState === 'FAVORITED',
+          subgroups: subgroupTargets.map((st) => ({
+            subgroupId: st.targetId || 0,
+            isFavorited: st.favoriteState === 'FAVORITED',
+          })),
+        })
+      })
+      .catch(() => {
+        // 에러 처리 (인증되지 않은 사용자 등)
+        setFavoriteStatus(null)
+      })
   }, [restaurantId])
 
   const [isReviewsLoading, setIsReviewsLoading] = React.useState(true)
@@ -282,12 +313,33 @@ export function RestaurantDetailPage() {
     return `${price.toLocaleString('ko-KR')}원`
   }
 
-  const handleSave = () => {
-    setIsSaved(!isSaved)
-  }
-
   const handleWriteReview = () => {
     navigate(`/restaurants/${restaurantId}/review`)
+  }
+
+  const handleFavoriteComplete = () => {
+    // 찜 상태 재조회
+    if (!restaurantId) return
+
+    getRestaurantFavoriteTargets(Number(restaurantId))
+      .then((response) => {
+        const data = response.data
+        // targets 배열에서 ME 타입과 SUBGROUP 타입을 찾아서 상태 설정
+        const myTarget = data.targets.find((t) => t.targetType === 'ME')
+        const subgroupTargets = data.targets.filter((t) => t.targetType === 'SUBGROUP')
+
+        setFavoriteStatus({
+          personal: myTarget?.favoriteState === 'FAVORITED',
+          subgroups: subgroupTargets.map((st) => ({
+            subgroupId: st.targetId || 0,
+            isFavorited: st.favoriteState === 'FAVORITED',
+          })),
+        })
+        toast.success('찜 목록이 업데이트되었습니다')
+      })
+      .catch(() => {
+        // 에러 처리
+      })
   }
 
   return (
@@ -305,12 +357,31 @@ export function RestaurantDetailPage() {
             <CarouselContent>
               {restaurant.images.map((image, idx) => (
                 <CarouselItem key={idx}>
-                  <div className="aspect-[4/3] bg-muted">
+                  <div className="aspect-[4/3] bg-muted relative">
                     <img
                       src={image}
                       alt={`${restaurant.name} ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
+                    {/* 찜 버튼 - 우측 상단 */}
+                    {idx === 0 && (
+                      <button
+                        onClick={() => setShowFavoriteSheet(true)}
+                        className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/50 transition-colors z-10"
+                        aria-label="찜하기"
+                      >
+                        <Heart
+                          className={cn(
+                            'w-5 h-5',
+                            favoriteStatus?.personal ||
+                              (favoriteStatus?.subgroups &&
+                                favoriteStatus.subgroups.some((sg) => sg.isFavorited))
+                              ? 'text-primary fill-primary'
+                              : 'text-foreground/80',
+                          )}
+                        />
+                      </button>
+                    )}
                   </div>
                 </CarouselItem>
               ))}
@@ -319,8 +390,25 @@ export function RestaurantDetailPage() {
             <CarouselNext className="right-2" />
           </Carousel>
         ) : (
-          <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center text-sm text-muted-foreground">
+          <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center text-sm text-muted-foreground relative">
             이미지가 없습니다
+            {/* 찜 버튼 - 이미지가 없을 때도 표시 */}
+            <button
+              onClick={() => setShowFavoriteSheet(true)}
+              className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/50 transition-colors z-10"
+              aria-label="찜하기"
+            >
+              <Heart
+                className={cn(
+                  'w-5 h-5',
+                  favoriteStatus?.personal ||
+                    (favoriteStatus?.subgroups &&
+                      favoriteStatus.subgroups.some((sg) => sg.isFavorited))
+                    ? 'text-primary fill-primary'
+                    : 'text-foreground/80',
+                )}
+              />
+            </button>
           </div>
         )}
       </div>
@@ -344,18 +432,6 @@ export function RestaurantDetailPage() {
                 </>
               )}
             </div>
-            {FEATURE_FLAGS.enableRestaurantFavorite && (
-              <Button
-                variant={isSaved ? 'default' : 'secondary'}
-                size="icon"
-                className="shrink-0 rounded-full border border-gray-300 shadow-md bg-white text-foreground hover:bg-white/90"
-                onClick={handleSave}
-                aria-pressed={isSaved}
-                aria-label="찜"
-              >
-                <Heart className={cn('h-5 w-5 text-primary', isSaved && 'fill-primary')} />
-              </Button>
-            )}
           </div>
 
           {/* Restaurant Feature - AI Highlighted */}
@@ -785,6 +861,16 @@ export function RestaurantDetailPage() {
           </Container>
         </TabsContent>
       </Tabs>
+
+      {/* 찜 선택 시트 */}
+      {restaurantId && restaurantData && (
+        <FavoriteSelectionSheet
+          open={showFavoriteSheet}
+          onOpenChange={setShowFavoriteSheet}
+          restaurantId={Number(restaurantId)}
+          onComplete={handleFavoriteComplete}
+        />
+      )}
     </div>
   )
 }

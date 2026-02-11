@@ -6,6 +6,8 @@ export type FavoriteRestaurantItem = {
   restaurantId: number
   name: string
   thumbnailUrl: string
+  category: string
+  address: string
   createdAt?: IsoDateTimeString
 }
 
@@ -28,4 +30,26 @@ export type RestaurantFavoriteStatus = {
     groupName: string
     favoriteState: FavoriteState
   }>
+}
+
+// 찜 타겟 타입
+export type FavoriteTarget = {
+  id: string // 'my' 또는 'subgroup-{subgroupId}'
+  type: 'personal' | 'group'
+  name: string
+  subgroupId?: number
+  groupName?: string
+  favoriteCount?: number
+  isFavorited?: boolean // 레스토랑 맥락에서만 사용
+}
+
+// 찜 탭 타입
+export type FavoriteTab = 'personal' | 'group'
+
+// 하위그룹 정보 (그룹 선택 시트용)
+export type SubgroupInfo = {
+  subgroupId: number
+  name: string
+  groupName: string
+  favoriteCount: number
 }

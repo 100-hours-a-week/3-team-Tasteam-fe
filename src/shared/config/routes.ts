@@ -20,6 +20,7 @@ export const ROUTES = {
   subgroupDetail: (id: string) => `/subgroups/${id}`,
   profile: '/profile',
   editProfile: '/my-page/edit',
+  favorites: '/favorites',
   myFavorites: '/my-page/favorites',
   myReviews: '/my-page/reviews',
   notifications: '/notifications',
