@@ -36,9 +36,19 @@ export type MainSectionDto = {
   items: MainSectionItemDto[]
 }
 
+export type SplashEventDto = {
+  id: number
+  title: string
+  content: string
+  thumbnailImageUrl: string | null
+  startAt: IsoDateTimeString
+  endAt: IsoDateTimeString
+}
+
 export type MainPageResponseDto = SuccessResponse<{
   banners: MainBannerGroupDto
   sections: MainSectionDto[]
+  splashEvent?: SplashEventDto
 }>
 
 export type MainPageData = {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Flame, Sparkles } from 'lucide-react'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { SplashPopup } from '@/widgets/splash-popup'
+import { HomeAdCarousel } from '@/widgets/home-ad-carousel'
 import { Container } from '@/shared/ui/container'
 import { LocationHeader } from '@/widgets/location-header'
 import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
@@ -10,17 +11,12 @@ import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/rest
 import { Input } from '@/shared/ui/input'
 import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main'
+import { getBanners } from '@/entities/banner'
+import type { BannerDto } from '@/entities/banner'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
 import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
 import { toMainPageData } from '@/entities/main'
-
-function shouldShowSplashPopup(): boolean {
-  const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
-  if (!dismissedDate) return true
-  const today = new Date().toDateString()
-  return dismissedDate !== today
-}
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -31,9 +27,10 @@ type HomePageProps = {
 export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
+  const [banners, setBanners] = useState<BannerDto[]>([])
   const [isMainLoading, setIsMainLoading] = useState(true)
   const [hasLoadedMain, setHasLoadedMain] = useState(false)
-  const [showSplashPopup, setShowSplashPopup] = useState(shouldShowSplashPopup)
+  const [showSplashPopup, setShowSplashPopup] = useState(false)
   const { location, status, requestCurrentLocation } = useAppLocation()
   const hasRefreshedRef = useRef(false)
   const latitude = location?.latitude ?? 37.5665
@@ -42,13 +39,35 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   useEffect(() => {
     queueMicrotask(() => setIsMainLoading(true))
     getMainPage({ latitude, longitude })
-      .then(setMainData)
+      .then((data) => {
+        setMainData(data)
+        const splashEvent = data.data?.splashEvent
+        if (splashEvent) {
+          const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
+          const today = new Date().toDateString()
+          const shouldShow = !dismissedDate || dismissedDate !== today
+          setShowSplashPopup(shouldShow)
+        }
+      })
       .catch(() => {})
       .finally(() => {
         setIsMainLoading(false)
         setHasLoadedMain(true)
       })
   }, [latitude, longitude])
+
+  useEffect(() => {
+    let cancelled = false
+    getBanners()
+      .then((response) => {
+        if (cancelled) return
+        setBanners(response.data?.banners ?? [])
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (hasRefreshedRef.current) return
@@ -175,16 +194,14 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
 
   return (
     <div className="pb-20">
-      <SplashPopup
-        isOpen={showSplashPopup}
-        onClose={() => setShowSplashPopup(false)}
-        image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
-        title="신규 가입 이벤트"
-        description="Tasteam과 함께 맛집을 찾아보세요! 첫 리뷰 작성 시 특별 쿠폰을 드립니다."
-        link={ROUTES.events}
-        linkText="이벤트 보러가기"
-        onLinkClick={() => navigate(ROUTES.events)}
-      />
+      {mainData?.data?.splashEvent && (
+        <SplashPopup
+          event={mainData.data.splashEvent}
+          isOpen={showSplashPopup}
+          onClose={() => setShowSplashPopup(false)}
+          onLinkClick={() => navigate(ROUTES.events)}
+        />
+      )}
 
       <LocationHeader
         district={status === 'loading' ? '현재 위치 확인 중...' : location?.district}
@@ -210,6 +227,21 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
           />
         </div>
       </Container>
+
+      {banners.length > 0 && (
+        <section className="mb-6">
+          <Container>
+            <HomeAdCarousel
+              banners={banners}
+              onBannerClick={(banner) => {
+                if (banner.deeplinkUrl) {
+                  navigate(banner.deeplinkUrl)
+                }
+              }}
+            />
+          </Container>
+        </section>
+      )}
 
       <section className="mb-8">
         <Container>

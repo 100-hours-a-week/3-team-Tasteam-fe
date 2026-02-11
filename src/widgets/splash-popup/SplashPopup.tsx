@@ -1,27 +1,15 @@
 import { X } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
+import type { SplashEventDto } from '@/entities/main'
 
 type SplashPopupProps = {
+  event: SplashEventDto
   isOpen: boolean
   onClose: () => void
-  image?: string
-  title?: string
-  description?: string
-  link?: string
-  linkText?: string
   onLinkClick?: () => void
 }
 
-export function SplashPopup({
-  isOpen,
-  onClose,
-  image,
-  title = '신규 이벤트',
-  description = 'Tasteam과 함께 맛집을 찾아보세요!',
-  link,
-  linkText = '자세히 보기',
-  onLinkClick,
-}: SplashPopupProps) {
+export function SplashPopup({ event, isOpen, onClose, onLinkClick }: SplashPopupProps) {
   if (!isOpen) return null
 
   const handleLinkClick = () => {
@@ -46,24 +34,26 @@ export function SplashPopup({
           <X className="w-5 h-5 text-white" />
         </button>
 
-        {image && (
+        {event.thumbnailImageUrl && (
           <div className="relative w-full aspect-[4/3] overflow-hidden">
-            <img src={image} alt={title} className="w-full h-full object-cover" />
+            <img
+              src={event.thumbnailImageUrl}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
           </div>
         )}
 
         <div className="p-6 space-y-4">
           <div className="space-y-2">
-            <h3 className="text-center text-lg font-semibold">{title}</h3>
-            <p className="text-center text-muted-foreground">{description}</p>
+            <h3 className="text-center text-lg font-semibold">{event.title}</h3>
+            <p className="text-center text-muted-foreground">{event.content}</p>
           </div>
 
           <div className="space-y-2">
-            {link && (
-              <Button onClick={handleLinkClick} className="w-full" size="lg">
-                {linkText}
-              </Button>
-            )}
+            <Button onClick={handleLinkClick} className="w-full" size="lg">
+              이벤트 보러가기
+            </Button>
             <Button onClick={onClose} variant="outline" className="w-full" size="lg">
               닫기
             </Button>
