@@ -46,5 +46,6 @@ export type UnreadNotificationCountResponseDto = {
 }
 
 export type PushNotificationTargetRequestDto = {
+  deviceId: string
   fcmToken: string
 }
