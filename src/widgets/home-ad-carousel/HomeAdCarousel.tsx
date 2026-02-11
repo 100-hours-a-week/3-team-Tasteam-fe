@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
+import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import type { BannerDto } from '@/entities/banner'
 
 type HomeAdCarouselProps = {
@@ -81,10 +82,11 @@ export function HomeAdCarousel({
               onClick={() => handleBannerClick(banner, index)}
               style={{ backgroundColor: banner.bgColor ?? undefined }}
             >
-              <img
+              <ImageWithFallback
                 src={banner.imageUrl}
                 alt={banner.title ?? `Banner ${index + 1}`}
                 className="w-full h-full object-cover"
+                disableInteraction
               />
             </div>
           ))}

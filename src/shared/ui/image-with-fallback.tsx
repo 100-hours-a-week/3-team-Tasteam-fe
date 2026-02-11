@@ -8,12 +8,24 @@ const ERROR_IMG_SRC =
 type ImageWithFallbackProps = ImgHTMLAttributes<HTMLImageElement> & {
   progressive?: boolean
   placeholderClassName?: string
+  disableInteraction?: boolean
 }
 
 export function ImageWithFallback(props: ImageWithFallbackProps) {
   const [failedSrc, setFailedSrc] = useState<string | undefined>(undefined)
   const [isLoaded, setIsLoaded] = useState(false)
-  const { src, alt, style, className, progressive = false, placeholderClassName, ...rest } = props
+  const {
+    src,
+    alt,
+    style,
+    className,
+    progressive = false,
+    placeholderClassName,
+    disableInteraction = false,
+    ...rest
+  } = props
+
+  const interactionClasses = disableInteraction ? 'pointer-events-none select-none' : ''
   const normalizedSrc = typeof src === 'string' ? src : undefined
   const didError = Boolean(normalizedSrc && failedSrc === normalizedSrc)
 
@@ -58,9 +70,11 @@ export function ImageWithFallback(props: ImageWithFallbackProps) {
         <img
           src={src}
           alt={alt}
+          draggable={!disableInteraction}
           className={cn(
             'w-full h-full object-cover transition-all duration-500',
             isLoaded ? 'opacity-100 blur-0 visible' : 'opacity-0 blur-sm invisible',
+            interactionClasses,
           )}
           onLoad={handleLoad}
           onError={handleError}
@@ -71,6 +85,14 @@ export function ImageWithFallback(props: ImageWithFallbackProps) {
   }
 
   return (
-    <img src={src} alt={alt} className={className} style={style} onError={handleError} {...rest} />
+    <img
+      src={src}
+      alt={alt}
+      draggable={!disableInteraction}
+      className={cn(className, interactionClasses)}
+      style={style}
+      onError={handleError}
+      {...rest}
+    />
   )
 }
