@@ -8,7 +8,7 @@ import { EmptyState } from '@/widgets/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { getNotices } from '@/entities/notice'
 import type { NoticeDto } from '@/entities/notice'
-import { formatDate } from '@/shared/lib/time'
+import { formatIsoTimestamp } from '@/shared/lib/time'
 
 type NoticesPageProps = {
   onBack?: () => void
@@ -19,6 +19,7 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
   const navigate = useNavigate()
   const [notices, setNotices] = useState<NoticeDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -29,6 +30,7 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
       })
       .catch(() => {
         if (cancelled) return
+        setHasError(true)
         setNotices([])
       })
       .finally(() => {
@@ -39,6 +41,22 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
       cancelled = true
     }
   }, [])
+
+  const handleRetry = () => {
+    setIsLoading(true)
+    setHasError(false)
+    getNotices()
+      .then((response) => {
+        setNotices(response.data?.notices ?? [])
+      })
+      .catch(() => {
+        setHasError(true)
+        setNotices([])
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
 
   const handleBack = () => {
     if (onBack) {
@@ -59,7 +77,15 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
       <TopAppBar title="공지사항" showBackButton onBack={handleBack} />
 
       <Container className="flex-1 py-4 overflow-auto">
-        {isLoading ? (
+        {hasError ? (
+          <EmptyState
+            icon={Bell}
+            title="공지사항을 불러올 수 없습니다"
+            description="네트워크 연결을 확인하고 다시 시도해주세요"
+            actionLabel="다시 시도"
+            onAction={handleRetry}
+          />
+        ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="p-4">
@@ -71,7 +97,7 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
         ) : notices.length === 0 ? (
           <EmptyState
             icon={Bell}
-            title="공지사항이 없습니다"
+            title="등록된 공지사항이 없습니다"
             description="새로운 공지사항이 등록되면 여기에 표시됩니다"
           />
         ) : (
@@ -90,7 +116,7 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
                   <div className="flex-1 min-w-0">
                     <h4 className="truncate text-sm font-medium">{notice.title}</h4>
                     <span className="text-xs text-muted-foreground">
-                      {formatDate(notice.createdAt)}
+                      {formatIsoTimestamp(notice.createdAt, { preset: 'dotDate' })}
                     </span>
                   </div>
 

@@ -9,7 +9,7 @@ import { EmptyState } from '@/widgets/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { getEvents } from '@/entities/event'
 import type { EventDto } from '@/entities/event'
-import { formatDate } from '@/shared/lib/time'
+import { formatIsoTimestamp } from '@/shared/lib/time'
 
 type EventsPageProps = {
   onBack?: () => void
@@ -20,6 +20,7 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
   const navigate = useNavigate()
   const [events, setEvents] = useState<EventDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -30,6 +31,7 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
       })
       .catch(() => {
         if (cancelled) return
+        setHasError(true)
         setEvents([])
       })
       .finally(() => {
@@ -40,6 +42,22 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
       cancelled = true
     }
   }, [])
+
+  const handleRetry = () => {
+    setIsLoading(true)
+    setHasError(false)
+    getEvents()
+      .then((response) => {
+        setEvents(response.data?.events ?? [])
+      })
+      .catch(() => {
+        setHasError(true)
+        setEvents([])
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
 
   const handleBack = () => {
     if (onBack) {
@@ -52,6 +70,8 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
   const handleEventClick = (id: number) => {
     if (onEventClick) {
       onEventClick(id)
+    } else {
+      navigate(`/events/${id}`)
     }
   }
 
@@ -83,7 +103,15 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
       <TopAppBar title="이벤트" showBackButton onBack={handleBack} />
 
       <Container className="flex-1 py-4 overflow-auto">
-        {isLoading ? (
+        {hasError ? (
+          <EmptyState
+            icon={Calendar}
+            title="이벤트를 불러올 수 없습니다"
+            description="네트워크 연결을 확인하고 다시 시도해주세요"
+            actionLabel="다시 시도"
+            onAction={handleRetry}
+          />
+        ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="overflow-hidden">
@@ -133,7 +161,8 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
                       {!event.thumbnailImageUrl && getStatusBadge(event.status)}
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {formatDate(event.startAt)} ~ {formatDate(event.endAt)}
+                      {formatIsoTimestamp(event.startAt, { preset: 'dotDate' })} ~{' '}
+                      {formatIsoTimestamp(event.endAt, { preset: 'dotDate' })}
                     </span>
                   </div>
 

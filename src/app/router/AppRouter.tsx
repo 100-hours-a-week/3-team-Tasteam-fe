@@ -79,6 +79,9 @@ const TodayLunchPage = lazy(() =>
 )
 const NoticesPage = lazy(() => import('@/pages/notices').then((m) => ({ default: m.NoticesPage })))
 const EventsPage = lazy(() => import('@/pages/events').then((m) => ({ default: m.EventsPage })))
+const EventDetailPage = lazy(() =>
+  import('@/pages/events').then((m) => ({ default: m.EventDetailPage })),
+)
 
 function ScrollToTop() {
   const location = useLocation()
@@ -293,6 +296,7 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
           <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
           <Route path="/notices" element={<NoticesPage onBack={() => navigate(-1)} />} />
           <Route path="/events" element={<EventsPage onBack={() => navigate(-1)} />} />
+          <Route path="/events/:id" element={<EventDetailPage onBack={() => navigate(-1)} />} />
 
           <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
           <Route

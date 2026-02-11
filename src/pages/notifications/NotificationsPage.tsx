@@ -6,6 +6,7 @@ import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { getNotifications } from '@/entities/notification'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
@@ -23,41 +24,6 @@ type NotificationsPageProps = {
   onBack?: () => void
 }
 
-const defaultNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'group_invite',
-    title: '그룹 초대',
-    message: '"맛집 탐험대" 그룹에 초대되었습니다',
-    timestamp: '5분 전',
-    isRead: false,
-  },
-  {
-    id: '2',
-    type: 'review_like',
-    title: '리뷰 좋아요',
-    message: '회원님의 "한옥마을 맛집" 리뷰에 좋아요 3개가 추가되었습니다',
-    timestamp: '1시간 전',
-    isRead: false,
-  },
-  {
-    id: '3',
-    type: 'group_activity',
-    title: '그룹 활동',
-    message: '"브런치 러버스" 그룹에 새로운 맛집이 추가되었습니다',
-    timestamp: '2시간 전',
-    isRead: true,
-  },
-  {
-    id: '4',
-    type: 'restaurant_recommendation',
-    title: '맛집 추천',
-    message: '회원님 근처의 새로운 맛집을 추천합니다',
-    timestamp: '1일 전',
-    isRead: true,
-  },
-]
-
 const mapNotificationType = (type: string): Notification['type'] => {
   const typeMap: Record<string, Notification['type']> = {
     CHAT: 'group_activity',
@@ -70,24 +36,73 @@ const mapNotificationType = (type: string): Notification['type'] => {
 export function NotificationsPage({ onNotificationClick, onBack }: NotificationsPageProps) {
   const notificationsEnabled = FEATURE_FLAGS.enableNotifications
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [hasError, setHasError] = useState(false)
+  const [isLoading, setIsLoading] = useState(notificationsEnabled)
 
   useEffect(() => {
     if (!notificationsEnabled) return
     getNotifications()
       .then((response) => {
         const apiData =
-          response.data?.map((item) => ({
+          response.data?.items?.map((item) => ({
             id: String(item.id),
             type: mapNotificationType(item.notificationType),
             title: item.title,
             message: item.body,
             timestamp: item.createdAt,
             isRead: !!item.readAt,
-          })) ?? defaultNotifications
+          })) ?? []
         setNotifications(apiData)
       })
-      .catch(() => setNotifications(defaultNotifications))
+      .catch((error) => {
+        const status = error?.response?.status
+        console.log('[알림] API 에러:', { status, error })
+        if (status === 401) {
+          console.log('[알림] 401 에러 - 알림 없음으로 처리')
+          setNotifications([])
+        } else {
+          console.log('[알림] 네트워크 에러 - 에러 상태 표시')
+          setHasError(true)
+          setNotifications([])
+        }
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
   }, [notificationsEnabled])
+
+  const handleRetry = () => {
+    setHasError(false)
+    setIsLoading(true)
+    getNotifications()
+      .then((response) => {
+        const apiData =
+          response.data?.items?.map((item) => ({
+            id: String(item.id),
+            type: mapNotificationType(item.notificationType),
+            title: item.title,
+            message: item.body,
+            timestamp: item.createdAt,
+            isRead: !!item.readAt,
+          })) ?? []
+        setNotifications(apiData)
+      })
+      .catch((error) => {
+        const status = error?.response?.status
+        console.log('[알림] API 에러:', { status, error })
+        if (status === 401) {
+          console.log('[알림] 401 에러 - 알림 없음으로 처리')
+          setNotifications([])
+        } else {
+          console.log('[알림] 네트워크 에러 - 에러 상태 표시')
+          setHasError(true)
+          setNotifications([])
+        }
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
@@ -140,7 +155,27 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
       <TopAppBar title="알림" showBackButton onBack={onBack} />
 
       <Container className="flex-1 py-6 overflow-auto">
-        {notifications.length > 0 ? (
+        {hasError ? (
+          <EmptyState
+            icon={Bell}
+            title="알림을 불러올 수 없습니다"
+            description="네트워크 연결을 확인하고 다시 시도해주세요"
+            actionLabel="다시 시도"
+            onAction={handleRetry}
+          />
+        ) : isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 py-3 px-4">
+                <Skeleton className="w-10 h-10 rounded-full" />
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : notifications.length > 0 ? (
           <>
             {unreadCount > 0 && (
               <div className="flex items-center justify-between mb-4">
