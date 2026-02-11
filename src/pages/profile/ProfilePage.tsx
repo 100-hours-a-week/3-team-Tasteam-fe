@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight, Heart, Bell, Settings, LogOut, User, Pencil } from 'lucide-react'
+import {
+  ChevronRight,
+  Heart,
+  Bell,
+  Settings,
+  LogOut,
+  User,
+  Pencil,
+  Gift,
+  FileText,
+} from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -33,6 +43,8 @@ type ProfilePageProps = {
   onNotificationSettings?: () => void
   onMyFavorites?: () => void
   onMyReviews?: () => void
+  onNotices?: () => void
+  onEvents?: () => void
 }
 
 export function ProfilePage({
@@ -43,6 +55,8 @@ export function ProfilePage({
   onNotificationSettings,
   onMyFavorites,
   onMyReviews,
+  onNotices,
+  onEvents,
 }: ProfilePageProps) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -95,8 +109,10 @@ export function ProfilePage({
   const isLoading = isAuthenticated && member === null && !profileError
 
   const menuItems = [
+    { label: '공지사항', icon: Bell, onClick: onNotices },
+    { label: '이벤트', icon: Gift, onClick: onEvents },
     { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites, requiresAuth: true },
-    { label: '내 리뷰', icon: Bell, onClick: onMyReviews, requiresAuth: true },
+    { label: '내 리뷰', icon: FileText, onClick: onMyReviews, requiresAuth: true },
     ...(FEATURE_FLAGS.enableNotifications
       ? [
           { label: '알림', icon: Bell, onClick: onNotifications, requiresAuth: true },
