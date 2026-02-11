@@ -1,4 +1,4 @@
-import { getToken } from 'firebase/messaging'
+import { getToken, onMessage } from 'firebase/messaging'
 import { FIREBASE_VAPID_KEY } from '@/shared/config/env'
 import { logger } from '@/shared/lib/logger'
 import { getOrCreateDeviceId } from '@/shared/lib/deviceId'
@@ -53,73 +53,138 @@ export const syncFcmToken = async () => {
   }
 
   syncInFlight = (async () => {
-    if (!canUseNotifications()) {
-      logger.debug('[fcm] Notification API unavailable')
-      return
-    }
-    if (!FIREBASE_VAPID_KEY) {
-      logger.debug('[fcm] Missing VAPID key')
-      return
-    }
-
-    if (Notification.permission === 'denied') {
-      logger.debug('[fcm] Notification permission denied')
-      return
-    }
-
-    if (Notification.permission === 'default') {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
-        logger.debug('[fcm] Notification permission not granted')
+    try {
+      if (!canUseNotifications()) {
+        logger.debug('[fcm] Notification API unavailable')
         return
       }
+      if (!FIREBASE_VAPID_KEY) {
+        logger.warn('[fcm] Missing VAPID key')
+        return
+      }
+
+      if (Notification.permission === 'denied') {
+        logger.debug('[fcm] Notification permission denied')
+        return
+      }
+
+      if (Notification.permission === 'default') {
+        try {
+          const permission = await Notification.requestPermission()
+          if (permission !== 'granted') {
+            logger.debug('[fcm] Notification permission not granted')
+            return
+          }
+        } catch (error) {
+          logger.error('[fcm] Failed to request notification permission', error)
+          return
+        }
+      }
+
+      let registration
+      try {
+        registration = await registerFirebaseMessagingServiceWorker()
+        if (!registration) {
+          logger.warn('[fcm] Service worker registration failed')
+          return
+        }
+      } catch (error) {
+        logger.error('[fcm] Service worker registration error', error)
+        return
+      }
+
+      let messaging
+      try {
+        messaging = await getFirebaseMessaging()
+        if (!messaging) {
+          logger.warn('[fcm] Messaging unsupported or not initialized')
+          return
+        }
+      } catch (error) {
+        logger.error('[fcm] Failed to initialize Firebase messaging', error)
+        return
+      }
+
+      let token
+      try {
+        token = await getToken(messaging, {
+          vapidKey: FIREBASE_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        })
+
+        if (!token) {
+          logger.warn('[fcm] Token not issued')
+          return
+        }
+      } catch (error) {
+        logger.error('[fcm] Failed to get FCM token', error)
+        return
+      }
+
+      const stored = getStoredToken()
+      if (stored === token) {
+        logger.debug('[fcm] Token unchanged, skip register')
+        setLastSync(Date.now())
+        return
+      }
+
+      const deviceId = getOrCreateDeviceId()
+      if (!deviceId) {
+        logger.warn('[fcm] Device id unavailable')
+        return
+      }
+
+      try {
+        await registerPushNotificationTarget({ deviceId, fcmToken: token })
+        setStoredToken(token)
+        setLastSync(Date.now())
+        logger.debug('[fcm] Token registered')
+      } catch (error) {
+        logger.error('[fcm] Failed to register token with server', error)
+        throw error
+      }
+    } catch (error) {
+      logger.error('[fcm] Unexpected error during token sync', error)
     }
-
-    const registration = await registerFirebaseMessagingServiceWorker()
-    if (!registration) {
-      logger.debug('[fcm] Service worker registration failed')
-      return
-    }
-
-    const messaging = await getFirebaseMessaging()
-    if (!messaging) {
-      logger.debug('[fcm] Messaging unsupported or not initialized')
-      return
-    }
-
-    const token = await getToken(messaging, {
-      vapidKey: FIREBASE_VAPID_KEY,
-      serviceWorkerRegistration: registration,
-    })
-
-    if (!token) {
-      logger.debug('[fcm] Token not issued')
-      return
-    }
-
-    const stored = getStoredToken()
-    if (stored === token) {
-      logger.debug('[fcm] Token unchanged, skip register')
-      setLastSync(Date.now())
-      return
-    }
-
-    const deviceId = getOrCreateDeviceId()
-    if (!deviceId) {
-      logger.debug('[fcm] Device id unavailable')
-      return
-    }
-
-    await registerPushNotificationTarget({ deviceId, fcmToken: token })
-    setStoredToken(token)
-    setLastSync(Date.now())
-    logger.debug('[fcm] Token registered')
   })()
 
   try {
     await syncInFlight
   } finally {
     syncInFlight = null
+  }
+}
+
+const setupForegroundMessageListener = async () => {
+  try {
+    const messaging = await getFirebaseMessaging()
+    if (!messaging) {
+      logger.debug('[fcm] Messaging unavailable for foreground listener')
+      return
+    }
+
+    onMessage(messaging, (payload) => {
+      try {
+        logger.debug('[fcm] Foreground message received', payload)
+
+        const title = payload.notification?.title || '알림'
+        const body = payload.notification?.body || ''
+
+        if (Notification.permission === 'granted') {
+          new Notification(title, {
+            body,
+            icon: '/icons/icon-192x192.png',
+            data: payload.data,
+          })
+        }
+      } catch (error) {
+        logger.error('[fcm] Failed to handle foreground message', error)
+      }
+    })
+
+    logger.debug('[fcm] Foreground message listener setup complete')
+  } catch (error) {
+    logger.error('[fcm] Failed to setup foreground message listener', error)
   }
 }
 
@@ -148,6 +213,7 @@ export const startFcmTokenSync = () => {
   const intervalId = window.setInterval(scheduleSync, FCM_SYNC_INTERVAL_MS)
 
   scheduleSync()
+  void setupForegroundMessageListener()
 
   return () => {
     window.removeEventListener('visibilitychange', onVisibilityChange)

@@ -9,6 +9,7 @@ import {
   FIREBASE_PROJECT_ID,
   FIREBASE_STORAGE_BUCKET,
 } from '@/shared/config/env'
+import { logger } from './logger'
 
 const firebaseConfig = {
   apiKey: FIREBASE_API_KEY,
@@ -31,32 +32,75 @@ const hasFirebaseConfig = () =>
   )
 
 export const initFirebaseApp = (): FirebaseApp | null => {
-  if (!hasFirebaseConfig()) return null
-  if (getApps().length > 0) return getApp()
-  return initializeApp(firebaseConfig)
+  try {
+    if (!hasFirebaseConfig()) {
+      logger.debug('[firebase] Config unavailable')
+      return null
+    }
+    if (getApps().length > 0) return getApp()
+    return initializeApp(firebaseConfig)
+  } catch (error) {
+    logger.error('[firebase] Failed to initialize Firebase app', error)
+    return null
+  }
 }
 
 export const getFirebaseMessaging = async (): Promise<Messaging | null> => {
-  if (!hasFirebaseConfig()) return null
-  if (!(await isSupported())) return null
-  const app = initFirebaseApp()
-  if (!app) return null
-  return getMessaging(app)
+  try {
+    if (!hasFirebaseConfig()) {
+      logger.debug('[firebase] Config unavailable for messaging')
+      return null
+    }
+
+    const supported = await isSupported()
+    if (!supported) {
+      logger.debug('[firebase] Messaging not supported in this environment')
+      return null
+    }
+
+    const app = initFirebaseApp()
+    if (!app) {
+      logger.warn('[firebase] Firebase app initialization failed')
+      return null
+    }
+
+    return getMessaging(app)
+  } catch (error) {
+    logger.error('[firebase] Failed to get Firebase messaging', error)
+    return null
+  }
 }
 
 export const registerFirebaseMessagingServiceWorker = async () => {
-  if (!('serviceWorker' in navigator)) return null
-  if (!hasFirebaseConfig()) return null
+  try {
+    if (!('serviceWorker' in navigator)) {
+      logger.debug('[firebase] Service Worker not supported')
+      return null
+    }
 
-  const params = new URLSearchParams({
-    apiKey: FIREBASE_API_KEY,
-    authDomain: FIREBASE_AUTH_DOMAIN,
-    projectId: FIREBASE_PROJECT_ID,
-    storageBucket: FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
-    appId: FIREBASE_APP_ID,
-    measurementId: FIREBASE_MEASUREMENT_ID ?? '',
-  })
+    if (!hasFirebaseConfig()) {
+      logger.debug('[firebase] Config unavailable for service worker')
+      return null
+    }
 
-  return navigator.serviceWorker.register(`/firebase-messaging-sw.js?${params.toString()}`)
+    const params = new URLSearchParams({
+      apiKey: FIREBASE_API_KEY,
+      authDomain: FIREBASE_AUTH_DOMAIN,
+      projectId: FIREBASE_PROJECT_ID,
+      storageBucket: FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
+      appId: FIREBASE_APP_ID,
+      measurementId: FIREBASE_MEASUREMENT_ID ?? '',
+    })
+
+    const registration = await navigator.serviceWorker.register(
+      `/firebase-messaging-sw.js?${params.toString()}`,
+    )
+
+    logger.debug('[firebase] Service Worker registered successfully')
+    return registration
+  } catch (error) {
+    logger.error('[firebase] Service Worker registration failed', error)
+    return null
+  }
 }
