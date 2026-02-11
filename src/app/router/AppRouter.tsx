@@ -280,7 +280,7 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             path="/my-page/reviews"
             element={
               <RequireAuth>
-                <MyReviewsPage onBack={() => navigate(-1)} onEditReview={() => {}} />
+                <MyReviewsPage onBack={() => navigate(-1)} />
               </RequireAuth>
             }
           />
