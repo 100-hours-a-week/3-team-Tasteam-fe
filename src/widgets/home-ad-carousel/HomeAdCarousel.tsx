@@ -16,8 +16,8 @@ export function HomeAdCarousel({
 }: HomeAdCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const resetAutoSlide = () => {
     if (timeoutRef.current) {

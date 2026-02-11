@@ -37,7 +37,7 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
   const notificationsEnabled = FEATURE_FLAGS.enableNotifications
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [hasError, setHasError] = useState(false)
-  const [isLoading, setIsLoading] = useState(notificationsEnabled)
+  const [isLoading, setIsLoading] = useState<boolean>(notificationsEnabled)
 
   useEffect(() => {
     if (!notificationsEnabled) return

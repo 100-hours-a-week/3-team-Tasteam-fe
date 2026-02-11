@@ -1,12 +1,7 @@
 import { request } from '@/shared/api/request'
 import type { OffsetPageResponse } from '@/shared/types/pagination'
 import type { SuccessResponse } from '@/shared/types/api'
-import type {
-  EventDto,
-  EventListResponseDto,
-  EventDetailResponseDto,
-  EventStatus,
-} from '../model/dto'
+import type { EventDto, EventListResponseDto, EventStatus } from '../model/dto'
 
 export type GetEventsParams = {
   page?: number

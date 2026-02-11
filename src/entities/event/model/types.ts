@@ -1,4 +1,4 @@
-export type EventStatus = 'ONGOING' | 'ENDED' | 'UPCOMING'
+import type { EventStatus } from './dto'
 
 export type Event = {
   id: number

@@ -1,7 +1,7 @@
 import { request } from '@/shared/api/request'
 import type { SuccessResponse } from '@/shared/types/api'
 import type { OffsetPageResponse } from '@/shared/types/pagination'
-import type { NoticeDto, NoticeListResponseDto, NoticeDetailResponseDto } from '../model/dto'
+import type { NoticeDto, NoticeListResponseDto } from '../model/dto'
 
 export type GetNoticesParams = {
   page?: number
