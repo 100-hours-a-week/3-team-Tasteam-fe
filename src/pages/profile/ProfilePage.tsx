@@ -208,7 +208,7 @@ export function ProfilePage({
         <Card className="divide-y">
           {menuItems.map((item, idx) => {
             const Icon = item.icon
-            const isDestructive = item.tone === 'destructive'
+            const isDestructive = (item as { tone?: string }).tone === 'destructive'
             const handleClick = () => {
               if (item.requiresAuth && !isAuthenticated) {
                 openLogin()
