@@ -39,25 +39,12 @@ jobs:
       #      - name: Run tests with coverage
       #        run: npm test -- --coverage
 
-      # 1주차 생략 SonarCloud 사용 불가
-      # SonarCloud 분석
-      #      - name: SonarCloud Scan
-      #        uses: SonarSource/sonarcloud-github-action@master
-      #        env:
-      #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      #        with:
-      #          args: >
-      #            -Dsonar.projectKey=your-project-key
-      #            -Dsonar.organization=your-organization
-      #            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-
       # CI 결과 알림 (PR은 항상)
       - name: Notify CI result to Discord
         if: always()
         run: |
           if [ "${{ job.status }}" = "success" ]; then
-            TITLE="프론트엔드 Develop, Main PR CI 성공 ✅"
+            TITLE="프론트엔드 Develop, Main PR CI 성공 💗"
             COLOR=65280
           else
             TITLE="프론트엔드 Develop, Main PR CI 실패 💔💀"
