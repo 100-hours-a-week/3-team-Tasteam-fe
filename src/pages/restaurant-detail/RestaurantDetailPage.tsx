@@ -367,7 +367,7 @@ export function RestaurantDetailPage() {
                     {idx === 0 && (
                       <button
                         onClick={() => setShowFavoriteSheet(true)}
-                        className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/50 transition-colors z-10"
+                        className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
                         aria-label="찜하기"
                       >
                         <Heart
@@ -395,7 +395,7 @@ export function RestaurantDetailPage() {
             {/* 찜 버튼 - 이미지가 없을 때도 표시 */}
             <button
               onClick={() => setShowFavoriteSheet(true)}
-              className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/50 transition-colors z-10"
+              className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
               aria-label="찜하기"
             >
               <Heart
