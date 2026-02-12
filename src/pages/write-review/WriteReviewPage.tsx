@@ -12,6 +12,7 @@ import { cn } from '@/shared/lib/utils'
 import { getMyGroupSummaries } from '@/entities/member'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
 import { GroupSubgroupLabel } from '@/shared/ui/group-subgroup-label'
+import { ImagePreviewDialog } from '@/shared/ui/image-preview-dialog'
 import type { ReviewKeywordItemDto } from '@/entities/review'
 
 /** 드롭다운용 그룹/하위그룹 옵션 (평탄화) */
@@ -55,6 +56,7 @@ export function WriteReviewPage() {
   const [keywords, setKeywords] = useState<ReviewKeywordItemDto[]>([])
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   // Drag to scroll logic
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -336,7 +338,8 @@ export function WriteReviewPage() {
                     src={img.previewUrl}
                     alt={`Selected ${idx}`}
                     draggable={false}
-                    className="w-full h-full object-cover rounded-xl border border-border"
+                    className="w-full h-full object-cover rounded-xl border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setPreviewImage(img.previewUrl)}
                   />
                   <button
                     onClick={() => removeImage(idx)}
@@ -445,6 +448,13 @@ export function WriteReviewPage() {
         open={uploadErrors.length > 0}
         onClose={clearErrors}
         errors={uploadErrors}
+      />
+
+      <ImagePreviewDialog
+        open={previewImage !== null}
+        onClose={() => setPreviewImage(null)}
+        imageUrl={previewImage || ''}
+        alt="리뷰 이미지 미리보기"
       />
 
       <style>{`
