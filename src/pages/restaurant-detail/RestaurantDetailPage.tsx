@@ -61,7 +61,6 @@ export function RestaurantDetailPage() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const { summaries } = useMemberGroups()
-  const [isSaved, setIsSaved] = React.useState(false)
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const [showGroupJoinModal, setShowGroupJoinModal] = React.useState(false)
   const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
