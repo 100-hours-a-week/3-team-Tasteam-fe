@@ -34,6 +34,17 @@ import { FavoriteSelectionSheet } from '@/features/favorites'
 import { toast } from 'sonner'
 import type { ReviewListItemDto } from '@/entities/review'
 import type { MenuCategoryDto } from '@/entities/restaurant'
+import { useAuth } from '@/entities/user'
+import { useMemberGroups } from '@/entities/member'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui/alert-dialog'
 
 export function RestaurantDetailPage() {
   type BusinessHoursWeekItem = {
@@ -48,6 +59,10 @@ export function RestaurantDetailPage() {
 
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+  const { summaries } = useMemberGroups()
+  const [showLoginModal, setShowLoginModal] = React.useState(false)
+  const [showGroupJoinModal, setShowGroupJoinModal] = React.useState(false)
   const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
   const [favoriteStatus, setFavoriteStatus] = React.useState<{
     personal: boolean
@@ -79,9 +94,10 @@ export function RestaurantDetailPage() {
       .then((res) => setRestaurantData(res.data))
       .catch(() => {
         setRestaurantData(null)
+        navigate('/404', { replace: true })
       })
       .finally(() => setIsRestaurantLoading(false))
-  }, [restaurantId])
+  }, [restaurantId, navigate])
 
   // 찜 상태 조회
   React.useEffect(() => {
@@ -314,6 +330,16 @@ export function RestaurantDetailPage() {
   }
 
   const handleWriteReview = () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
+    }
+
+    if (summaries.length === 0) {
+      setShowGroupJoinModal(true)
+      return
+    }
+
     navigate(`/restaurants/${restaurantId}/review`)
   }
 
@@ -861,6 +887,32 @@ export function RestaurantDetailPage() {
           </Container>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>로그인이 필요합니다</AlertDialogTitle>
+            <AlertDialogDescription>리뷰를 작성하려면 로그인이 필요합니다.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowLoginModal(false)}>확인</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showGroupJoinModal} onOpenChange={setShowGroupJoinModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>그룹 가입이 필요합니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              리뷰를 작성하려면 그룹에 가입해야 합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowGroupJoinModal(false)}>확인</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 찜 선택 시트 */}
       {restaurantId && restaurantData && (

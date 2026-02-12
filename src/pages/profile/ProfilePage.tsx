@@ -1,14 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  ChevronRight,
-  Bell,
-  Settings,
-  LogOut,
-  User,
-  Pencil,
-  Gift,
-  FileText,
-} from 'lucide-react'
+import { ChevronRight, Bell, Settings, LogOut, User, Pencil, Gift, FileText } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { TopAppBar } from '@/widgets/top-app-bar'

@@ -22,7 +22,9 @@ export function FavoriteRestaurantCard({
       className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow py-0"
       onClick={onClick}
     >
-      <CardContent className={showRemoveButton ? 'relative px-3 py-2.5 pr-12' : 'relative px-3 py-2.5'}>
+      <CardContent
+        className={showRemoveButton ? 'relative px-3 py-2.5 pr-12' : 'relative px-3 py-2.5'}
+      >
         <div className="flex gap-3">
           {/* Image */}
           <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">

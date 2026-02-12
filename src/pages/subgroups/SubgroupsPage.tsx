@@ -149,6 +149,7 @@ export function SubgroupsPage() {
           setReviews([])
           setMembers([])
           setError('하위 그룹 정보를 불러오지 못했습니다')
+          navigate('/404', { replace: true })
         }
       } finally {
         if (!cancelled) {
@@ -160,7 +161,7 @@ export function SubgroupsPage() {
     return () => {
       cancelled = true
     }
-  }, [subgroupId, summaries])
+  }, [subgroupId, summaries, navigate])
 
   useEffect(() => {
     if (!subgroup?.groupId || !isLoaded) return
@@ -462,7 +463,10 @@ export function SubgroupsPage() {
       </Container>
 
       {/* 탭: 찜 / 리뷰 */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'favorites' | 'reviews')}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as 'favorites' | 'reviews')}
+      >
         <Container className="pt-4 pb-3">
           <TabsList className="w-full grid grid-cols-2 rounded-2xl bg-muted/40 p-1.5 h-12 transition-colors items-center">
             <TabsTrigger
@@ -501,9 +505,7 @@ export function SubgroupsPage() {
                 />
               ))
             ) : (
-              <div className="text-center py-12 text-muted-foreground">
-                찜한 맛집이 없습니다.
-              </div>
+              <div className="text-center py-12 text-muted-foreground">찜한 맛집이 없습니다.</div>
             )}
           </Container>
         </TabsContent>

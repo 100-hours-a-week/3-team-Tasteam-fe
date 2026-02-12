@@ -2,7 +2,13 @@ import { request } from '@/shared/api/request'
 import { buildQuery } from '@/shared/api/query'
 import type { SearchResponse, RecentSearchesResponse } from '../model/types'
 
-export const searchAll = (params: { keyword: string; cursor?: string; size?: number }) =>
+export const searchAll = (params: {
+  keyword: string
+  cursor?: string
+  size?: number
+  distance?: number
+  priceRange?: string
+}) =>
   request<SearchResponse>({
     method: 'POST',
     url: `/api/v1/search${buildQuery(params)}`,
