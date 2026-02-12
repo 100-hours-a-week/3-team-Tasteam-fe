@@ -143,6 +143,16 @@ export function WriteReviewPage() {
 
   const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
+      const fileCount = e.target.files.length
+      const currentCount = selectedImages.length
+      const remaining = 5 - currentCount
+
+      if (fileCount + currentCount > 5) {
+        toast.error(
+          `이미지는 최대 5장까지 선택할 수 있습니다 (현재 ${currentCount}장, ${remaining}장 추가 가능)`,
+        )
+      }
+
       addFiles(e.target.files)
     }
     e.target.value = ''
