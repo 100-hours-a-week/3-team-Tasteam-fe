@@ -255,8 +255,6 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
                 onEditProfile={() => navigate('/my-page/edit')}
                 onSettingsClick={() => navigate('/settings')}
                 onNotifications={() => navigate('/notifications')}
-                onNotificationSettings={() => navigate('/notifications/settings')}
-                onMyFavorites={() => navigate('/my-page/favorites')}
                 onMyReviews={() => navigate('/my-page/reviews')}
                 onNotices={() => navigate('/notices')}
                 onEvents={() => navigate('/events')}

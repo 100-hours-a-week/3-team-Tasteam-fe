@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   ChevronRight,
-  Heart,
   Bell,
   Settings,
   LogOut,
@@ -40,8 +39,6 @@ type ProfilePageProps = {
   onLogout?: () => void
   onEditProfile?: () => void
   onNotifications?: () => void
-  onNotificationSettings?: () => void
-  onMyFavorites?: () => void
   onMyReviews?: () => void
   onNotices?: () => void
   onEvents?: () => void
@@ -52,8 +49,6 @@ export function ProfilePage({
   onLogout,
   onEditProfile,
   onNotifications,
-  onNotificationSettings,
-  onMyFavorites,
   onMyReviews,
   onNotices,
   onEvents,
@@ -111,35 +106,30 @@ export function ProfilePage({
   const menuItems = [
     { label: '공지사항', icon: Bell, onClick: onNotices },
     { label: '이벤트', icon: Gift, onClick: onEvents },
-    { label: '저장한 맛집', icon: Heart, onClick: onMyFavorites, requiresAuth: true },
     { label: '내 리뷰', icon: FileText, onClick: onMyReviews, requiresAuth: true },
     ...(FEATURE_FLAGS.enableNotifications
-      ? [
-          { label: '알림', icon: Bell, onClick: onNotifications, requiresAuth: true },
-          {
-            label: '알림 설정',
-            icon: Settings,
-            onClick: onNotificationSettings,
-            requiresAuth: true,
-          },
-        ]
+      ? [{ label: '알림', icon: Bell, onClick: onNotifications, requiresAuth: true }]
       : []),
     { label: '설정', icon: Settings, onClick: onSettingsClick },
-    ...(isAuthenticated
-      ? [
-          {
-            label: '로그아웃',
-            icon: LogOut,
-            onClick: () => setLogoutDialogOpen(true),
-            tone: 'destructive' as const,
-          },
-        ]
-      : []),
   ]
 
   return (
     <div className="pb-20 min-h-screen bg-background">
-      <TopAppBar title="프로필" />
+      <TopAppBar
+        title="프로필"
+        actions={
+          isAuthenticated ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLogoutDialogOpen(true)}
+              aria-label="로그아웃"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          ) : undefined
+        }
+      />
 
       <Container className="pt-6 pb-6">
         <div className="p-6 h-[200px] flex items-center justify-center relative">
@@ -161,17 +151,6 @@ export function ProfilePage({
               </div>
             ) : member ? (
               <>
-                {onEditProfile && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={onEditProfile}
-                    className="absolute right-4 top-4 rounded-md border-muted-foreground/60 shadow-none"
-                    aria-label="프로필 수정"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                )}
                 <Avatar className="w-24 h-24 ring-1 ring-muted-foreground/40">
                   {member.profileImageUrl ? (
                     <AvatarImage src={member.profileImageUrl} alt={member.nickname} />
@@ -182,7 +161,20 @@ export function ProfilePage({
                   )}
                 </Avatar>
                 <div className="flex flex-col items-center gap-2 w-full">
-                  <h2 className="text-xl font-semibold mb-2.5">{member.nickname} 님</h2>
+                  <div className="w-full flex justify-center items-center gap-2 mb-2.5">
+                    <h2 className="text-xl font-semibold text-center">{member.nickname} 님</h2>
+                    {onEditProfile && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={onEditProfile}
+                        className="h-8 w-8 shrink-0 rounded-md border-muted-foreground/60 shadow-none"
+                        aria-label="프로필 수정"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground text-center max-w-xs">
                     {member.introduction?.trim() || '자기소개를 입력해주세요.'}
                   </p>

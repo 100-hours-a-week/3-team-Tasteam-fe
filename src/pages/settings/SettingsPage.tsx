@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, MapPin, Moon, Globe, Shield, HelpCircle, Info } from 'lucide-react'
+import { ChevronRight, MapPin, Moon, Globe, Shield, HelpCircle, Info, Bell } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { Card } from '@/shared/ui/card'
@@ -8,6 +8,7 @@ import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { ROUTES } from '@/shared/config/routes'
 import { deleteMe } from '@/entities/member'
 import { useAuth } from '@/entities/user'
 import { useNavigate } from 'react-router-dom'
@@ -52,6 +53,25 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
               현재 일부 설정 기능은 준비 중이라 변경할 수 없습니다.
             </p>
           </Card>
+        )}
+
+        {FEATURE_FLAGS.enableNotifications && (
+          <section className="space-y-3">
+            <h2 className="px-1 font-semibold">알림</h2>
+            <Card>
+              <button
+                type="button"
+                className="w-full p-4 flex items-center justify-between gap-3 transition-colors hover:bg-accent"
+                onClick={() => navigate(ROUTES.notificationSettings)}
+              >
+                <div className="flex items-center gap-3">
+                  <Bell className="h-5 w-5 text-muted-foreground" />
+                  <span>알림 설정</span>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+            </Card>
+          </section>
         )}
 
         <section className="space-y-3">
