@@ -140,6 +140,7 @@ export function SubgroupsPage() {
           setReviews([])
           setMembers([])
           setError('하위 그룹 정보를 불러오지 못했습니다')
+          navigate('/404', { replace: true })
         }
       } finally {
         if (!cancelled) {
@@ -151,7 +152,7 @@ export function SubgroupsPage() {
     return () => {
       cancelled = true
     }
-  }, [subgroupId, summaries])
+  }, [subgroupId, summaries, navigate])
 
   useEffect(() => {
     if (!subgroup?.groupId || !isLoaded) return

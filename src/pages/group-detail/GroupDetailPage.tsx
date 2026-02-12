@@ -206,6 +206,7 @@ export function GroupDetailPage() {
           setRestaurants([])
           setEmailDomain(null)
           setIsGroupLoaded(false)
+          navigate('/404', { replace: true })
         }
       } finally {
         if (!cancelled) {
@@ -217,7 +218,7 @@ export function GroupDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [groupId])
+  }, [groupId, navigate])
 
   useEffect(() => {
     if (!isValidId(groupId)) return
