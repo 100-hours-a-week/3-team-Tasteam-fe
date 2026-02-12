@@ -1,7 +1,7 @@
-import { Home, Search, Users, User } from 'lucide-react'
+import { Home, Search, Heart, Users, User } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 
-export type TabId = 'home' | 'search' | 'groups' | 'profile'
+export type TabId = 'home' | 'search' | 'favorites' | 'groups' | 'profile'
 
 type BottomTabBarProps = {
   currentTab: TabId
@@ -9,9 +9,10 @@ type BottomTabBarProps = {
 }
 
 const tabs = [
-  { id: 'home' as const, icon: Home, label: '홈' },
   { id: 'search' as const, icon: Search, label: '검색' },
   { id: 'groups' as const, icon: Users, label: '그룹' },
+  { id: 'home' as const, icon: Home, label: '홈' },
+  { id: 'favorites' as const, icon: Heart, label: '찜' },
   { id: 'profile' as const, icon: User, label: '프로필' },
 ]
 

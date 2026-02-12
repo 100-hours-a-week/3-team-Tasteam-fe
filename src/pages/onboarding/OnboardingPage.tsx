@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, MapPin, Search, ShieldCheck, Soup, Users } from 'lucide-react'
 import { ROUTES } from '@/shared/config/routes'
+import { TopAppBar } from '@/widgets/top-app-bar'
 import { OnboardingProgressDots, OnboardingStepPanel } from '@/features/groups'
 import { useAppLocation } from '@/entities/location'
 import { searchAll } from '@/entities/search'
@@ -79,6 +81,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 ]
 
 export function OnboardingPage({ onComplete }: OnboardingPageProps) {
+  const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(0)
   const [groupQuery, setGroupQuery] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
@@ -195,6 +198,14 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
     setTimeout(() => setIsTransitioning(false), 500)
   }
 
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1)
+    } else {
+      navigate(-1)
+    }
+  }
+
   const toggleGroupSelection = (groupId: string) => {
     setSelectedGroupId((prev) => (prev === groupId ? null : groupId))
   }
@@ -209,6 +220,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <TopAppBar showBackButton onBack={handleBack} />
       <Progress
         className="h-1 rounded-none"
         value={((currentStep + 1) / ONBOARDING_STEPS.length) * 100}

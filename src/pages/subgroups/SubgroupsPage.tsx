@@ -9,6 +9,7 @@ import { Card } from '@/shared/ui/card'
 import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 // import { RestaurantCard } from '@/entities/restaurant'
 import { DetailReviewCard } from '@/entities/review'
 import {
@@ -41,6 +42,9 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { ROUTES } from '@/shared/config/routes'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { FavoriteRestaurantCard } from '@/pages/favorites/components/FavoriteRestaurantCard'
+import { getSubgroupFavoriteRestaurants } from '@/entities/favorite'
+import type { FavoriteRestaurantItem } from '@/entities/favorite'
 import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup'
 import type { ReviewListItemDto } from '@/entities/review'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
@@ -60,6 +64,10 @@ export function SubgroupsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLeaving, setIsLeaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<'favorites' | 'reviews'>('favorites')
+  const [favorites, setFavorites] = useState<FavoriteRestaurantItem[]>([])
+  const [isFavoritesLoading, setIsFavoritesLoading] = useState(false)
+  const [favoritesError, setFavoritesError] = useState<string | null>(null)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = parseNumberParam(id)
@@ -133,6 +141,7 @@ export function SubgroupsPage() {
             setReviews([])
           }
         }
+        // 찜 목록은 탭이 활성화될 때 로드
       } catch {
         if (!cancelled) {
           setSubgroup(null)
@@ -244,6 +253,31 @@ export function SubgroupsPage() {
       navigate(ROUTES.groupDetail(String(subgroup.groupId)))
     }
   }
+
+  // 하위 그룹 찜 목록 조회
+  useEffect(() => {
+    if (activeTab !== 'favorites' || !isValidId(subgroupId)) return
+
+    const loadFavorites = async () => {
+      setIsFavoritesLoading(true)
+      setFavoritesError(null)
+      try {
+        const response = await getSubgroupFavoriteRestaurants(subgroupId, {
+          cursor: undefined,
+        })
+        const data = (response as any).data || response
+        setFavorites(data.items || [])
+      } catch (err) {
+        console.error('하위그룹 찜 목록 조회 실패:', err)
+        setFavoritesError('찜 목록을 불러오는데 실패했습니다')
+        setFavorites([])
+      } finally {
+        setIsFavoritesLoading(false)
+      }
+    }
+
+    loadFavorites()
+  }, [activeTab, subgroupId])
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -428,26 +462,78 @@ export function SubgroupsPage() {
         </Card>
       </Container>
 
-      {/* 리뷰 목록 */}
-      <Container className="mt-4 space-y-4">
-        <div className="space-y-3">
-          {isSubgroupLoading ? (
-            <>
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </>
-          ) : error ? (
-            <div className="text-center py-12 text-muted-foreground">{error}</div>
-          ) : reviews.length > 0 ? (
-            reviews.map((review) => (
-              <DetailReviewCard key={review.id} variant="group" review={review} />
-            ))
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">등록된 리뷰가 없습니다.</div>
-          )}
-        </div>
-      </Container>
+      {/* 탭: 찜 / 리뷰 */}
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as 'favorites' | 'reviews')}
+      >
+        <Container className="pt-4 pb-3">
+          <TabsList className="w-full grid grid-cols-2 rounded-2xl bg-muted/40 p-1.5 h-12 transition-colors items-center">
+            <TabsTrigger
+              value="favorites"
+              className="h-full flex items-center justify-center text-base leading-none rounded-xl transition-all duration-200 ease-out data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground hover:bg-muted/60 hover:text-foreground"
+            >
+              찜
+            </TabsTrigger>
+            <TabsTrigger
+              value="reviews"
+              className="h-full flex items-center justify-center text-base leading-none rounded-xl transition-all duration-200 ease-out data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground hover:bg-muted/60 hover:text-foreground"
+            >
+              리뷰
+            </TabsTrigger>
+          </TabsList>
+        </Container>
+
+        <TabsContent value="favorites" className="mt-4">
+          <Container className="space-y-4">
+            {isFavoritesLoading ? (
+              <>
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </>
+            ) : favoritesError ? (
+              <div className="text-center py-12 text-muted-foreground">{favoritesError}</div>
+            ) : favorites.length > 0 ? (
+              favorites.map((favorite) => (
+                <FavoriteRestaurantCard
+                  key={favorite.restaurantId}
+                  restaurant={favorite}
+                  onRemove={() => {}}
+                  onClick={() => navigate(ROUTES.restaurantDetail(String(favorite.restaurantId)))}
+                  showRemoveButton={false}
+                />
+              ))
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">찜한 맛집이 없습니다.</div>
+            )}
+          </Container>
+        </TabsContent>
+
+        <TabsContent value="reviews" className="mt-4">
+          <Container className="space-y-4">
+            <div className="space-y-3">
+              {isSubgroupLoading ? (
+                <>
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </>
+              ) : error ? (
+                <div className="text-center py-12 text-muted-foreground">{error}</div>
+              ) : reviews.length > 0 ? (
+                reviews.map((review) => (
+                  <DetailReviewCard key={review.id} variant="group" review={review} />
+                ))
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  등록된 리뷰가 없습니다.
+                </div>
+              )}
+            </div>
+          </Container>
+        </TabsContent>
+      </Tabs>
 
       {FEATURE_FLAGS.enableChat && (
         <Button

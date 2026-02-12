@@ -40,6 +40,9 @@ const ProfilePage = lazy(() => import('@/pages/profile').then((m) => ({ default:
 const EditProfilePage = lazy(() =>
   import('@/pages/edit-profile').then((m) => ({ default: m.EditProfilePage })),
 )
+const FavoritesPage = lazy(() =>
+  import('@/pages/favorites').then((m) => ({ default: m.FavoritesPage })),
+)
 const MyFavoritesPage = lazy(() =>
   import('@/pages/my-favorites').then((m) => ({ default: m.MyFavoritesPage })),
 )
@@ -152,6 +155,15 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
           />
 
           <Route
+            path="/favorites"
+            element={
+              <RequireAuth>
+                <FavoritesPage onRestaurantClick={(id) => navigate(`/restaurants/${id}`)} />
+              </RequireAuth>
+            }
+          />
+
+          <Route
             path="/location-select"
             element={
               <LocationSelectPage
@@ -243,8 +255,6 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
                 onEditProfile={() => navigate('/my-page/edit')}
                 onSettingsClick={() => navigate('/settings')}
                 onNotifications={() => navigate('/notifications')}
-                onNotificationSettings={() => navigate('/notifications/settings')}
-                onMyFavorites={() => navigate('/my-page/favorites')}
                 onMyReviews={() => navigate('/my-page/reviews')}
                 onNotices={() => navigate('/notices')}
                 onEvents={() => navigate('/events')}
