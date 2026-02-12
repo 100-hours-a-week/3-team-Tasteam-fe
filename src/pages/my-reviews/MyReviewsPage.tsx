@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { FileText, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { FileText, MoreVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { Button } from '@/shared/ui/button'
 import {
@@ -21,8 +21,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
-import { getMyReviews } from '@/entities/member/api/memberApi'
-import { SimpleReviewCard } from '@/entities/review/ui'
+import { getMyReviews } from '@/entities/member'
+import { deleteReview } from '@/entities/review'
+import { SimpleReviewCard } from '@/entities/review'
 
 type Review = {
   id: string
@@ -34,12 +35,11 @@ type Review = {
 }
 
 type MyReviewsPageProps = {
-  onEditReview?: (id: string) => void
   onRestaurantClick?: (name: string) => void
   onBack?: () => void
 }
 
-export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyReviewsPageProps) {
+export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
@@ -68,10 +68,16 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
       .catch(() => setReviews([]))
   }, [])
 
-  const handleDelete = (id: string) => {
-    setReviews((prev) => prev.filter((r) => r.id !== id))
-    toast.success('리뷰가 삭제되었습니다')
-    setDeleteTargetId(null)
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteReview(Number(id))
+      setReviews((prev) => prev.filter((r) => r.id !== id))
+      toast.success('리뷰가 삭제되었습니다')
+    } catch {
+      toast.error('리뷰 삭제에 실패했습니다')
+    } finally {
+      setDeleteTargetId(null)
+    }
   }
 
   return (
@@ -105,15 +111,12 @@ export function MyReviewsPage({ onEditReview, onRestaurantClick, onBack }: MyRev
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEditReview?.(review.id)}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        수정
-                      </DropdownMenuItem>
                       <DropdownMenuItem
-                        className="text-destructive"
+                        variant="destructive"
+                        className="gap-1.5"
                         onClick={() => setDeleteTargetId(review.id)}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                         삭제
                       </DropdownMenuItem>
                     </DropdownMenuContent>

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { ChevronLeft, Sparkles } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
-import { getMainPage } from '@/entities/main/api/mainApi'
+import { getMainPage } from '@/entities/main'
 import { useAppLocation } from '@/entities/location'
-import type { MainSectionItemDto } from '@/entities/main/model/types'
-import { toAiRecommendData } from '@/entities/main/model/mapper'
+import type { MainSectionItemDto } from '@/entities/main'
+import { toAiRecommendData } from '@/entities/main'
 
 type TodayLunchPageProps = {
   onBack?: () => void

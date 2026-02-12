@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ChevronLeft, MapPin, Navigation, Search } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { useAppLocation } from '@/entities/location'
 
 type LocationSelectPageProps = {

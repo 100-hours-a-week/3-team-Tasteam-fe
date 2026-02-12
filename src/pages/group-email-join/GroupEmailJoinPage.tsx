@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { GroupEmailJoinGroupInfo, GroupEmailVerificationForm } from '@/features/groups'
-import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member/api/memberApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
-import { getGroup } from '@/entities/group/api/groupApi'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { sendGroupEmailVerification, verifyGroupEmailCode } from '@/entities/member'
+import { useMemberGroups } from '@/entities/member'
+import { useGroupPreview } from '@/entities/group'
+import { useAuth } from '@/entities/user'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { extractResponseData } from '@/shared/lib/apiResponse'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 type GroupEmailJoinPageProps = {
   onBack?: () => void
@@ -16,17 +19,11 @@ type GroupEmailJoinPageProps = {
 
 type HelperStatus = 'idle' | 'sent' | 'success' | 'error' | 'expired'
 
-type GroupInfo = {
-  id: number
-  name: string
-  imageUrl?: string
-}
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) {
   const { id } = useParams()
-  const groupId = id ? Number(id) : null
+  const groupId = parseNumberParam(id)
   const { openLogin } = useAuth()
   const { refresh } = useMemberGroups()
   const [email, setEmail] = useState('')
@@ -41,47 +38,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
 
   const isEmailValid = useMemo(() => EMAIL_REGEX.test(email.trim()), [email])
   const showEmailError = email.trim().length > 0 && !isEmailValid
-  const [groupInfo, setGroupInfo] = useState<GroupInfo>({
-    id: 0,
-    name: '그룹 정보를 불러오는 중...',
-    imageUrl: undefined,
-  })
-  const [isGroupLoading, setIsGroupLoading] = useState(false)
-  const [groupError, setGroupError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!groupId || Number.isNaN(groupId)) return
-    let cancelled = false
-    const fetchGroup = async () => {
-      setIsGroupLoading(true)
-      setGroupError(null)
-      try {
-        const data = await getGroup(groupId)
-        if (cancelled) return
-        setGroupInfo({
-          id: data.groupId,
-          name: data.name,
-          imageUrl: data.logoImageUrl ?? data.logoImage?.url ?? undefined,
-        })
-      } catch {
-        if (cancelled) return
-        setGroupError('그룹 정보를 불러오지 못했습니다.')
-        setGroupInfo({
-          id: groupId,
-          name: '그룹 정보를 불러오지 못했습니다.',
-          imageUrl: undefined,
-        })
-      } finally {
-        if (!cancelled) {
-          setIsGroupLoading(false)
-        }
-      }
-    }
-    fetchGroup()
-    return () => {
-      cancelled = true
-    }
-  }, [groupId])
+  const { groupInfo, isLoading: isGroupLoading, error: groupError } = useGroupPreview(groupId)
 
   useEffect(() => {
     if (!hasRequestedCode || timeLeft <= 0 || helperStatus === 'success') return
@@ -110,7 +67,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
   }
 
   const handleSend = () => {
-    if (!groupId || Number.isNaN(groupId) || isGroupLoading || groupError) {
+    if (!isValidId(groupId) || isGroupLoading || groupError) {
       setHelperStatus('error')
       setHelperText('그룹 정보를 불러온 뒤 다시 시도해주세요.')
       return
@@ -133,9 +90,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
     setHelperText('')
     sendGroupEmailVerification(groupId, { email: normalizedEmail })
       .then((response) => {
-        const payload =
-          (response as { data?: { createdAt?: string; expiresAt?: string } })?.data ??
-          (response as { data?: { data?: { createdAt?: string; expiresAt?: string } } })?.data?.data
+        const payload = extractResponseData<{ createdAt?: string; expiresAt?: string }>(response)
         const expiresAt = payload?.expiresAt
         const timeLeftSeconds = expiresAt
           ? Math.max(Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000), 0)
@@ -148,7 +103,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         setCode('')
       })
       .catch((error) => {
-        const code = error?.response?.data?.code
+        const code = getApiErrorCode(error)
         if (code === 'EMAIL_ALREADY_EXISTS') {
           setHelperStatus('error')
           setHelperText('이미 가입된 이메일입니다.')
@@ -179,7 +134,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
   }
 
   const handleJoin = () => {
-    if (!groupId || Number.isNaN(groupId) || isGroupLoading || groupError) {
+    if (!isValidId(groupId) || isGroupLoading || groupError) {
       setHelperStatus('error')
       setHelperText('그룹 정보를 불러온 뒤 다시 시도해주세요.')
       return
@@ -207,9 +162,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
     setHelperText('')
     verifyGroupEmailCode(groupId, { code: code.trim() })
       .then((response) => {
-        const payload =
-          (response as { data?: { verified?: boolean } })?.data ??
-          (response as { data?: { data?: { verified?: boolean } } })?.data?.data
+        const payload = extractResponseData<{ verified?: boolean }>(response)
         if (!payload?.verified) {
           setHelperStatus('error')
           setHelperText('인증번호가 올바르지 않습니다.')
@@ -221,7 +174,7 @@ export function GroupEmailJoinPage({ onBack, onJoin }: GroupEmailJoinPageProps) 
         onJoin?.(String(groupId))
       })
       .catch((error) => {
-        const codeValue = error?.response?.data?.code
+        const codeValue = getApiErrorCode(error)
         if (codeValue === 'EMAIL_CODE_MISMATCH') {
           setHelperStatus('error')
           setHelperText('인증번호가 올바르지 않습니다.')

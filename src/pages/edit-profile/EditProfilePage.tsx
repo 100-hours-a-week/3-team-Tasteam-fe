@@ -3,14 +3,14 @@ import { Camera } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
-import { getMe, updateMeProfile } from '@/entities/member/api/memberApi'
+import { getMe, updateMeProfile } from '@/entities/member'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
-import type { MemberProfileDto } from '@/entities/member/model/dto'
+import type { MemberProfileDto } from '@/entities/member'
 
 type EditProfilePageProps = {
   onBack?: () => void

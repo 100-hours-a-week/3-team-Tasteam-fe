@@ -42,7 +42,7 @@ export const getNotificationPreferences = () =>
 
 export const updateNotificationPreferences = (payload: NotificationPreferencesUpdateRequestDto) =>
   request<void>({
-    method: 'PUT',
+    method: 'PATCH',
     url: '/api/v1/members/me/notification-preferences',
     data: payload,
   })

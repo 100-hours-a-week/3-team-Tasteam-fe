@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Check, MapPin, Search, ShieldCheck, Soup, Users } from 'lucide-react'
 import { ROUTES } from '@/shared/config/routes'
+import { TopAppBar } from '@/widgets/top-app-bar'
 import { OnboardingProgressDots, OnboardingStepPanel } from '@/features/groups'
 import { useAppLocation } from '@/entities/location'
-import { searchAll } from '@/entities/search/api/searchApi'
-import type { SearchGroupItem } from '@/entities/search/model/types'
+import { searchAll } from '@/entities/search'
+import type { SearchGroupItem } from '@/entities/search'
 import { requestLocationPermission } from '@/shared/lib/geolocation'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
@@ -12,7 +14,7 @@ import { Button } from '@/shared/ui/button'
 import { GroupImage } from '@/shared/ui/group-image'
 import { Input } from '@/shared/ui/input'
 import { Progress } from '@/shared/ui/progress'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 
 type OnboardingPageProps = {
   onComplete?: (nextPath?: string) => void
@@ -79,6 +81,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
 ]
 
 export function OnboardingPage({ onComplete }: OnboardingPageProps) {
+  const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(0)
   const [groupQuery, setGroupQuery] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
@@ -86,6 +89,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
   const [searchedGroups, setSearchedGroups] = useState<SearchGroupItem[]>([])
   const [isGroupSearching, setIsGroupSearching] = useState(false)
   const [groupSearchError, setGroupSearchError] = useState<string | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const { requestCurrentLocation } = useAppLocation()
   const groupSearchRequestId = useRef(0)
   const groupSearchTimeoutId = useRef<number | null>(null)
@@ -97,7 +101,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
     currentStepData.key === 'daily-menu' || currentStepData.key === 'trusted-review'
   const isGroupSearchStep = currentStepData.key === 'group-search'
   const isCenteredPrimaryButton = !isGroupSearchStep
-  const isPrimaryDisabled = isGroupSearchStep && !selectedGroupId
+  const isPrimaryDisabled = (isGroupSearchStep && !selectedGroupId) || isTransitioning
 
   const normalizedQuery = groupQuery.trim()
 
@@ -159,6 +163,8 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
   }, [normalizedQuery, searchedGroups])
 
   const handleNext = async () => {
+    if (isTransitioning) return
+
     if (currentStepData.key === 'location') {
       const granted = await requestLocationPermission()
       if (granted) {
@@ -167,7 +173,9 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
     }
 
     if (currentStep < ONBOARDING_STEPS.length - 1) {
+      setIsTransitioning(true)
       setCurrentStep((prev) => prev + 1)
+      setTimeout(() => setIsTransitioning(false), 500)
       return
     }
 
@@ -181,6 +189,21 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
 
   const handleSkip = () => {
     onComplete?.()
+  }
+
+  const handleDotClick = (index: number) => {
+    if (isTransitioning || index > currentStep) return
+    setIsTransitioning(true)
+    setCurrentStep(index)
+    setTimeout(() => setIsTransitioning(false), 500)
+  }
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1)
+    } else {
+      navigate(-1)
+    }
   }
 
   const toggleGroupSelection = (groupId: string) => {
@@ -197,6 +220,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <TopAppBar showBackButton onBack={handleBack} />
       <Progress
         className="h-1 rounded-none"
         value={((currentStep + 1) / ONBOARDING_STEPS.length) * 100}
@@ -344,7 +368,11 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
             {isGroupSearchStep ? '건너뛰고 시작하기' : '건너뛰기'}
           </Button>
 
-          <OnboardingProgressDots total={ONBOARDING_STEPS.length} current={currentStep} />
+          <OnboardingProgressDots
+            total={ONBOARDING_STEPS.length}
+            current={currentStep}
+            onDotClick={handleDotClick}
+          />
         </div>
       </Container>
     </div>

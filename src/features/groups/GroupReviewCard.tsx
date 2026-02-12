@@ -85,7 +85,9 @@ export function GroupReviewCard({ review, onClick, className }: GroupReviewCardP
 
           <div className="mt-2 h-px w-full bg-border" />
 
-          <p className="mt-2 text-sm text-muted-foreground line-clamp-1">{review.summary}</p>
+          <p className="mt-2 text-sm text-muted-foreground line-clamp-1 whitespace-pre-wrap">
+            {review.summary}
+          </p>
 
           <div className="mt-2 flex items-center justify-between text-xs font-normal text-muted-foreground">
             <span>작성자 · {review.author}</span>

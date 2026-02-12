@@ -3,16 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Heart, X, ChevronDown, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
-import { createReview, getReviewKeywords } from '@/entities/review/api/reviewApi'
-import { getRestaurant } from '@/entities/restaurant/api/restaurantApi'
+import { createReview, getReviewKeywords } from '@/entities/review'
+import { getRestaurant } from '@/entities/restaurant'
 import { cn } from '@/shared/lib/utils'
-import { getMyGroupSummaries } from '@/entities/member/api/memberApi'
+import { getMyGroupSummaries } from '@/entities/member'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
 import { GroupSubgroupLabel } from '@/shared/ui/group-subgroup-label'
-import type { ReviewKeywordItemDto } from '@/entities/review/model/dto'
+import { ImagePreviewDialog } from '@/shared/ui/image-preview-dialog'
+import type { ReviewKeywordItemDto } from '@/entities/review'
 
 /** 드롭다운용 그룹/하위그룹 옵션 (평탄화) */
 type GroupOption =
@@ -55,6 +56,7 @@ export function WriteReviewPage() {
   const [keywords, setKeywords] = useState<ReviewKeywordItemDto[]>([])
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
 
   // Drag to scroll logic
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -143,6 +145,16 @@ export function WriteReviewPage() {
 
   const handleImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
+      const fileCount = e.target.files.length
+      const currentCount = selectedImages.length
+      const remaining = 5 - currentCount
+
+      if (fileCount + currentCount > 5) {
+        toast.error(
+          `이미지는 최대 5장까지 선택할 수 있습니다 (현재 ${currentCount}장, ${remaining}장 추가 가능)`,
+        )
+      }
+
       addFiles(e.target.files)
     }
     e.target.value = ''
@@ -326,7 +338,8 @@ export function WriteReviewPage() {
                     src={img.previewUrl}
                     alt={`Selected ${idx}`}
                     draggable={false}
-                    className="w-full h-full object-cover rounded-xl border border-border"
+                    className="w-full h-full object-cover rounded-xl border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setPreviewImage(img.previewUrl)}
                   />
                   <button
                     onClick={() => removeImage(idx)}
@@ -435,6 +448,13 @@ export function WriteReviewPage() {
         open={uploadErrors.length > 0}
         onClose={clearErrors}
         errors={uploadErrors}
+      />
+
+      <ImagePreviewDialog
+        open={previewImage !== null}
+        onClose={() => setPreviewImage(null)}
+        imageUrl={previewImage || ''}
+        alt="리뷰 이미지 미리보기"
       />
 
       <style>{`

@@ -28,12 +28,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # 4. 빌드
+      # 4. 환경변수 파일 생성
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      # 5. 빌드
       - name: Build
-        env:
-          VITE_APP_ENV: ${{ secrets.VITE_APP_ENV }}
-          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: npm run build
 
       # 5. 빌드 산출물 업로드 (run_number 기반 - 롤백용)
@@ -129,7 +129,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 배포 ${{ job.status == 'success' && '성공 ❤️' || '실패 💔💀' }}"
+          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 배포 ${{ job.status == 'success' && '성공 💗' || '실패 💔💀' }}"
           description: |
             **결과:** ${{ job.status }}
             **브랜치:** ${{ github.ref_name }}

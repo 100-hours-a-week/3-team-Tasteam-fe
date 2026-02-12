@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { ChevronRight, Bell, MapPin, Moon, Globe, Shield, HelpCircle, Info } from 'lucide-react'
+import { ChevronRight, MapPin, Moon, Globe, Shield, HelpCircle, Info, Bell } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Card } from '@/shared/ui/card'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import { deleteMe } from '@/entities/member/api/memberApi'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { ROUTES } from '@/shared/config/routes'
+import { deleteMe } from '@/entities/member'
+import { useAuth } from '@/entities/user'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertDialog,
@@ -32,10 +33,8 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
   const { logout } = useAuth()
   const settingsInteractionsEnabled = FEATURE_FLAGS.enableSettingsInteractions
   const [settings, setSettings] = useState({
-    notifications: true,
     locationServices: true,
     darkMode: false,
-    marketingEmails: false,
   })
 
   const handleToggle = (key: keyof typeof settings) => {
@@ -59,55 +58,18 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
         {FEATURE_FLAGS.enableNotifications && (
           <section className="space-y-3">
             <h2 className="px-1 font-semibold">알림</h2>
-            <Card className="divide-y">
-              <div
-                className={cn(
-                  'p-4 flex items-center justify-between gap-3',
-                  !settingsInteractionsEnabled && 'opacity-50',
-                )}
+            <Card>
+              <button
+                type="button"
+                className="w-full p-4 flex items-center justify-between gap-3 transition-colors hover:bg-accent"
+                onClick={() => navigate(ROUTES.notificationSettings)}
               >
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-3">
                   <Bell className="h-5 w-5 text-muted-foreground" />
-                  <div className="flex-1">
-                    <Label
-                      htmlFor="notifications"
-                      className={cn(settingsInteractionsEnabled ? 'cursor-pointer' : 'opacity-70')}
-                    >
-                      푸시 알림
-                    </Label>
-                    <p className="text-sm text-muted-foreground">새로운 활동 알림 받기</p>
-                  </div>
+                  <span>알림 설정</span>
                 </div>
-                <Switch
-                  id="notifications"
-                  checked={settings.notifications}
-                  onCheckedChange={() => handleToggle('notifications')}
-                  disabled={!settingsInteractionsEnabled}
-                />
-              </div>
-
-              <div
-                className={cn(
-                  'p-4 flex items-center justify-between gap-3',
-                  !settingsInteractionsEnabled && 'opacity-50',
-                )}
-              >
-                <div className="flex-1">
-                  <Label
-                    htmlFor="marketing"
-                    className={cn(settingsInteractionsEnabled ? 'cursor-pointer' : 'opacity-70')}
-                  >
-                    마케팅 알림
-                  </Label>
-                  <p className="text-sm text-muted-foreground">이벤트 및 프로모션 정보</p>
-                </div>
-                <Switch
-                  id="marketing"
-                  checked={settings.marketingEmails}
-                  onCheckedChange={() => handleToggle('marketingEmails')}
-                  disabled={!settingsInteractionsEnabled}
-                />
-              </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
             </Card>
           </section>
         )}

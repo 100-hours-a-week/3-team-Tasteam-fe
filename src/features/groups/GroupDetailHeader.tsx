@@ -9,7 +9,7 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/lib/utils'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 export type GroupDetailHeaderData = {

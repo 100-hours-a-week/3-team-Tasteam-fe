@@ -22,16 +22,29 @@ import {
   CarouselPrevious,
 } from '@/shared/ui/carousel'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { RestaurantMetaRow } from '@/entities/restaurant/ui'
-import { DetailReviewCard } from '@/entities/review/ui'
-import { Container } from '@/widgets/container'
+import { RestaurantMetaRow } from '@/entities/restaurant'
+import { DetailReviewCard } from '@/entities/review'
+import { Container } from '@/shared/ui/container'
 import { cn } from '@/shared/lib/utils'
-import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { GroupCategoryFilter } from '@/features/groups'
-import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant/api/restaurantApi'
-import { getRestaurantReviews } from '@/entities/review/api/reviewApi'
-import type { ReviewListItemDto } from '@/entities/review/model/dto'
-import type { MenuCategoryDto } from '@/entities/restaurant/model/dto'
+import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant'
+import { getRestaurantReviews } from '@/entities/review'
+import { getRestaurantFavoriteTargets } from '@/entities/favorite'
+import { FavoriteSelectionSheet } from '@/features/favorites'
+import { toast } from 'sonner'
+import type { ReviewListItemDto } from '@/entities/review'
+import type { MenuCategoryDto } from '@/entities/restaurant'
+import { useAuth } from '@/entities/user'
+import { useMemberGroups } from '@/entities/member'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui/alert-dialog'
 
 export function RestaurantDetailPage() {
   type BusinessHoursWeekItem = {
@@ -46,7 +59,15 @@ export function RestaurantDetailPage() {
 
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [isSaved, setIsSaved] = React.useState(false)
+  const { isAuthenticated } = useAuth()
+  const { summaries } = useMemberGroups()
+  const [showLoginModal, setShowLoginModal] = React.useState(false)
+  const [showGroupJoinModal, setShowGroupJoinModal] = React.useState(false)
+  const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
+  const [favoriteStatus, setFavoriteStatus] = React.useState<{
+    personal: boolean
+    subgroups: Array<{ subgroupId: number; isFavorited: boolean }>
+  } | null>(null)
   const [isRestaurantLoading, setIsRestaurantLoading] = React.useState(true)
   const [restaurantData, setRestaurantData] = React.useState<{
     id: number
@@ -73,8 +94,34 @@ export function RestaurantDetailPage() {
       .then((res) => setRestaurantData(res.data))
       .catch(() => {
         setRestaurantData(null)
+        navigate('/404', { replace: true })
       })
       .finally(() => setIsRestaurantLoading(false))
+  }, [restaurantId, navigate])
+
+  // 찜 상태 조회
+  React.useEffect(() => {
+    if (!restaurantId) return
+
+    getRestaurantFavoriteTargets(Number(restaurantId))
+      .then((response) => {
+        const data = response.data
+        // targets 배열에서 ME 타입과 SUBGROUP 타입을 찾아서 상태 설정
+        const myTarget = data.targets.find((t) => t.targetType === 'ME')
+        const subgroupTargets = data.targets.filter((t) => t.targetType === 'SUBGROUP')
+
+        setFavoriteStatus({
+          personal: myTarget?.favoriteState === 'FAVORITED',
+          subgroups: subgroupTargets.map((st) => ({
+            subgroupId: st.targetId || 0,
+            isFavorited: st.favoriteState === 'FAVORITED',
+          })),
+        })
+      })
+      .catch(() => {
+        // 에러 처리 (인증되지 않은 사용자 등)
+        setFavoriteStatus(null)
+      })
   }, [restaurantId])
 
   const [isReviewsLoading, setIsReviewsLoading] = React.useState(true)
@@ -282,12 +329,43 @@ export function RestaurantDetailPage() {
     return `${price.toLocaleString('ko-KR')}원`
   }
 
-  const handleSave = () => {
-    setIsSaved(!isSaved)
+  const handleWriteReview = () => {
+    if (!isAuthenticated) {
+      setShowLoginModal(true)
+      return
+    }
+
+    if (summaries.length === 0) {
+      setShowGroupJoinModal(true)
+      return
+    }
+
+    navigate(`/restaurants/${restaurantId}/review`)
   }
 
-  const handleWriteReview = () => {
-    navigate(`/restaurants/${restaurantId}/review`)
+  const handleFavoriteComplete = () => {
+    // 찜 상태 재조회
+    if (!restaurantId) return
+
+    getRestaurantFavoriteTargets(Number(restaurantId))
+      .then((response) => {
+        const data = response.data
+        // targets 배열에서 ME 타입과 SUBGROUP 타입을 찾아서 상태 설정
+        const myTarget = data.targets.find((t) => t.targetType === 'ME')
+        const subgroupTargets = data.targets.filter((t) => t.targetType === 'SUBGROUP')
+
+        setFavoriteStatus({
+          personal: myTarget?.favoriteState === 'FAVORITED',
+          subgroups: subgroupTargets.map((st) => ({
+            subgroupId: st.targetId || 0,
+            isFavorited: st.favoriteState === 'FAVORITED',
+          })),
+        })
+        toast.success('찜 목록이 업데이트되었습니다')
+      })
+      .catch(() => {
+        // 에러 처리
+      })
   }
 
   return (
@@ -305,12 +383,31 @@ export function RestaurantDetailPage() {
             <CarouselContent>
               {restaurant.images.map((image, idx) => (
                 <CarouselItem key={idx}>
-                  <div className="aspect-[4/3] bg-muted">
+                  <div className="aspect-[4/3] bg-muted relative">
                     <img
                       src={image}
                       alt={`${restaurant.name} ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
+                    {/* 찜 버튼 - 우측 상단 */}
+                    {idx === 0 && (
+                      <button
+                        onClick={() => setShowFavoriteSheet(true)}
+                        className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
+                        aria-label="찜하기"
+                      >
+                        <Heart
+                          className={cn(
+                            'w-5 h-5',
+                            favoriteStatus?.personal ||
+                              (favoriteStatus?.subgroups &&
+                                favoriteStatus.subgroups.some((sg) => sg.isFavorited))
+                              ? 'text-primary fill-primary'
+                              : 'text-foreground/80',
+                          )}
+                        />
+                      </button>
+                    )}
                   </div>
                 </CarouselItem>
               ))}
@@ -319,8 +416,25 @@ export function RestaurantDetailPage() {
             <CarouselNext className="right-2" />
           </Carousel>
         ) : (
-          <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center text-sm text-muted-foreground">
+          <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center text-sm text-muted-foreground relative">
             이미지가 없습니다
+            {/* 찜 버튼 - 이미지가 없을 때도 표시 */}
+            <button
+              onClick={() => setShowFavoriteSheet(true)}
+              className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
+              aria-label="찜하기"
+            >
+              <Heart
+                className={cn(
+                  'w-5 h-5',
+                  favoriteStatus?.personal ||
+                    (favoriteStatus?.subgroups &&
+                      favoriteStatus.subgroups.some((sg) => sg.isFavorited))
+                    ? 'text-primary fill-primary'
+                    : 'text-foreground/80',
+                )}
+              />
+            </button>
           </div>
         )}
       </div>
@@ -344,18 +458,6 @@ export function RestaurantDetailPage() {
                 </>
               )}
             </div>
-            {FEATURE_FLAGS.enableRestaurantFavorite && (
-              <Button
-                variant={isSaved ? 'default' : 'secondary'}
-                size="icon"
-                className="shrink-0 rounded-full border border-gray-300 shadow-md bg-white text-foreground hover:bg-white/90"
-                onClick={handleSave}
-                aria-pressed={isSaved}
-                aria-label="찜"
-              >
-                <Heart className={cn('h-5 w-5 text-primary', isSaved && 'fill-primary')} />
-              </Button>
-            )}
           </div>
 
           {/* Restaurant Feature - AI Highlighted */}
@@ -785,6 +887,42 @@ export function RestaurantDetailPage() {
           </Container>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>로그인이 필요합니다</AlertDialogTitle>
+            <AlertDialogDescription>리뷰를 작성하려면 로그인이 필요합니다.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowLoginModal(false)}>확인</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showGroupJoinModal} onOpenChange={setShowGroupJoinModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>그룹 가입이 필요합니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              리뷰를 작성하려면 그룹에 가입해야 합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowGroupJoinModal(false)}>확인</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 찜 선택 시트 */}
+      {restaurantId && restaurantData && (
+        <FavoriteSelectionSheet
+          open={showFavoriteSheet}
+          onOpenChange={setShowFavoriteSheet}
+          restaurantId={Number(restaurantId)}
+          onComplete={handleFavoriteComplete}
+        />
+      )}
     </div>
   )
 }

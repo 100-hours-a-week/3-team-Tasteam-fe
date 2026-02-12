@@ -6,22 +6,24 @@
   align-items: center;
 }
 
+.button,
+.buttonContent {
+  display: inline-flex;
+  align-items: center;
+}
+
 .button {
   height: 48px;
   border-radius: 14px;
   font-size: 14px;
   font-weight: 600;
   border: 1px solid transparent;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
   width: 100%;
   max-width: 320px;
 }
 
 .buttonContent {
-  display: inline-flex;
-  align-items: center;
   gap: 10px;
 }
 

@@ -2,21 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Flame, Sparkles } from 'lucide-react'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
-import { Container } from '@/widgets/container'
+import { SplashPopup } from '@/widgets/splash-popup'
+import { HomeAdCarousel } from '@/widgets/home-ad-carousel'
+import { Container } from '@/shared/ui/container'
 import { LocationHeader } from '@/widgets/location-header'
 import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
 import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { Input } from '@/shared/ui/input'
 import { ROUTES } from '@/shared/config/routes'
-import { getMainPage } from '@/entities/main/api/mainApi'
+import { getMainPage } from '@/entities/main'
+import type { BannerDto } from '@/entities/banner'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
-import type {
-  MainPageResponseDto,
-  MainSectionDto,
-  MainSectionItemDto,
-} from '@/entities/main/model/types'
-import { toMainPageData } from '@/entities/main/model/mapper'
+import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
+import { toMainPageData } from '@/entities/main'
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -29,6 +28,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
   const [hasLoadedMain, setHasLoadedMain] = useState(false)
+  const [showSplashPopup, setShowSplashPopup] = useState(false)
   const { location, status, requestCurrentLocation } = useAppLocation()
   const hasRefreshedRef = useRef(false)
   const latitude = location?.latitude ?? 37.5665
@@ -37,7 +37,16 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   useEffect(() => {
     queueMicrotask(() => setIsMainLoading(true))
     getMainPage({ latitude, longitude })
-      .then(setMainData)
+      .then((data) => {
+        setMainData(data)
+        const splashEvent = data.data?.splashEvent
+        if (splashEvent) {
+          const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
+          const today = new Date().toDateString()
+          const shouldShow = !dismissedDate || dismissedDate !== today
+          setShowSplashPopup(shouldShow)
+        }
+      })
       .catch(() => {})
       .finally(() => {
         setIsMainLoading(false)
@@ -60,6 +69,15 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   }, [requestCurrentLocation, status])
 
   const mainPageData = toMainPageData(mainData)
+  const banners: BannerDto[] =
+    mainData?.data?.banners?.items?.map((item) => ({
+      id: item.id,
+      imageUrl: item.imageUrl,
+      title: null,
+      deeplinkUrl: item.landingUrl,
+      bgColor: null,
+      displayOrder: item.order,
+    })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
 
@@ -170,6 +188,15 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
 
   return (
     <div className="pb-20">
+      {mainData?.data?.splashEvent && (
+        <SplashPopup
+          event={mainData.data.splashEvent}
+          isOpen={showSplashPopup}
+          onClose={() => setShowSplashPopup(false)}
+          onLinkClick={() => navigate(ROUTES.events)}
+        />
+      )}
+
       <LocationHeader
         district={status === 'loading' ? '현재 위치 확인 중...' : location?.district}
         address={location?.address}
@@ -194,6 +221,21 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
           />
         </div>
       </Container>
+
+      {banners.length > 0 && (
+        <section className="mb-6">
+          <Container>
+            <HomeAdCarousel
+              banners={banners}
+              onBannerClick={(banner) => {
+                if (banner.deeplinkUrl) {
+                  navigate(banner.deeplinkUrl)
+                }
+              }}
+            />
+          </Container>
+        </section>
+      )}
 
       <section className="mb-8">
         <Container>
@@ -270,6 +312,8 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
               return
             }
             navigate(ROUTES.search)
+          } else if (tab === 'favorites') {
+            navigate(ROUTES.favorites)
           } else if (tab === 'groups') {
             navigate(ROUTES.groups)
           } else if (tab === 'profile') {

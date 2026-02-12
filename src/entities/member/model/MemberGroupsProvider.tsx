@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MemberGroupsContext } from './memberGroupsContext'
 import type { MemberGroupsContextValue } from './memberGroupsContext'
 import type { MemberGroupSummaryItemDto } from './dto'
-import { getMyGroupSummaries } from '@/entities/member/api/memberApi'
-import { useAuth } from '@/entities/user/model/useAuth'
+import { getMyGroupSummaries } from '@/entities/member'
+import { useAuth } from '@/entities/user'
 
 const MEMBER_GROUP_SUMMARY_CACHE_KEY = 'member:group-summaries:v1'
 

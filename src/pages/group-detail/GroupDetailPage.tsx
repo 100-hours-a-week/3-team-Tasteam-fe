@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { ROUTES } from '@/shared/config/routes'
 import {
   GroupCategoryFilter,
   GroupDetailHeader,
   type GroupDetailHeaderData,
 } from '@/features/groups'
-import { RestaurantCard } from '@/entities/restaurant/ui'
-import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group/api/groupApi'
-import type { RestaurantListItemDto } from '@/entities/restaurant/model/dto'
-import { getFoodCategories } from '@/entities/restaurant/api/restaurantApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
+import { RestaurantCard } from '@/entities/restaurant'
+import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group'
+import type { RestaurantListItemDto } from '@/entities/restaurant'
+import { getFoodCategories } from '@/entities/restaurant'
+import { useMemberGroups } from '@/entities/member'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
   AlertDialog,
@@ -68,7 +69,7 @@ export function GroupDetailPage() {
   const [locationError, setLocationError] = useState<string | null>(null)
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const [isGroupLoaded, setIsGroupLoaded] = useState(false)
-  const groupId = id ? Number(id) : null
+  const groupId = parseNumberParam(id)
   const { summaries, isLoaded, refresh } = useMemberGroups()
 
   const joinedState =
@@ -180,7 +181,7 @@ export function GroupDetailPage() {
   }, [])
 
   useEffect(() => {
-    if (!groupId || Number.isNaN(groupId)) return
+    if (!isValidId(groupId)) return
     let cancelled = false
     const fetchGroup = async () => {
       setIsGroupLoading(true)
@@ -205,6 +206,7 @@ export function GroupDetailPage() {
           setRestaurants([])
           setEmailDomain(null)
           setIsGroupLoaded(false)
+          navigate('/404', { replace: true })
         }
       } finally {
         if (!cancelled) {
@@ -216,10 +218,10 @@ export function GroupDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [groupId])
+  }, [groupId, navigate])
 
   useEffect(() => {
-    if (!groupId || Number.isNaN(groupId)) return
+    if (!isValidId(groupId)) return
     if (!isGroupLoaded) return
     if (isLocationLoading) return
     if (!locationPosition) {
@@ -259,9 +261,7 @@ export function GroupDetailPage() {
   }, [groupId, isGroupLoaded, isLocationLoading, locationError, locationPosition, selectedCategory])
 
   const isJoined =
-    isLoaded && groupId !== null && !Number.isNaN(groupId)
-      ? summaries.some((item) => item.groupId === groupId)
-      : false
+    isLoaded && isValidId(groupId) ? summaries.some((item) => item.groupId === groupId) : false
 
   return (
     <div className="pb-10">
@@ -277,7 +277,7 @@ export function GroupDetailPage() {
           navigate(-1)
         }}
         onJoin={() => {
-          if (!groupId) return
+          if (!isValidId(groupId)) return
           const targetRoute =
             emailDomain === null
               ? ROUTES.groupPasswordJoin(String(groupId))
@@ -285,7 +285,7 @@ export function GroupDetailPage() {
           navigate(targetRoute)
         }}
         onMoreAction={() => {
-          if (!groupId) return
+          if (!isValidId(groupId)) return
           navigate(`${ROUTES.subgroupList}?groupId=${groupId}`)
         }}
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
@@ -357,7 +357,7 @@ export function GroupDetailPage() {
               variant="default"
               className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => {
-                if (!groupId || Number.isNaN(groupId)) return
+                if (!isValidId(groupId)) return
                 leaveGroup(groupId)
                   .then(() => {
                     toast.success('그룹에서 탈퇴했습니다')

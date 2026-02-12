@@ -4,6 +4,10 @@
 
 ## 하위 폴더 역할 가이드
 
+- 각 엔티티 루트의 `index.ts`를 퍼블릭 API로 사용합니다.
+- 외부 레이어(`app/pages/widgets/features`)에서는 `@/entities/<entity>`로만 import합니다.
+- `api/model/ui` 직접 경로 import는 엔티티 내부에서만 허용합니다.
+
 - `api/`
   - 도메인에 특화된 HTTP 요청 모듈.
   - REST 호출 래퍼, 쿼리키 상수, 서버 DTO 변환이 여기서 끝나야 함.
@@ -135,6 +139,8 @@
 - **upload**
   - api
     1. `uploadApi.ts` : 파일 업로드 API
+  - lib
+    1. `imageOptimization.ts` : 업로드 목적별 이미지 최적화
   - model
     1. `types.ts` : 업로드 도메인 타입
     2. `dto.ts` : 업로드 서버 DTO

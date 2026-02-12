@@ -1,12 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { Card } from '@/shared/ui/card'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { EmptyState } from '@/widgets/empty-state'
 import { Bell } from 'lucide-react'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { getNotificationPreferences, updateNotificationPreferences } from '@/entities/notification'
+
+type NotificationChannel = 'PUSH' | 'EMAIL'
+type NotificationType = 'CHAT' | 'SYSTEM' | 'NOTICE'
+
+const TYPE_BY_SETTING = {
+  groupActivity: 'CHAT',
+  groupInvites: 'SYSTEM',
+  restaurantRecommendations: 'NOTICE',
+} as const satisfies Record<string, NotificationType>
 
 type NotificationSettingsPageProps = {
   onBack?: () => void
@@ -17,16 +28,110 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
   const [settings, setSettings] = useState({
     pushEnabled: true,
     groupActivity: true,
-    reviewLikes: true,
     groupInvites: true,
     restaurantRecommendations: true,
     marketingEmails: false,
     nightMode: true,
   })
+  const [loading, setLoading] = useState(true)
+
+  const preferenceKey = (channel: NotificationChannel, type: NotificationType) =>
+    `${channel}_${type}`
+
+  const preferenceByKey = useMemo(() => new Map<string, boolean>(), [])
+
+  useEffect(() => {
+    if (!notificationsEnabled) return
+    getNotificationPreferences()
+      .then((response) => {
+        preferenceByKey.clear()
+        response.data?.forEach((pref) => {
+          const channel = pref.channel as NotificationChannel
+          const type = pref.notificationType as NotificationType
+          if (channel && type) {
+            preferenceByKey.set(preferenceKey(channel, type), pref.isEnabled)
+          }
+        })
+
+        const pushTypes = Object.values(TYPE_BY_SETTING)
+        const pushEnabled = pushTypes.every(
+          (type) => preferenceByKey.get(preferenceKey('PUSH', type)) ?? true,
+        )
+
+        setSettings((prev) => ({
+          ...prev,
+          pushEnabled,
+          groupActivity: preferenceByKey.get(preferenceKey('PUSH', 'CHAT')) ?? prev.groupActivity,
+          groupInvites: preferenceByKey.get(preferenceKey('PUSH', 'SYSTEM')) ?? prev.groupInvites,
+          restaurantRecommendations:
+            preferenceByKey.get(preferenceKey('PUSH', 'NOTICE')) ?? prev.restaurantRecommendations,
+          marketingEmails:
+            preferenceByKey.get(preferenceKey('EMAIL', 'NOTICE')) ?? prev.marketingEmails,
+        }))
+      })
+      .catch(() => {
+        toast.error('알림 설정을 불러오지 못했습니다')
+      })
+      .finally(() => setLoading(false))
+  }, [notificationsEnabled, preferenceByKey])
+
+  const updatePreference = (
+    channel: NotificationChannel,
+    type: NotificationType,
+    isEnabled: boolean,
+  ) =>
+    updateNotificationPreferences({
+      notificationPreferences: [{ channel, notificationType: type, isEnabled }],
+    })
+
+  const updatePreferencesBatch = (
+    items: Array<{ channel: NotificationChannel; type: NotificationType; isEnabled: boolean }>,
+  ) =>
+    updateNotificationPreferences({
+      notificationPreferences: items.map((item) => ({
+        channel: item.channel,
+        notificationType: item.type,
+        isEnabled: item.isEnabled,
+      })),
+    })
 
   const handleToggle = (key: keyof typeof settings) => {
     if (!notificationsEnabled) return
-    setSettings((prev) => ({ ...prev, [key]: !prev[key] }))
+    if (key === 'nightMode') {
+      toast.message('해당 옵션은 아직 서버 지원이 없습니다')
+      return
+    }
+
+    const nextValue = !settings[key]
+    setSettings((prev) => ({ ...prev, [key]: nextValue }))
+
+    if (key === 'pushEnabled') {
+      const items = Object.values(TYPE_BY_SETTING).map((type) => ({
+        channel: 'PUSH' as const,
+        type,
+        isEnabled: nextValue,
+      }))
+      updatePreferencesBatch(items).catch(() => {
+        toast.error('푸시 알림 설정 변경에 실패했습니다')
+        setSettings((prev) => ({ ...prev, [key]: !nextValue }))
+      })
+      return
+    }
+
+    if (key === 'marketingEmails') {
+      updatePreference('EMAIL', 'NOTICE', nextValue).catch(() => {
+        toast.error('마케팅 이메일 설정 변경에 실패했습니다')
+        setSettings((prev) => ({ ...prev, [key]: !nextValue }))
+      })
+      return
+    }
+
+    const mappedType = TYPE_BY_SETTING[key as keyof typeof TYPE_BY_SETTING]
+    if (!mappedType) return
+    updatePreference('PUSH', mappedType, nextValue).catch(() => {
+      toast.error('알림 설정 변경에 실패했습니다')
+      setSettings((prev) => ({ ...prev, [key]: !nextValue }))
+    })
   }
 
   if (!notificationsEnabled) {
@@ -65,6 +170,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
                 id="pushEnabled"
                 checked={settings.pushEnabled}
                 onCheckedChange={() => handleToggle('pushEnabled')}
+                disabled={loading}
               />
             </div>
           </Card>
@@ -84,22 +190,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
                 id="groupActivity"
                 checked={settings.groupActivity}
                 onCheckedChange={() => handleToggle('groupActivity')}
-                disabled={!settings.pushEnabled}
-              />
-            </div>
-
-            <div className="p-4 flex items-center justify-between gap-3">
-              <div className="flex-1">
-                <Label htmlFor="reviewLikes" className="cursor-pointer">
-                  리뷰 좋아요
-                </Label>
-                <p className="text-sm text-muted-foreground">내 리뷰에 좋아요가 추가될 때</p>
-              </div>
-              <Switch
-                id="reviewLikes"
-                checked={settings.reviewLikes}
-                onCheckedChange={() => handleToggle('reviewLikes')}
-                disabled={!settings.pushEnabled}
+                disabled={!settings.pushEnabled || loading}
               />
             </div>
 
@@ -114,7 +205,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
                 id="groupInvites"
                 checked={settings.groupInvites}
                 onCheckedChange={() => handleToggle('groupInvites')}
-                disabled={!settings.pushEnabled}
+                disabled={!settings.pushEnabled || loading}
               />
             </div>
 
@@ -129,7 +220,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
                 id="restaurantRecommendations"
                 checked={settings.restaurantRecommendations}
                 onCheckedChange={() => handleToggle('restaurantRecommendations')}
-                disabled={!settings.pushEnabled}
+                disabled={!settings.pushEnabled || loading}
               />
             </div>
           </Card>
@@ -149,6 +240,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
                 id="marketingEmails"
                 checked={settings.marketingEmails}
                 onCheckedChange={() => handleToggle('marketingEmails')}
+                disabled={loading}
               />
             </div>
 
@@ -163,7 +255,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
                 id="nightMode"
                 checked={settings.nightMode}
                 onCheckedChange={() => handleToggle('nightMode')}
-                disabled={!settings.pushEnabled}
+                disabled
               />
             </div>
           </Card>

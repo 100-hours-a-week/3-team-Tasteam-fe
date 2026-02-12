@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { createUploadGrant, uploadFileToS3 } from '@/entities/upload/api/uploadApi'
+import { createUploadGrant, uploadFileToS3 } from '@/entities/upload'
 import {
   ALLOWED_IMAGE_TYPES,
   ALLOWED_IMAGE_EXTENSIONS,
@@ -7,9 +7,10 @@ import {
   MAX_IMAGE_SIZE_BYTES,
   MIN_IMAGE_SIZE_BYTES,
   MAX_FILENAME_LENGTH,
-} from '@/entities/upload/model/types'
-import type { UploadPurpose } from '@/entities/upload/model/types'
-import { optimizeImage } from '@/shared/lib/imageOptimization'
+} from '@/entities/upload'
+import type { UploadPurpose } from '@/entities/upload'
+import { optimizeImage } from '@/entities/upload'
+import { logger } from '@/shared/lib/logger'
 
 type ImageFile = {
   file: File
@@ -98,7 +99,7 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
                 optimizedFile: optimized,
               }
             } catch (error) {
-              console.error('Image optimization failed for', file.name, error)
+              logger.error('Image optimization failed for', file.name, error)
               return {
                 file,
                 previewUrl: URL.createObjectURL(file),
@@ -110,7 +111,7 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
 
         setFiles((prev) => [...prev, ...optimizedImages])
       } catch (error) {
-        console.error('Failed to optimize images:', error)
+        logger.error('Failed to optimize images:', error)
         setUploadErrors(['이미지 최적화에 실패했습니다'])
       } finally {
         setIsOptimizing(false)

@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, Users, Check, Plus, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
-import { Container } from '@/widgets/container'
+import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
@@ -19,10 +18,12 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
-import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup/api/subgroupApi'
-import { useMemberGroups } from '@/entities/member/model/useMemberGroups'
-import { useAuth } from '@/entities/user/model/useAuth'
-import type { ErrorResponse } from '@/shared/types/api'
+import { getSubgroups, joinSubgroup, searchSubgroups } from '@/entities/subgroup'
+import { useMemberGroups } from '@/entities/member'
+import { useAuth } from '@/entities/user'
+import { logger } from '@/shared/lib/logger'
+import { isValidId, parseNumberParam } from '@/shared/lib/number'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 type Group = {
   id: string
@@ -51,8 +52,7 @@ export function SubgroupListPage({
   const { isAuthenticated, openLogin } = useAuth()
   const { refresh, isSubgroupMember, isLoaded } = useMemberGroups()
   const [searchParams] = useSearchParams()
-  const groupIdParam = searchParams.get('groupId')
-  const groupId = groupIdParam ? Number(groupIdParam) : null
+  const groupId = parseNumberParam(searchParams.get('groupId'))
   const [searchQuery, setSearchQuery] = useState('')
   const [groups, setGroups] = useState<Group[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -64,7 +64,7 @@ export function SubgroupListPage({
   const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!groupId || Number.isNaN(groupId)) {
+    if (!isValidId(groupId)) {
       setLoadError('그룹 정보를 찾을 수 없습니다.')
       setGroups([])
       return
@@ -120,10 +120,9 @@ export function SubgroupListPage({
   }, [groupId, searchQuery, isLoaded, isSubgroupMember])
 
   const resolveJoinErrorCode = (error: unknown) => {
-    if (axios.isAxiosError<ErrorResponse>(error)) {
-      return error.response?.data?.code
-    }
-    console.error(error)
+    const code = getApiErrorCode(error)
+    if (code) return code
+    logger.error(error)
     return undefined
   }
 
@@ -140,6 +139,15 @@ export function SubgroupListPage({
     )
   }
 
+  const resetPasswordJoinState = (closeModal: boolean) => {
+    if (closeModal) {
+      setPasswordModalOpen(false)
+    }
+    setPendingJoinGroup(null)
+    setPasswordValue('')
+    setPasswordError('')
+  }
+
   const handleJoin = async (subgroupId: string) => {
     const target = groups.find((group) => group.id === subgroupId)
     if (!target || target.isJoined) return
@@ -147,7 +155,7 @@ export function SubgroupListPage({
       openLogin()
       return
     }
-    if (!groupId || Number.isNaN(groupId)) {
+    if (!isValidId(groupId)) {
       toast.error('그룹 정보를 찾을 수 없습니다.')
       return
     }
@@ -192,14 +200,11 @@ export function SubgroupListPage({
       return
     }
     if (!isAuthenticated) {
-      setPasswordModalOpen(false)
-      setPendingJoinGroup(null)
-      setPasswordValue('')
-      setPasswordError('')
+      resetPasswordJoinState(true)
       openLogin()
       return
     }
-    if (!groupId || Number.isNaN(groupId)) {
+    if (!isValidId(groupId)) {
       toast.error('그룹 정보를 찾을 수 없습니다.')
       return
     }
@@ -211,10 +216,7 @@ export function SubgroupListPage({
       refresh()
       toast.success('하위그룹에 가입했습니다.')
       onJoinSuccess?.(pendingJoinGroup.id)
-      setPasswordModalOpen(false)
-      setPendingJoinGroup(null)
-      setPasswordValue('')
-      setPasswordError('')
+      resetPasswordJoinState(true)
     } catch (error: unknown) {
       const code = resolveJoinErrorCode(error)
       if (code === 'PASSWORD_MISMATCH') {
@@ -224,17 +226,11 @@ export function SubgroupListPage({
       if (code === 'SUBGROUP_ALREADY_JOINED') {
         markJoined(pendingJoinGroup.id, false)
         toast.error('이미 가입된 하위그룹입니다.')
-        setPasswordModalOpen(false)
-        setPendingJoinGroup(null)
-        setPasswordValue('')
-        setPasswordError('')
+        resetPasswordJoinState(true)
         return
       }
       if (code === 'AUTHENTICATION_REQUIRED') {
-        setPasswordModalOpen(false)
-        setPendingJoinGroup(null)
-        setPasswordValue('')
-        setPasswordError('')
+        resetPasswordJoinState(true)
         openLogin()
       } else if (code === 'NO_PERMISSION') {
         toast.error('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
@@ -253,9 +249,7 @@ export function SubgroupListPage({
   const handlePasswordModalChange = (open: boolean) => {
     setPasswordModalOpen(open)
     if (!open) {
-      setPendingJoinGroup(null)
-      setPasswordValue('')
-      setPasswordError('')
+      resetPasswordJoinState(false)
     }
   }
 
@@ -280,7 +274,7 @@ export function SubgroupListPage({
               size="icon"
               aria-label="하위그룹 추가"
               onClick={() => {
-                if (!groupId || Number.isNaN(groupId)) {
+                if (!isValidId(groupId)) {
                   toast.error('그룹 정보를 찾을 수 없습니다.')
                   return
                 }
