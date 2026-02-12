@@ -7,19 +7,22 @@ type FavoriteRestaurantCardProps = {
   restaurant: FavoriteRestaurantItem
   onRemove: (e: React.MouseEvent) => void
   onClick: () => void
+  /** false면 찜 해제 버튼 숨김 (읽기 전용, 예: 하위 그룹 상세) */
+  showRemoveButton?: boolean
 }
 
 export function FavoriteRestaurantCard({
   restaurant,
   onRemove,
   onClick,
+  showRemoveButton = true,
 }: FavoriteRestaurantCardProps) {
   return (
     <Card
       className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow py-0"
       onClick={onClick}
     >
-      <CardContent className="relative px-3 py-2.5 pr-12">
+      <CardContent className={showRemoveButton ? 'relative px-3 py-2.5 pr-12' : 'relative px-3 py-2.5'}>
         <div className="flex gap-3">
           {/* Image */}
           <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
@@ -53,14 +56,15 @@ export function FavoriteRestaurantCard({
             )}
           </div>
         </div>
-        {/* Remove button - 카드 우측 상단 */}
-        <button
-          onClick={onRemove}
-          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/50 transition-colors z-10"
-          aria-label="찜 해제"
-        >
-          <Heart className="w-5 h-5 text-primary fill-primary" />
-        </button>
+        {showRemoveButton && (
+          <button
+            onClick={onRemove}
+            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/40 backdrop-blur-sm hover:bg-white/50 transition-colors z-10"
+            aria-label="찜 해제"
+          >
+            <Heart className="w-5 h-5 text-primary fill-primary" />
+          </button>
+        )}
       </CardContent>
     </Card>
   )
