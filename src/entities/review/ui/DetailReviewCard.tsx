@@ -200,7 +200,7 @@ export function DetailReviewCard({
           ))}
         </div>
       )}
-      <p className="text-sm leading-relaxed mb-3">{content}</p>
+      <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{content}</p>
       {(review.keywords?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {(review.keywords ?? []).map((keyword) => (
