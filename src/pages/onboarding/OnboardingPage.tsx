@@ -86,6 +86,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
   const [searchedGroups, setSearchedGroups] = useState<SearchGroupItem[]>([])
   const [isGroupSearching, setIsGroupSearching] = useState(false)
   const [groupSearchError, setGroupSearchError] = useState<string | null>(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const { requestCurrentLocation } = useAppLocation()
   const groupSearchRequestId = useRef(0)
   const groupSearchTimeoutId = useRef<number | null>(null)
@@ -97,7 +98,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
     currentStepData.key === 'daily-menu' || currentStepData.key === 'trusted-review'
   const isGroupSearchStep = currentStepData.key === 'group-search'
   const isCenteredPrimaryButton = !isGroupSearchStep
-  const isPrimaryDisabled = isGroupSearchStep && !selectedGroupId
+  const isPrimaryDisabled = (isGroupSearchStep && !selectedGroupId) || isTransitioning
 
   const normalizedQuery = groupQuery.trim()
 
@@ -159,6 +160,8 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
   }, [normalizedQuery, searchedGroups])
 
   const handleNext = async () => {
+    if (isTransitioning) return
+
     if (currentStepData.key === 'location') {
       const granted = await requestLocationPermission()
       if (granted) {
@@ -167,7 +170,9 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
     }
 
     if (currentStep < ONBOARDING_STEPS.length - 1) {
+      setIsTransitioning(true)
       setCurrentStep((prev) => prev + 1)
+      setTimeout(() => setIsTransitioning(false), 500)
       return
     }
 
