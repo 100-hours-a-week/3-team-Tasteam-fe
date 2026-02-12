@@ -73,9 +73,10 @@ export function RestaurantDetailPage() {
       .then((res) => setRestaurantData(res.data))
       .catch(() => {
         setRestaurantData(null)
+        navigate('/404', { replace: true })
       })
       .finally(() => setIsRestaurantLoading(false))
-  }, [restaurantId])
+  }, [restaurantId, navigate])
 
   const [isReviewsLoading, setIsReviewsLoading] = React.useState(true)
   const [, setReviewsError] = React.useState(false)
