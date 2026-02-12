@@ -112,10 +112,11 @@ export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps)
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        className="text-destructive"
+                        variant="destructive"
+                        className="gap-1.5"
                         onClick={() => setDeleteTargetId(review.id)}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                         삭제
                       </DropdownMenuItem>
                     </DropdownMenuContent>
