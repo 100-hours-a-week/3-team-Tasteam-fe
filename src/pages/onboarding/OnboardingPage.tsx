@@ -188,6 +188,13 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
     onComplete?.()
   }
 
+  const handleDotClick = (index: number) => {
+    if (isTransitioning || index > currentStep) return
+    setIsTransitioning(true)
+    setCurrentStep(index)
+    setTimeout(() => setIsTransitioning(false), 500)
+  }
+
   const toggleGroupSelection = (groupId: string) => {
     setSelectedGroupId((prev) => (prev === groupId ? null : groupId))
   }
@@ -349,7 +356,11 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
             {isGroupSearchStep ? '건너뛰고 시작하기' : '건너뛰기'}
           </Button>
 
-          <OnboardingProgressDots total={ONBOARDING_STEPS.length} current={currentStep} />
+          <OnboardingProgressDots
+            total={ONBOARDING_STEPS.length}
+            current={currentStep}
+            onDotClick={handleDotClick}
+          />
         </div>
       </Container>
     </div>
