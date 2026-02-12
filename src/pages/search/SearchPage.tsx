@@ -49,9 +49,14 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
   const [searchError, setSearchError] = useState<string | null>(null)
   const searchRequestId = useRef(0)
   const searchTimeoutId = useRef<number | null>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const hasGroupResults = groupResults.length > 0
   const hasRestaurantResults = restaurantResults.length > 0
   const hasNoResults = !hasGroupResults && !hasRestaurantResults
+
+  useEffect(() => {
+    searchInputRef.current?.focus()
+  }, [])
 
   // TODO: 추천 키워드 기능 미개발 - 추후 활성화 예정
   // const recommendedKeywords = ['일식', '이탈리안', '한식', '카페', '디저트', '브런치']
@@ -119,6 +124,7 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               placeholder="그룹, 음식점, 태그를 검색해보세요"
               className="pl-9"
               value={searchQuery}
