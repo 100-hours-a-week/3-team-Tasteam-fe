@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
@@ -15,6 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from '@/shared/ui/sheet'
 import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
@@ -26,6 +27,18 @@ import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
 import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search'
 
 const SEARCH_DEBOUNCE_MS = 700
+const SCROLL_DEBOUNCE_MS = 300
+const DEFAULT_DISTANCE = 5
+const DEFAULT_PRICE_RANGE = 'all'
+
+const STORAGE_KEYS = {
+  QUERY: 'search_state_query',
+  RESTAURANTS: 'search_state_restaurants',
+  GROUPS: 'search_state_groups',
+  DISTANCE: 'search_state_distance',
+  PRICE_RANGE: 'search_state_price_range',
+  SCROLL: 'search_state_scroll',
+} as const
 
 type SearchPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -34,25 +47,86 @@ type SearchPageProps = {
 
 export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps) {
   const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return sessionStorage.getItem(STORAGE_KEYS.QUERY) || ''
+  })
   const {
     recentSearches,
     remove: removeRecentSearch,
     add: addRecentSearch,
     refresh: refreshRecentSearches,
   } = useRecentSearches()
-  const [restaurantResults, setRestaurantResults] = useState<SearchRestaurantItem[]>([])
-  const [groupResults, setGroupResults] = useState<SearchGroupItem[]>([])
-  const [distance, setDistance] = useState([5])
-  const [priceRange, setPriceRange] = useState('all')
+  const [restaurantResults, setRestaurantResults] = useState<SearchRestaurantItem[]>(() => {
+    const saved = sessionStorage.getItem(STORAGE_KEYS.RESTAURANTS)
+    return saved ? JSON.parse(saved) : []
+  })
+  const [groupResults, setGroupResults] = useState<SearchGroupItem[]>(() => {
+    const saved = sessionStorage.getItem(STORAGE_KEYS.GROUPS)
+    return saved ? JSON.parse(saved) : []
+  })
+  const [distance, setDistance] = useState<number[]>(() => {
+    const saved = sessionStorage.getItem(STORAGE_KEYS.DISTANCE)
+    return saved ? [parseFloat(saved)] : [DEFAULT_DISTANCE]
+  })
+  const [priceRange, setPriceRange] = useState<string>(() => {
+    return sessionStorage.getItem(STORAGE_KEYS.PRICE_RANGE) || DEFAULT_PRICE_RANGE
+  })
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const searchRequestId = useRef(0)
   const searchTimeoutId = useRef<number | null>(null)
+  const scrollTimeoutId = useRef<number | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const hasGroupResults = groupResults.length > 0
   const hasRestaurantResults = restaurantResults.length > 0
   const hasNoResults = !hasGroupResults && !hasRestaurantResults
+  const hasActiveFilters = distance[0] !== DEFAULT_DISTANCE || priceRange !== DEFAULT_PRICE_RANGE
+
+  useLayoutEffect(() => {
+    const savedScroll = sessionStorage.getItem(STORAGE_KEYS.SCROLL)
+    if (savedScroll) {
+      window.scrollTo(0, parseInt(savedScroll, 10))
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollTimeoutId.current !== null) {
+        window.clearTimeout(scrollTimeoutId.current)
+      }
+      scrollTimeoutId.current = window.setTimeout(() => {
+        sessionStorage.setItem(STORAGE_KEYS.SCROLL, String(window.scrollY))
+      }, SCROLL_DEBOUNCE_MS)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (scrollTimeoutId.current !== null) {
+        window.clearTimeout(scrollTimeoutId.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEYS.QUERY, searchQuery)
+  }, [searchQuery])
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEYS.RESTAURANTS, JSON.stringify(restaurantResults))
+  }, [restaurantResults])
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEYS.GROUPS, JSON.stringify(groupResults))
+  }, [groupResults])
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEYS.DISTANCE, String(distance[0]))
+  }, [distance])
+
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEYS.PRICE_RANGE, priceRange)
+  }, [priceRange])
 
   useEffect(() => {
     searchInputRef.current?.focus()
@@ -86,7 +160,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
 
     searchTimeoutId.current = window.setTimeout(() => {
       addRecentSearch(keyword)
-      searchAll({ keyword })
+      searchAll({
+        keyword,
+        distance: distance[0],
+        priceRange: priceRange !== 'all' ? priceRange : undefined,
+      })
         .then((response) => {
           if (searchRequestId.current !== requestId) return
           setRestaurantResults(response.data.restaurants.items)
@@ -105,6 +183,17 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           }
         })
     }, SEARCH_DEBOUNCE_MS)
+  }
+
+  const handleResetFilters = () => {
+    setDistance([DEFAULT_DISTANCE])
+    setPriceRange(DEFAULT_PRICE_RANGE)
+  }
+
+  const handleApplyFilters = () => {
+    if (searchQuery.trim()) {
+      scheduleSearch(searchQuery)
+    }
   }
 
   useEffect(() => {
@@ -137,8 +226,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
           </div>
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="relative">
                 <SlidersHorizontal className="h-4 w-4" />
+                {hasActiveFilters && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
+                )}
               </Button>
             </SheetTrigger>
             <SheetContent side="bottom" className="h-[80vh] rounded-t-xl">
@@ -175,10 +267,18 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                   </Select>
                 </div>
                 <div className="flex gap-3 pt-6">
-                  <Button variant="outline" className="flex-1 h-12 text-base">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 text-base"
+                    onClick={handleResetFilters}
+                  >
                     초기화
                   </Button>
-                  <Button className="flex-1 h-12 text-base">적용</Button>
+                  <SheetClose asChild>
+                    <Button className="flex-1 h-12 text-base" onClick={handleApplyFilters}>
+                      적용
+                    </Button>
+                  </SheetClose>
                 </div>
               </div>
             </SheetContent>

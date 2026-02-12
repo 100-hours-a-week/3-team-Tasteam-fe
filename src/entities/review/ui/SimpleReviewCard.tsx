@@ -70,7 +70,10 @@ export function SimpleReviewCard(props: SimpleReviewCardProps) {
             <span className="text-xs text-muted-foreground">{date}</span>
           </span>
         </div>
-        <p className="text-sm leading-relaxed line-clamp-2 text-muted-foreground" title={content}>
+        <p
+          className="text-sm leading-relaxed line-clamp-2 text-muted-foreground whitespace-pre-wrap"
+          title={content}
+        >
           {content}
         </p>
       </Card>
@@ -110,7 +113,7 @@ export function SimpleReviewCard(props: SimpleReviewCardProps) {
         </div>
       </div>
       <p
-        className="text-sm leading-relaxed line-clamp-2 text-muted-foreground mb-2"
+        className="text-sm leading-relaxed line-clamp-2 text-muted-foreground mb-2 whitespace-pre-wrap"
         title={content}
       >
         {content}

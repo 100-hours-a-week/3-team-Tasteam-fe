@@ -85,7 +85,10 @@ export function ReviewCard(props: ReviewCardProps) {
             </div>
           </div>
         </div>
-        <p className="text-sm leading-relaxed line-clamp-2 text-muted-foreground" title={content}>
+        <p
+          className="text-sm leading-relaxed line-clamp-2 text-muted-foreground whitespace-pre-wrap"
+          title={content}
+        >
           {content}
         </p>
       </Card>
@@ -155,7 +158,7 @@ export function ReviewCard(props: ReviewCardProps) {
           </div>
         </div>
       </div>
-      <p className="text-sm leading-relaxed mb-3">{getContent(review)}</p>
+      <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{getContent(review)}</p>
       {review.keywords.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-3">
           {review.keywords.map((keyword) => (
