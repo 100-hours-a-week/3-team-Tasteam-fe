@@ -92,7 +92,17 @@ export function SubgroupsPage() {
       openLogin()
       return
     }
-    navigate(ROUTES.chatRoom(id))
+    navigate(ROUTES.chatRoom(id), {
+      state: {
+        subgroupName: subgroup?.name ?? null,
+        memberCount: subgroup?.memberCount ?? members.length,
+        members: members.map((member) => ({
+          memberId: member.memberId,
+          nickname: member.nickname,
+          profileImageUrl: member.profileImage?.url ?? null,
+        })),
+      },
+    })
   }
 
   useEffect(() => {
@@ -122,7 +132,7 @@ export function SubgroupsPage() {
           }
         }
         try {
-          const memberList = await getSubgroupMembers(detail.subgroupId, { size: 5 })
+          const memberList = await getSubgroupMembers(detail.subgroupId, { size: 100 })
           if (!cancelled) {
             setMembers(memberList)
           }
