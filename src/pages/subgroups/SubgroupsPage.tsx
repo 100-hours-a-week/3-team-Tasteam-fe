@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailReviewCard } from '@/entities/review'
 import {
   getSubgroup,
+  getSubgroupChatRoomId,
   getSubgroupMembers,
   getSubgroupReviews,
   joinSubgroup,
@@ -68,6 +69,7 @@ export function SubgroupsPage() {
   const [favorites, setFavorites] = useState<FavoriteRestaurantItem[]>([])
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false)
   const [favoritesError, setFavoritesError] = useState<string | null>(null)
+  const [isChatNavigating, setIsChatNavigating] = useState(false)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = parseNumberParam(id)
@@ -86,23 +88,44 @@ export function SubgroupsPage() {
   //   tags: string[]
   // }> = []
 
-  const handleChatClick = () => {
+  const handleChatClick = async () => {
     if (!id) return
     if (!isAuthenticated) {
       openLogin()
       return
     }
-    navigate(ROUTES.chatRoom(id), {
-      state: {
-        subgroupName: subgroup?.name ?? null,
-        memberCount: subgroup?.memberCount ?? members.length,
-        members: members.map((member) => ({
-          memberId: member.memberId,
-          nickname: member.nickname,
-          profileImageUrl: member.profileImage?.url ?? null,
-        })),
-      },
-    })
+    const parsedSubgroupId = Number(id)
+    if (!Number.isFinite(parsedSubgroupId)) return
+
+    setIsChatNavigating(true)
+    try {
+      const chatRoomId = await getSubgroupChatRoomId(parsedSubgroupId)
+      navigate(ROUTES.chatRoom(String(chatRoomId)), {
+        state: {
+          subgroupId: parsedSubgroupId,
+          subgroupName: subgroup?.name ?? null,
+          memberCount: subgroup?.memberCount ?? members.length,
+          members: members.map((member) => ({
+            memberId: member.memberId,
+            nickname: member.nickname,
+            profileImageUrl: member.profileImageUrl ?? member.profileImage?.url ?? null,
+          })),
+        },
+      })
+    } catch (error: unknown) {
+      const code = getApiErrorCode(error)
+      if (code === 'AUTHENTICATION_REQUIRED') {
+        openLogin()
+      } else if (code === 'NO_PERMISSION') {
+        alert('채팅방 접근 권한이 없습니다.')
+      } else if (code === 'CHAT_ROOM_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
+        alert('채팅방 정보를 찾을 수 없습니다.')
+      } else {
+        alert('채팅방으로 이동하지 못했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsChatNavigating(false)
+    }
   }
 
   useEffect(() => {
@@ -550,8 +573,9 @@ export function SubgroupsPage() {
           variant="default"
           size="icon"
           className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
-          onClick={handleChatClick}
+          onClick={() => void handleChatClick()}
           aria-label="채팅하기"
+          disabled={isChatNavigating}
         >
           <MessageSquare className="h-6 w-6" />
         </Button>
