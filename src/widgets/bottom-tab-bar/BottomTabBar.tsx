@@ -2,6 +2,7 @@ import { Home, Search, Heart, Users, User } from 'lucide-react'
 import { useLocation } from 'react-router-dom'
 import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
 import { cn } from '@/shared/lib/utils'
+import { logger } from '@/shared/lib/logger'
 
 export type TabId = 'home' | 'search' | 'favorites' | 'groups' | 'profile'
 
@@ -19,6 +20,13 @@ const tabs = [
 ]
 
 export function BottomTabBar({ currentTab, onTabChange }: BottomTabBarProps) {
+  const handleTabClick = (tabId: TabId) => {
+    try {
+      onTabChange?.(tabId)
+    } catch (error) {
+      logger.error('[BottomTabBar] tab click failed', { tabId, error })
+    }
+  }
   const location = useLocation()
   const { track } = useUserActivity()
 
@@ -32,6 +40,7 @@ export function BottomTabBar({ currentTab, onTabChange }: BottomTabBarProps) {
           return (
             <button
               key={tab.id}
+              onClick={() => handleTabClick(tab.id)}
               onClick={() => {
                 if (tab.id !== currentTab) {
                   track({
