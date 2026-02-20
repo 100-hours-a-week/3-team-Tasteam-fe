@@ -49,7 +49,7 @@ export function ChatMessageBubble({
     <div className={cn('flex gap-2 px-4 py-1', isOwn && 'flex-row-reverse')}>
       {!isOwn && showAvatar && (
         <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarImage src={message.memberProfileImageUrl} />
+          <AvatarImage src={message.memberProfileImageUrl ?? undefined} />
           <AvatarFallback>{message.memberNickname?.[0] || '?'}</AvatarFallback>
         </Avatar>
       )}

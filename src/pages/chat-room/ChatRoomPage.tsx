@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState, type UIEvent } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Client, type IMessage } from '@stomp/stompjs'
 import { ChevronDown, Users } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -8,7 +9,16 @@ import { ListState } from '@/widgets/list-state'
 import { Button } from '@/shared/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
-import { ChatMessageBubble, ChatDateDivider } from '@/entities/chat'
+import { getAccessToken } from '@/shared/lib/authToken'
+import { API_BASE_URL } from '@/shared/config/env'
+import {
+  ChatDateDivider,
+  ChatMessageBubble,
+  getChatMessages,
+  sendChatMessage,
+  updateChatReadCursor,
+} from '@/entities/chat'
+import { getSubgroupMembers } from '@/entities/subgroup'
 import type { ChatMessageDto } from '@/entities/chat'
 
 type ChatRoomMember = {
@@ -18,82 +28,231 @@ type ChatRoomMember = {
 }
 
 type ChatRoomLocationState = {
+  subgroupId?: number
   subgroupName?: string | null
   memberCount?: number
   members?: ChatRoomMember[]
 }
 
 const MEMBER_PAGE_SIZE = 10
+const MESSAGE_PAGE_SIZE = 20
 
-const createMockMessages = (
-  targetRoomId: string | undefined,
-  currentUserId: number,
-): ChatMessageDto[] => {
-  if (!targetRoomId) return []
-
-  const now = Date.now()
-  return [
-    {
-      id: Number(`${targetRoomId}001`),
-      memberId: 2,
-      memberNickname: '민지',
-      memberProfileImageUrl: '',
-      messageType: 'text',
-      content: '안녕하세요! 하위그룹 채팅방 오픈했어요.',
-      createdAt: new Date(now - 1000 * 60 * 45).toISOString(),
-    },
-    {
-      id: Number(`${targetRoomId}002`),
-      memberId: 3,
-      memberNickname: '지훈',
-      memberProfileImageUrl: '',
-      messageType: 'text',
-      content: '오늘 저녁 후보 2곳 정리해둘게요.',
-      createdAt: new Date(now - 1000 * 60 * 30).toISOString(),
-    },
-    {
-      id: Number(`${targetRoomId}003`),
-      memberId: currentUserId,
-      memberNickname: '나',
-      memberProfileImageUrl: '',
-      messageType: 'text',
-      content: '좋아요, 7시쯤 투표 시작해요!',
-      createdAt: new Date(now - 1000 * 60 * 20).toISOString(),
-    },
-  ]
+const toWsUrl = (apiBaseUrl: string) => {
+  const url = new URL(apiBaseUrl)
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+  url.pathname = '/ws/chat'
+  url.search = ''
+  url.hash = ''
+  return url.toString()
 }
+
+const parseJwtPayload = (token: string): { sub?: string } | null => {
+  try {
+    const base64Url = token.split('.')[1]
+    if (!base64Url) return null
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+    return JSON.parse(atob(padded)) as { sub?: string }
+  } catch {
+    return null
+  }
+}
+
+const normalizeMessage = (message: ChatMessageDto): ChatMessageDto => ({
+  ...message,
+  messageType: message.messageType.toLowerCase(),
+})
 
 export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as ChatRoomLocationState | null
-  const currentUserId = 1
-  const roomTitle = state?.subgroupName?.trim() || `하위그룹 ${roomId ?? '-'}`
-  const membersFromState = state?.members ?? []
-  const fallbackMembers: ChatRoomMember[] = [
-    { memberId: currentUserId, nickname: '나', profileImageUrl: null },
-    { memberId: 2, nickname: '민지', profileImageUrl: null },
-    { memberId: 3, nickname: '지훈', profileImageUrl: null },
-  ]
-  const members = membersFromState.length > 0 ? membersFromState : fallbackMembers
-  const memberCount = state?.memberCount ?? members.length
+  const chatRoomId = Number(roomId)
+  const isValidRoomId = Number.isFinite(chatRoomId)
 
-  const [messages, setMessages] = useState<ChatMessageDto[]>(() =>
-    createMockMessages(roomId, currentUserId),
-  )
-  const [hasMore, setHasMore] = useState(false)
-  const [showScrollButton, setShowScrollButton] = useState(false)
+  const currentUserId = useMemo(() => {
+    const token = getAccessToken()
+    if (!token) return null
+    const payload = parseJwtPayload(token)
+    if (!payload) return null
+    const parsedSub = Number(payload.sub)
+    return Number.isFinite(parsedSub) ? parsedSub : null
+  }, [])
+  const ownMemberId = currentUserId ?? -1
+
+  const roomTitle = state?.subgroupName?.trim() || `채팅방 ${roomId ?? ''}`
+  const [members, setMembers] = useState<ChatRoomMember[]>(state?.members ?? [])
+  const [memberCount, setMemberCount] = useState<number>(state?.memberCount ?? members.length)
   const [visibleMemberCount, setVisibleMemberCount] = useState(MEMBER_PAGE_SIZE)
 
+  const [messages, setMessages] = useState<ChatMessageDto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [wsErrorMessage, setWsErrorMessage] = useState<string | null>(null)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+
+  const clientRef = useRef<Client | null>(null)
+  const readCursorSyncedRef = useRef<number | null>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const isAtBottom = useRef(true)
+  const isAtBottomRef = useRef(true)
 
   const scrollToBottom = (force = false) => {
     const container = scrollAreaRef.current
     if (!container) return
-    if (force || isAtBottom.current) {
+    if (force || isAtBottomRef.current) {
       container.scrollTop = container.scrollHeight
+    }
+  }
+
+  useEffect(() => {
+    if (!isValidRoomId) {
+      setIsLoading(false)
+      setErrorMessage('유효하지 않은 채팅방입니다.')
+      return
+    }
+
+    let cancelled = false
+    const loadInitialMessages = async () => {
+      setIsLoading(true)
+      setErrorMessage(null)
+      try {
+        const response = await getChatMessages(chatRoomId, { size: MESSAGE_PAGE_SIZE })
+        if (cancelled) return
+
+        const normalized = response.items.map(normalizeMessage).reverse()
+        setMessages(normalized)
+        setNextCursor(response.pagination.nextCursor)
+        setHasMore(response.pagination.hasNext)
+      } catch {
+        if (!cancelled) {
+          setErrorMessage('메시지를 불러오지 못했습니다.')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+          requestAnimationFrame(() => scrollToBottom(true))
+        }
+      }
+    }
+
+    void loadInitialMessages()
+    return () => {
+      cancelled = true
+    }
+  }, [chatRoomId, isValidRoomId])
+
+  useEffect(() => {
+    const subgroupId = state?.subgroupId
+    if (!subgroupId || members.length > 0) return
+
+    let cancelled = false
+    const loadMembers = async () => {
+      try {
+        const memberList = await getSubgroupMembers(subgroupId, { size: 100 })
+        if (cancelled) return
+        const mapped = memberList.map((member) => ({
+          memberId: member.memberId,
+          nickname: member.nickname,
+          profileImageUrl: member.profileImageUrl ?? member.profileImage?.url ?? null,
+        }))
+        setMembers(mapped)
+        setMemberCount(state?.memberCount ?? mapped.length)
+      } catch {
+        // keep fallback state
+      }
+    }
+
+    void loadMembers()
+    return () => {
+      cancelled = true
+    }
+  }, [members.length, state?.memberCount, state?.subgroupId])
+
+  useEffect(() => {
+    if (!isValidRoomId) return
+
+    const token = getAccessToken()
+    const wsUrl = toWsUrl(API_BASE_URL)
+    if (!token) return
+
+    const wsClient = new Client({
+      brokerURL: wsUrl,
+      reconnectDelay: 0,
+      connectHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
+      onConnect: () => {
+        setErrorMessage(null)
+        setWsErrorMessage(null)
+        wsClient.subscribe(`/topic/chat-rooms/${chatRoomId}`, (frame: IMessage) => {
+          try {
+            const incoming = normalizeMessage(JSON.parse(frame.body) as ChatMessageDto)
+            setMessages((prev) => {
+              if (prev.some((item) => item.id === incoming.id)) return prev
+              const next = [...prev, incoming]
+              next.sort((a, b) => a.id - b.id)
+              return next
+            })
+            requestAnimationFrame(() => scrollToBottom())
+          } catch {
+            // ignore malformed payload
+          }
+        })
+      },
+      onStompError: () => {
+        setWsErrorMessage('실시간 연결이 불안정합니다. 새로고침 후 다시 시도해주세요.')
+      },
+      onWebSocketError: () => {
+        setWsErrorMessage('실시간 연결에 실패했습니다.')
+      },
+    })
+
+    wsClient.activate()
+    clientRef.current = wsClient
+
+    return () => {
+      clientRef.current = null
+      wsClient.deactivate()
+    }
+  }, [chatRoomId, isValidRoomId])
+
+  useEffect(() => {
+    if (!isValidRoomId || messages.length === 0) return
+    const lastMessageId = messages[messages.length - 1]?.id
+    if (!lastMessageId || readCursorSyncedRef.current === lastMessageId) return
+
+    readCursorSyncedRef.current = lastMessageId
+    void updateChatReadCursor(chatRoomId, { lastReadMessageId: lastMessageId }).catch(() => {
+      readCursorSyncedRef.current = null
+    })
+  }, [chatRoomId, isValidRoomId, messages])
+
+  const loadOlderMessages = async () => {
+    if (!isValidRoomId || !hasMore || !nextCursor || isLoadingMore) return
+
+    setIsLoadingMore(true)
+    try {
+      const response = await getChatMessages(chatRoomId, {
+        cursor: nextCursor,
+        size: MESSAGE_PAGE_SIZE,
+      })
+      const normalized = response.items.map(normalizeMessage).reverse()
+      setMessages((prev) => {
+        const merged = [...normalized, ...prev]
+        const uniqueById = Array.from(new Map(merged.map((item) => [item.id, item])).values())
+        uniqueById.sort((a, b) => a.id - b.id)
+        return uniqueById
+      })
+      setNextCursor(response.pagination.nextCursor)
+      setHasMore(response.pagination.hasNext)
+    } catch {
+      // keep current timeline
+    } finally {
+      setIsLoadingMore(false)
     }
   }
 
@@ -104,35 +263,56 @@ export function ChatRoomPage() {
     const { scrollTop, scrollHeight, clientHeight } = container
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
     const atBottom = distanceFromBottom < 80
-    isAtBottom.current = atBottom
+    isAtBottomRef.current = atBottom
     setShowScrollButton(!atBottom)
-    if (scrollTop < 100 && hasMore) {
-      setHasMore(false)
+
+    if (scrollTop < 120) {
+      void loadOlderMessages()
     }
   }
 
-  const handleSendMessage = (text: string) => {
-    const newMessage: ChatMessageDto = {
-      id: Date.now(),
-      memberId: currentUserId,
-      memberNickname: '',
-      memberProfileImageUrl: '',
-      messageType: 'text',
-      content: text,
-      createdAt: new Date().toISOString(),
+  const handleSendMessage = async (text: string) => {
+    if (!isValidRoomId || !text.trim()) return
+
+    const payload = {
+      messageType: 'TEXT' as const,
+      content: text.trim(),
     }
-    setMessages((prev) => [...prev, newMessage])
-    scrollToBottom(true)
-    setShowScrollButton(false)
+
+    const client = clientRef.current
+    if (client?.connected) {
+      client.publish({
+        destination: `/pub/chat-rooms/${chatRoomId}/messages`,
+        body: JSON.stringify(payload),
+      })
+      scrollToBottom(true)
+      setShowScrollButton(false)
+      return
+    }
+
+    try {
+      await sendChatMessage(chatRoomId, payload)
+      const fallbackMessage: ChatMessageDto = {
+        id: Date.now(),
+        memberId: ownMemberId,
+        memberNickname: '나',
+        memberProfileImageUrl: '',
+        content: payload.content,
+        messageType: 'text',
+        createdAt: new Date().toISOString(),
+      }
+      setMessages((prev) => [...prev, fallbackMessage])
+      scrollToBottom(true)
+      setShowScrollButton(false)
+    } catch {
+      setErrorMessage('메시지 전송에 실패했습니다.')
+    }
   }
 
   const groupedMessages = messages.reduce(
     (groups, message) => {
-      const date = new Date(message.createdAt)
-      const dateKey = format(date, 'yyyy-MM-dd')
-      if (!groups[dateKey]) {
-        groups[dateKey] = []
-      }
+      const dateKey = format(new Date(message.createdAt), 'yyyy-MM-dd')
+      if (!groups[dateKey]) groups[dateKey] = []
       groups[dateKey].push(message)
       return groups
     },
@@ -142,7 +322,7 @@ export function ChatRoomPage() {
   const hasMoreMembers = visibleMemberCount < members.length
   const visibleMembers = members.slice(0, visibleMemberCount)
 
-  const handleMembersScroll = (event: React.UIEvent<HTMLDivElement>) => {
+  const handleMembersScroll = (event: UIEvent<HTMLDivElement>) => {
     if (!hasMoreMembers) return
     const target = event.currentTarget
     const distanceToBottom = target.scrollHeight - target.scrollTop - target.clientHeight
@@ -198,37 +378,60 @@ export function ChatRoomPage() {
       />
 
       <div ref={scrollAreaRef} className="flex-1 overflow-y-auto" onScroll={handleScroll}>
-        {Object.entries(groupedMessages).map(([dateKey, dateMessages]) => {
-          const date = parseISO(dateKey)
-          return (
-            <div key={dateKey}>
-              <ChatDateDivider date={date} />
-              {dateMessages.map((message, index) => {
-                const prevMessage = dateMessages[index - 1]
-                const showAvatar =
-                  !prevMessage ||
-                  prevMessage.memberId !== message.memberId ||
-                  message.messageType === 'system'
-                const showSender = showAvatar && message.memberId !== Number(currentUserId)
-
-                return (
-                  <ChatMessageBubble
-                    key={message.id}
-                    message={message}
-                    isOwn={message.memberId === currentUserId}
-                    showAvatar={showAvatar}
-                    showSender={showSender}
-                  />
-                )
-              })}
-            </div>
-          )
-        })}
-
-        {messages.length === 0 && (
+        {isLoading ? (
           <div className="h-full flex items-center justify-center">
-            <ListState type="empty" title="메시지가 없어요" description="첫 메시지를 보내보세요" />
+            <ListState type="loading" />
           </div>
+        ) : errorMessage && messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <ListState type="error" title="채팅을 불러오지 못했어요" description={errorMessage} />
+          </div>
+        ) : (
+          <>
+            {wsErrorMessage && (
+              <div className="px-4 pt-3 text-xs text-destructive">{wsErrorMessage}</div>
+            )}
+            {isLoadingMore && (
+              <div className="py-3 text-center text-xs text-muted-foreground">
+                이전 메시지 불러오는 중...
+              </div>
+            )}
+            {Object.entries(groupedMessages).map(([dateKey, dateMessages]) => {
+              const date = parseISO(dateKey)
+              return (
+                <div key={dateKey}>
+                  <ChatDateDivider date={date} />
+                  {dateMessages.map((message, index) => {
+                    const prevMessage = dateMessages[index - 1]
+                    const showAvatar =
+                      !prevMessage ||
+                      prevMessage.memberId !== message.memberId ||
+                      message.messageType === 'system'
+                    const showSender = showAvatar && message.memberId !== ownMemberId
+                    return (
+                      <ChatMessageBubble
+                        key={message.id}
+                        message={message}
+                        isOwn={message.memberId === ownMemberId}
+                        showAvatar={showAvatar}
+                        showSender={showSender}
+                      />
+                    )
+                  })}
+                </div>
+              )
+            })}
+
+            {messages.length === 0 && (
+              <div className="h-full flex items-center justify-center">
+                <ListState
+                  type="empty"
+                  title="메시지가 없어요"
+                  description="첫 메시지를 보내보세요"
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -248,7 +451,7 @@ export function ChatRoomPage() {
         </div>
       )}
 
-      <ChatInput onSendMessage={handleSendMessage} />
+      <ChatInput onSendMessage={(text) => void handleSendMessage(text)} />
     </div>
   )
 }

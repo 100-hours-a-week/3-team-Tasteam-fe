@@ -6,17 +6,17 @@ export type ChatMessageDto = {
   id: number
   memberId: number
   memberNickname: string
-  memberProfileImageUrl: string
+  memberProfileImageUrl?: string | null
   content: string
-  messageType: string
+  messageType: 'TEXT' | 'IMAGE' | 'SYSTEM' | string
   createdAt: IsoDateTimeString
 }
 
 export type ChatMessageListResponseDto = CursorPageResponse<ChatMessageDto>
 
 export type ChatMessageSendRequestDto = {
-  messageType?: string
-  content?: string
+  messageType?: 'TEXT' | 'IMAGE' | 'SYSTEM'
+  content: string
 }
 
 export type ChatMessageSendResponseDto = SuccessResponse<{
