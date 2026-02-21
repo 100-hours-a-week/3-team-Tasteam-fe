@@ -19,11 +19,12 @@ import { toMainPageData } from '@/entities/main'
 
 type HomePageProps = {
   onSearchClick?: () => void
-  onRestaurantClick?: (id: string) => void
+  onRestaurantClick?: (id: string, metadata?: { position: number; section: string }) => void
   onGroupClick?: (id: string) => void
+  onEventClick?: (eventId: number) => void
 }
 
-export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
+export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
@@ -80,6 +81,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
+  const splashEvent = mainData?.data?.splashEvent
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
   const hotSection = resolvedSections.find((section) => section.type === 'HOT')
@@ -116,7 +118,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     return (
       <div className="overflow-x-auto scrollbar-hide">
         <div className="flex w-max gap-3 px-4">
-          {items.map((item: MainSectionItemDto) => (
+          {items.map((item: MainSectionItemDto, index) => (
             <div key={item.restaurantId} className="w-[260px] shrink-0">
               <HorizontalRestaurantCard
                 id={item.restaurantId}
@@ -125,7 +127,12 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
                 distance={item.distanceMeter}
                 image={item.thumbnailImageUrl}
                 tags={[]}
-                onClick={onRestaurantClick}
+                onClick={(id) =>
+                  onRestaurantClick?.(id, {
+                    position: index,
+                    section: section?.type ?? 'UNKNOWN',
+                  })
+                }
               />
             </div>
           ))}
@@ -168,7 +175,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     return (
       <Container>
         <div className="space-y-4">
-          {items.map((item: MainSectionItemDto) => (
+          {items.map((item: MainSectionItemDto, index) => (
             <VerticalRestaurantCard
               key={item.restaurantId}
               id={item.restaurantId}
@@ -178,7 +185,12 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
               image={item.thumbnailImageUrl}
               tags={[]}
               reason={item.reviewSummary}
-              onClick={onRestaurantClick}
+              onClick={(id) =>
+                onRestaurantClick?.(id, {
+                  position: index,
+                  section: section?.type ?? 'UNKNOWN',
+                })
+              }
             />
           ))}
         </div>
@@ -188,12 +200,15 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
 
   return (
     <div className="pb-20">
-      {mainData?.data?.splashEvent && (
+      {splashEvent && (
         <SplashPopup
-          event={mainData.data.splashEvent}
+          event={splashEvent}
           isOpen={showSplashPopup}
           onClose={() => setShowSplashPopup(false)}
-          onLinkClick={() => navigate(ROUTES.events)}
+          onLinkClick={() => {
+            onEventClick?.(splashEvent.id)
+            navigate(ROUTES.events)
+          }}
         />
       )}
 
