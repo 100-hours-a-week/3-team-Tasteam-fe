@@ -17,5 +17,6 @@
 - `docs/디렉토리-구조/초기-단순-구조.md`: 초기 단순 구조 제안
 - `docs/개발-규칙/README.md`: FSD 파일/컴포넌트 분리 규칙
 - `docs/개발-규칙/데이터-로딩-정책.md`: 더미 데이터 제거 및 데이터 로딩 정책
+- `docs/spec/tech/user-activity/README.md`: 사용자 이벤트 수집(FE) 구현/운영 문서
 - `docs/트러블-슈팅/layout-shift.md`: Layout Shift 문제와 해결 방법
 - `docs/알림/알림-목록.md`: 알림 목록에서 지원/미지원 항목 정리
