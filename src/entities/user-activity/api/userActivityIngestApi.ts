@@ -40,10 +40,6 @@ export const sendUserActivityEvents = async (
       'Content-Type': 'application/json',
     }
 
-    if (payload.anonymousId) {
-      headers['X-Anonymous-Id'] = payload.anonymousId
-    }
-
     if (token) {
       headers.Authorization = `Bearer ${token}`
     }
@@ -68,10 +64,12 @@ export const sendUserActivityEvents = async (
       code,
     }
   } catch {
+    const isOnline = typeof navigator === 'undefined' ? true : navigator.onLine
     return {
       ok: false,
-      retryable: true,
+      retryable: !isOnline,
       status: 0,
+      code: isOnline ? 'CLIENT_TRANSPORT_BLOCKED' : 'CLIENT_OFFLINE',
     }
   }
 }

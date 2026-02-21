@@ -52,6 +52,11 @@ export class ActivityQueue {
     this.persist()
   }
 
+  clear() {
+    this.items = []
+    this.persist()
+  }
+
   private trimToMaxSize() {
     if (this.items.length <= this.maxSize) {
       return

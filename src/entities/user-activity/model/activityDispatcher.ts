@@ -110,7 +110,7 @@ export class ActivityDispatcher implements UserActivityTracker {
     this.anonymousId = options.anonymousId
   }
 
-  start() {
+  start = () => {
     this.stop()
     this.intervalId = window.setInterval(() => {
       void this.flush()
@@ -123,7 +123,7 @@ export class ActivityDispatcher implements UserActivityTracker {
     this.onlineListener = () => window.removeEventListener('online', handleOnline)
   }
 
-  stop() {
+  stop = () => {
     if (this.intervalId !== null) {
       window.clearInterval(this.intervalId)
       this.intervalId = null
@@ -136,61 +136,76 @@ export class ActivityDispatcher implements UserActivityTracker {
     this.onlineListener = null
   }
 
-  setEnabled(enabled: boolean) {
+  setEnabled = (enabled: boolean) => {
     this.enabled = enabled
     if (enabled) {
       void this.flush()
     }
   }
 
-  track(input: TrackEventInput) {
+  track = (input: TrackEventInput) => {
     if (!this.enabled) return
-    if (!isTrackEventName(input.eventName)) {
-      logger.warn('[activity] 허용되지 않은 이벤트명을 무시합니다.', {
-        eventName: input.eventName,
-      })
+
+    const execute = () => {
+      try {
+        if (!this.enabled) return
+        if (!isTrackEventName(input.eventName)) {
+          logger.warn('[activity] 허용되지 않은 이벤트명을 무시합니다.', {
+            eventName: input.eventName,
+          })
+          return
+        }
+
+        const normalizedProperties = sanitizeProperties(input.properties)
+        const missingKeys = findMissingRequiredProperties(input.eventName, normalizedProperties)
+        if (missingKeys.length > 0) {
+          logger.warn('[activity] 필수 속성 누락 이벤트를 무시합니다.', {
+            eventName: input.eventName,
+            required: getRequiredPropertyKeys(input.eventName),
+            missing: missingKeys,
+          })
+          return
+        }
+
+        const event: ActivityEventItemRequest = {
+          eventId: createEventId(),
+          eventName: input.eventName,
+          eventVersion: 'v1',
+          occurredAt: input.occurredAt ?? new Date().toISOString(),
+          properties: {
+            source: 'CLIENT',
+            platform: 'WEB',
+            appEnv: APP_ENV,
+            ...normalizedProperties,
+          },
+        }
+
+        this.queue.enqueue(event)
+
+        if (this.debug) {
+          logger.debug('[activity] 이벤트 큐 적재', {
+            eventName: event.eventName,
+            queueSize: this.queue.size(),
+          })
+        }
+
+        if (this.queue.size() >= this.maxBatchSize) {
+          void this.flush()
+        }
+      } catch (error) {
+        logger.error('[activity] track 처리 중 예외가 발생했습니다.', error)
+      }
+    }
+
+    if (typeof queueMicrotask === 'function') {
+      queueMicrotask(execute)
       return
     }
 
-    const normalizedProperties = sanitizeProperties(input.properties)
-    const missingKeys = findMissingRequiredProperties(input.eventName, normalizedProperties)
-    if (missingKeys.length > 0) {
-      logger.warn('[activity] 필수 속성 누락 이벤트를 무시합니다.', {
-        eventName: input.eventName,
-        required: getRequiredPropertyKeys(input.eventName),
-        missing: missingKeys,
-      })
-      return
-    }
-
-    const event: ActivityEventItemRequest = {
-      eventId: createEventId(),
-      eventName: input.eventName,
-      eventVersion: 'v1',
-      occurredAt: input.occurredAt ?? new Date().toISOString(),
-      properties: {
-        source: 'CLIENT',
-        platform: 'WEB',
-        appEnv: APP_ENV,
-        ...normalizedProperties,
-      },
-    }
-
-    this.queue.enqueue(event)
-
-    if (this.debug) {
-      logger.debug('[activity] 이벤트 큐 적재', {
-        eventName: event.eventName,
-        queueSize: this.queue.size(),
-      })
-    }
-
-    if (this.queue.size() >= this.maxBatchSize) {
-      void this.flush()
-    }
+    void Promise.resolve().then(execute)
   }
 
-  async flush(options?: { keepalive?: boolean }) {
+  flush = async (options?: { keepalive?: boolean }) => {
     if (!this.enabled) return
     if (this.isFlushing) return
     if (this.queue.size() === 0) return
@@ -223,6 +238,16 @@ export class ActivityDispatcher implements UserActivityTracker {
           break
         }
 
+        if (result.status === 0 && result.code === 'CLIENT_TRANSPORT_BLOCKED') {
+          this.queue.clear()
+          this.enabled = false
+          logger.warn('[activity] 전송 채널이 차단되어 수집을 비활성화합니다.', {
+            status: result.status,
+            code: result.code,
+          })
+          break
+        }
+
         logger.warn('[activity] 재시도 불가 배치를 폐기합니다.', {
           status: result.status,
           code: result.code,
@@ -234,7 +259,7 @@ export class ActivityDispatcher implements UserActivityTracker {
     }
   }
 
-  private scheduleRetry() {
+  private readonly scheduleRetry = () => {
     if (this.retryTimerId !== null) {
       return
     }
