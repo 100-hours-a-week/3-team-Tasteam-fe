@@ -2,7 +2,6 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { RequireAuth } from '@/features/auth/require-auth'
 import { useAuth } from '@/entities/user'
-import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 
 const HomePage = lazy(() => import('@/pages/home').then((m) => ({ default: m.HomePage })))
@@ -103,48 +102,7 @@ type AppRouterProps = {
 
 export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
   const navigate = useNavigate()
-  const location = useLocation()
   const { isAuthenticated, logout } = useAuth()
-  const { track } = useUserActivity()
-  const fromPageKey = resolvePageContext(location.pathname).pageKey
-
-  const trackRestaurantClick = (restaurantId: string, position = -1) => {
-    const parsedRestaurantId = Number(restaurantId)
-    if (!Number.isFinite(parsedRestaurantId)) return
-    track({
-      eventName: 'ui.restaurant.clicked',
-      properties: {
-        restaurantId: parsedRestaurantId,
-        fromPageKey,
-        position,
-      },
-    })
-  }
-
-  const trackGroupClick = (groupId: string, position = -1) => {
-    const parsedGroupId = Number(groupId)
-    if (!Number.isFinite(parsedGroupId)) return
-    track({
-      eventName: 'ui.group.clicked',
-      properties: {
-        groupId: parsedGroupId,
-        fromPageKey,
-        position,
-      },
-    })
-  }
-
-  const trackEventClick = (eventId: number, position = -1) => {
-    if (!Number.isFinite(eventId)) return
-    track({
-      eventName: 'ui.event.clicked',
-      properties: {
-        eventId,
-        fromPageKey,
-        position,
-      },
-    })
-  }
 
   return (
     <>
@@ -190,14 +148,8 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             path="/search"
             element={
               <SearchPage
-                onRestaurantClick={(id, metadata) => {
-                  trackRestaurantClick(id, metadata?.position ?? -1)
-                  navigate(`/restaurants/${id}`, { state: { fromPageKey } })
-                }}
-                onGroupClick={(id, metadata) => {
-                  trackGroupClick(id, metadata?.position ?? -1)
-                  navigate(`/groups/${id}`)
-                }}
+                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
+                onGroupClick={(id) => navigate(`/groups/${id}`)}
               />
             }
           />
@@ -206,12 +158,7 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             path="/favorites"
             element={
               <RequireAuth>
-                <FavoritesPage
-                  onRestaurantClick={(id) => {
-                    trackRestaurantClick(id, -1)
-                    navigate(`/restaurants/${id}`, { state: { fromPageKey } })
-                  }}
-                />
+                <FavoritesPage onRestaurantClick={(id) => navigate(`/restaurants/${id}`)} />
               </RequireAuth>
             }
           />
@@ -230,24 +177,14 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             element={
               <TodayLunchPage
                 onBack={() => navigate(-1)}
-                onRestaurantClick={(id) => {
-                  trackRestaurantClick(id, -1)
-                  navigate(`/restaurants/${id}`, { state: { fromPageKey } })
-                }}
+                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
               />
             }
           />
 
           <Route
             path="/groups"
-            element={
-              <GroupsPage
-                onGroupClick={(id) => {
-                  trackGroupClick(id, -1)
-                  navigate(`/groups/${id}`)
-                }}
-              />
-            }
+            element={<GroupsPage onGroupClick={(id) => navigate(`/groups/${id}`)} />}
           />
           <Route
             path="/groups/create"
@@ -344,10 +281,7 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
               <RequireAuth>
                 <MyFavoritesPage
                   onBack={() => navigate(-1)}
-                  onRestaurantClick={(id) => {
-                    trackRestaurantClick(id, -1)
-                    navigate(`/restaurants/${id}`, { state: { fromPageKey } })
-                  }}
+                  onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
                 />
               </RequireAuth>
             }
@@ -371,18 +305,7 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
           />
           <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
           <Route path="/notices" element={<NoticesPage onBack={() => navigate(-1)} />} />
-          <Route
-            path="/events"
-            element={
-              <EventsPage
-                onBack={() => navigate(-1)}
-                onEventClick={(eventId, metadata) => {
-                  trackEventClick(eventId, metadata?.position ?? -1)
-                  navigate(`/events/${eventId}`)
-                }}
-              />
-            }
-          />
+          <Route path="/events" element={<EventsPage onBack={() => navigate(-1)} />} />
           <Route path="/events/:id" element={<EventDetailPage onBack={() => navigate(-1)} />} />
 
           <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
@@ -421,17 +344,8 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             element={
               <HomePage
                 onSearchClick={() => navigate('/search')}
-                onRestaurantClick={(id, metadata) => {
-                  trackRestaurantClick(id, metadata?.position ?? -1)
-                  navigate(`/restaurants/${id}`, { state: { fromPageKey } })
-                }}
-                onGroupClick={(id) => {
-                  trackGroupClick(id, -1)
-                  navigate(`/groups/${id}`)
-                }}
-                onEventClick={(eventId) => {
-                  trackEventClick(eventId, 0)
-                }}
+                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
+                onGroupClick={(id) => navigate(`/groups/${id}`)}
               />
             }
           />

@@ -14,7 +14,6 @@ import { useImageUpload, UploadErrorModal } from '@/features/upload'
 import { GroupSubgroupLabel } from '@/shared/ui/group-subgroup-label'
 import { ImagePreviewDialog } from '@/shared/ui/image-preview-dialog'
 import type { ReviewKeywordItemDto } from '@/entities/review'
-import { useUserActivity } from '@/entities/user-activity'
 
 /** 드롭다운용 그룹/하위그룹 옵션 (평탄화) */
 type GroupOption =
@@ -30,8 +29,6 @@ type GroupOption =
 export function WriteReviewPage() {
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { track } = useUserActivity()
-  const parsedRestaurantId = Number(restaurantId)
 
   const [restaurantName, setRestaurantName] = useState('로딩 중...')
   const [groupOptions, setGroupOptions] = useState<GroupOption[]>([])
@@ -212,16 +209,6 @@ export function WriteReviewPage() {
         keywordIds: selectedKeywordIds,
         imageIds,
       })
-      if (Number.isFinite(parsedRestaurantId)) {
-        track({
-          eventName: 'ui.review.submitted',
-          properties: {
-            restaurantId: parsedRestaurantId,
-            groupId: selectedGroupId,
-            subgroupId: selectedSubgroupId ?? null,
-          },
-        })
-      }
       toast.success('리뷰가 등록되었습니다')
       navigate(`/restaurants/${restaurantId}`, { replace: true })
     } catch {

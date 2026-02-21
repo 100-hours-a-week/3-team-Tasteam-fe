@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Heart,
   MapPin,
@@ -36,7 +36,6 @@ import type { ReviewListItemDto } from '@/entities/review'
 import type { MenuCategoryDto } from '@/entities/restaurant'
 import { useAuth } from '@/entities/user'
 import { useMemberGroups } from '@/entities/member'
-import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,14 +59,8 @@ export function RestaurantDetailPage() {
 
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
-  const { track } = useUserActivity()
   const { isAuthenticated } = useAuth()
   const { summaries } = useMemberGroups()
-  const currentPageKey = resolvePageContext(location.pathname).pageKey
-  const locationState = (location.state as { fromPageKey?: string } | null) ?? null
-  const fromPageKey = locationState?.fromPageKey ?? currentPageKey
-  const parsedRestaurantId = Number(restaurantId)
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const [showGroupJoinModal, setShowGroupJoinModal] = React.useState(false)
   const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
@@ -98,24 +91,13 @@ export function RestaurantDetailPage() {
     if (!restaurantId) return
     setIsRestaurantLoading(true)
     getRestaurant(Number(restaurantId))
-      .then((res) => {
-        setRestaurantData(res.data)
-        if (Number.isFinite(parsedRestaurantId)) {
-          track({
-            eventName: 'ui.restaurant.viewed',
-            properties: {
-              restaurantId: parsedRestaurantId,
-              fromPageKey,
-            },
-          })
-        }
-      })
+      .then((res) => setRestaurantData(res.data))
       .catch(() => {
         setRestaurantData(null)
         navigate('/404', { replace: true })
       })
       .finally(() => setIsRestaurantLoading(false))
-  }, [restaurantId, navigate, track, fromPageKey, parsedRestaurantId])
+  }, [restaurantId, navigate])
 
   // 찜 상태 조회
   React.useEffect(() => {
@@ -358,29 +340,7 @@ export function RestaurantDetailPage() {
       return
     }
 
-    if (Number.isFinite(parsedRestaurantId)) {
-      track({
-        eventName: 'ui.review.write_started',
-        properties: {
-          restaurantId: parsedRestaurantId,
-          fromPageKey: currentPageKey,
-        },
-      })
-    }
     navigate(`/restaurants/${restaurantId}/review`)
-  }
-
-  const handleFavoriteSheetOpen = () => {
-    if (Number.isFinite(parsedRestaurantId)) {
-      track({
-        eventName: 'ui.favorite.sheet_opened',
-        properties: {
-          restaurantId: parsedRestaurantId,
-          fromPageKey: currentPageKey,
-        },
-      })
-    }
-    setShowFavoriteSheet(true)
   }
 
   const handleFavoriteComplete = () => {
@@ -394,27 +354,13 @@ export function RestaurantDetailPage() {
         const myTarget = data.targets.find((t) => t.targetType === 'ME')
         const subgroupTargets = data.targets.filter((t) => t.targetType === 'SUBGROUP')
 
-        const updatedFavoriteStatus = {
+        setFavoriteStatus({
           personal: myTarget?.favoriteState === 'FAVORITED',
           subgroups: subgroupTargets.map((st) => ({
             subgroupId: st.targetId || 0,
             isFavorited: st.favoriteState === 'FAVORITED',
           })),
-        }
-        setFavoriteStatus(updatedFavoriteStatus)
-        const selectedTargetCount =
-          (updatedFavoriteStatus.personal ? 1 : 0) +
-          updatedFavoriteStatus.subgroups.filter((subgroup) => subgroup.isFavorited).length
-        if (Number.isFinite(parsedRestaurantId)) {
-          track({
-            eventName: 'ui.favorite.updated',
-            properties: {
-              restaurantId: parsedRestaurantId,
-              selectedTargetCount,
-              fromPageKey: currentPageKey,
-            },
-          })
-        }
+        })
         toast.success('찜 목록이 업데이트되었습니다')
       })
       .catch(() => {
@@ -446,7 +392,7 @@ export function RestaurantDetailPage() {
                     {/* 찜 버튼 - 우측 상단 */}
                     {idx === 0 && (
                       <button
-                        onClick={handleFavoriteSheetOpen}
+                        onClick={() => setShowFavoriteSheet(true)}
                         className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
                         aria-label="찜하기"
                       >
@@ -474,7 +420,7 @@ export function RestaurantDetailPage() {
             이미지가 없습니다
             {/* 찜 버튼 - 이미지가 없을 때도 표시 */}
             <button
-              onClick={handleFavoriteSheetOpen}
+              onClick={() => setShowFavoriteSheet(true)}
               className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
               aria-label="찜하기"
             >

@@ -19,12 +19,11 @@ import { toMainPageData } from '@/entities/main'
 
 type HomePageProps = {
   onSearchClick?: () => void
-  onRestaurantClick?: (id: string, metadata?: { position: number; section: string }) => void
+  onRestaurantClick?: (id: string) => void
   onGroupClick?: (id: string) => void
-  onEventClick?: (eventId: number) => void
 }
 
-export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: HomePageProps) {
+export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
@@ -81,7 +80,6 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
-  const splashEvent = mainData?.data?.splashEvent
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
   const hotSection = resolvedSections.find((section) => section.type === 'HOT')
@@ -118,7 +116,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     return (
       <div className="overflow-x-auto scrollbar-hide">
         <div className="flex w-max gap-3 px-4">
-          {items.map((item: MainSectionItemDto, index) => (
+          {items.map((item: MainSectionItemDto) => (
             <div key={item.restaurantId} className="w-[260px] shrink-0">
               <HorizontalRestaurantCard
                 id={item.restaurantId}
@@ -127,12 +125,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
                 distance={item.distanceMeter}
                 image={item.thumbnailImageUrl}
                 tags={[]}
-                onClick={(id) =>
-                  onRestaurantClick?.(id, {
-                    position: index,
-                    section: section?.type ?? 'UNKNOWN',
-                  })
-                }
+                onClick={onRestaurantClick}
               />
             </div>
           ))}
@@ -175,7 +168,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     return (
       <Container>
         <div className="space-y-4">
-          {items.map((item: MainSectionItemDto, index) => (
+          {items.map((item: MainSectionItemDto) => (
             <VerticalRestaurantCard
               key={item.restaurantId}
               id={item.restaurantId}
@@ -185,12 +178,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
               image={item.thumbnailImageUrl}
               tags={[]}
               reason={item.reviewSummary}
-              onClick={(id) =>
-                onRestaurantClick?.(id, {
-                  position: index,
-                  section: section?.type ?? 'UNKNOWN',
-                })
-              }
+              onClick={onRestaurantClick}
             />
           ))}
         </div>
@@ -200,15 +188,12 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
 
   return (
     <div className="pb-20">
-      {splashEvent && (
+      {mainData?.data?.splashEvent && (
         <SplashPopup
-          event={splashEvent}
+          event={mainData.data.splashEvent}
           isOpen={showSplashPopup}
           onClose={() => setShowSplashPopup(false)}
-          onLinkClick={() => {
-            onEventClick?.(splashEvent.id)
-            navigate(ROUTES.events)
-          }}
+          onLinkClick={() => navigate(ROUTES.events)}
         />
       )}
 

@@ -41,5 +41,4 @@ export const API_ENDPOINTS = {
   oauthStart: (provider: string) => `/api/v1/auth/oauth/${provider}`,
   logout: '/api/v1/auth/logout',
   health: '/api/v1/health',
-  analyticsEvents: '/api/v1/analytics/events',
 } as const
