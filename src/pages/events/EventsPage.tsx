@@ -13,7 +13,7 @@ import { formatIsoTimestamp } from '@/shared/lib/time'
 
 type EventsPageProps = {
   onBack?: () => void
-  onEventClick?: (id: number, metadata?: { position: number }) => void
+  onEventClick?: (id: number) => void
 }
 
 export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
@@ -67,9 +67,9 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
     }
   }
 
-  const handleEventClick = (id: number, metadata?: { position: number }) => {
+  const handleEventClick = (id: number) => {
     if (onEventClick) {
-      onEventClick(id, metadata)
+      onEventClick(id)
     } else {
       navigate(`/events/${id}`)
     }
@@ -131,11 +131,11 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
           />
         ) : (
           <div className="space-y-3">
-            {events.map((event, index) => (
+            {events.map((event) => (
               <Card
                 key={event.id}
                 className="cursor-pointer hover:bg-secondary/50 transition-colors overflow-hidden"
-                onClick={() => handleEventClick(event.id, { position: index })}
+                onClick={() => handleEventClick(event.id)}
               >
                 {event.thumbnailImageUrl && (
                   <div className="relative w-full aspect-[16/9] overflow-hidden">
