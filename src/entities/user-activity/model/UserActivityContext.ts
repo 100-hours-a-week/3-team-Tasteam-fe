@@ -1,4 +1,10 @@
 import { createContext } from 'react'
 import type { UserActivityTracker } from './types'
 
-export const UserActivityContext = createContext<UserActivityTracker | null>(null)
+const noopTracker: UserActivityTracker = {
+  track: () => undefined,
+  flush: async () => undefined,
+  setEnabled: () => undefined,
+}
+
+export const UserActivityContext = createContext<UserActivityTracker>(noopTracker)
