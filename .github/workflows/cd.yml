@@ -36,7 +36,16 @@ jobs:
       - name: Build
         run: npm run build
 
-      # 5. 빌드 산출물 업로드 (run_number 기반 - 롤백용)
+      - name: Write version metadata
+        run: |
+          cat > dist/version.txt <<EOF
+          branch=${{ github.ref_name }}
+          run_number=${{ github.run_number }}
+          sha=${{ github.sha }}
+          deployed_at_utc=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          EOF
+
+      # 6. 빌드 산출물 업로드 (run_number 기반 - 롤백용)
       - name: Upload Build Artifact (with run number)
         uses: actions/upload-artifact@v4
         with:
@@ -44,15 +53,7 @@ jobs:
           path: dist/
           retention-days: 7
 
-      # 6. 빌드 산출물 업로드 (latest - 배포용)
-      - name: Upload Build Artifact (latest)
-        uses: actions/upload-artifact@v4
-        with:
-          name: fe-${{ github.ref_name }}-latest
-          path: dist/
-          retention-days: 7
-
-      # 8. 빌드 요약
+      # 7. 빌드 요약
       - name: Build Summary
         run: |
           echo "### Build Success :rocket:" >> $GITHUB_STEP_SUMMARY
@@ -64,7 +65,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "You can rollback to this version using the Rollback workflow." >> $GITHUB_STEP_SUMMARY
 
-      # 9. 빌드 실패 알림
+      # 8. 빌드 실패 알림
       - name: Notify Build Failure
         if: failure()
         uses: sarisia/actions-status-discord@v1
@@ -83,17 +84,18 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    timeout-minutes: 20
 
     steps:
       # 1. 빌드 산출물 다운로드
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: fe-${{ github.ref_name }}-latest
+          name: fe-${{ github.ref_name }}-${{ github.run_number }}
           path: ./deploy-temp
 
-      # 2. 서버로 정적 파일 전송
-      - name: Transfer Static Files to Server
+      # 2. 서버로 빌드 산출물 업로드 (고유 staging 경로)
+      - name: Upload Build Files to Staging
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -101,11 +103,11 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           source: "./deploy-temp/*"
-          target: "/home/${{ secrets.USERNAME }}/frontend/temp"
+          target: "/home/${{ secrets.USERNAME }}/frontend/staging/${{ github.ref_name }}/${{ github.run_number }}"
           strip_components: 1
 
-      # 3. 정적 파일 배포
-      - name: Deploy Frontend Files
+      # 3. 새 release 생성 후 current 심볼릭 링크 전환 (atomic)
+      - name: Promote Staging to Release
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -113,17 +115,55 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            TEMP_DIR="/home/${{ secrets.USERNAME }}/frontend/temp"
-            WEB_ROOT="/var/www/html"
+            set -euo pipefail
 
-            # 기존 파일 삭제 및 새 파일 배포
-            rm -rf $WEB_ROOT/*
-            cp -r $TEMP_DIR/* $WEB_ROOT/
+            STAGING_DIR="/home/${{ secrets.USERNAME }}/frontend/staging/${{ github.ref_name }}/${{ github.run_number }}"
+            DEPLOY_BASE="/opt/caddy/www/html"
+            RELEASES_DIR="${DEPLOY_BASE}/releases"
+            CURRENT_LINK="${DEPLOY_BASE}/current"
+            SHORT_SHA="$(printf '%s' '${{ github.sha }}' | cut -c1-12)"
+            RELEASE_ID="${{ github.ref_name }}-${{ github.run_number }}-${SHORT_SHA}"
+            RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
+            TMP_LINK="${DEPLOY_BASE}/.current_tmp"
 
-            # 임시 파일 정리
-            rm -rf $TEMP_DIR/*
+            if [ ! -d "$STAGING_DIR" ]; then
+              echo "❌ Staging directory not found: $STAGING_DIR"
+              exit 1
+            fi
 
-      # 4. 배포 결과 알림 (Discord)
+            sudo mkdir -p "$RELEASES_DIR"
+            sudo mkdir -p "$RELEASE_DIR"
+            sudo cp -a "$STAGING_DIR"/. "$RELEASE_DIR"/
+
+            sudo rm -f "$TMP_LINK"
+            sudo ln -s "$RELEASE_DIR" "$TMP_LINK"
+            sudo mv -Tf "$TMP_LINK" "$CURRENT_LINK"
+
+            rm -rf "$STAGING_DIR"
+
+            # 최근 5개 릴리즈만 유지
+            (sudo ls -1dt "$RELEASES_DIR"/* 2>/dev/null || true) | tail -n +6 | xargs -r sudo rm -rf
+
+            echo "✅ Deployed release: $RELEASE_DIR"
+            echo "✅ Current link -> $(readlink "$CURRENT_LINK")"
+            if [ -f "$CURRENT_LINK/version.txt" ]; then
+              echo "--- version.txt ---"
+              cat "$CURRENT_LINK/version.txt"
+            fi
+
+      # 4. 실패/중단 포함 staging 잔여물 정리
+      - name: Cleanup Staging Directory
+        if: always()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            rm -rf "/home/${{ secrets.USERNAME }}/frontend/staging/${{ github.ref_name }}/${{ github.run_number }}"
+
+      # 5. 배포 결과 알림 (Discord)
       - name: Notify Deployment Result
         if: always()
         uses: sarisia/actions-status-discord@v1
