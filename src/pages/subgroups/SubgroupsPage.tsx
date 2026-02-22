@@ -569,16 +569,20 @@ export function SubgroupsPage() {
       </Tabs>
 
       {FEATURE_FLAGS.enableChat && (
-        <Button
-          variant="default"
-          size="icon"
-          className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
-          onClick={() => void handleChatClick()}
-          aria-label="채팅하기"
-          disabled={isChatNavigating}
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
+        <div className="fixed inset-x-0 bottom-6 z-40 pointer-events-none md:mx-auto md:max-w-[var(--app-max-width)]">
+          <div className="flex justify-end px-4">
+            <Button
+              variant="default"
+              size="icon"
+              className="h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 pointer-events-auto"
+              onClick={() => void handleChatClick()}
+              aria-label="채팅하기"
+              disabled={isChatNavigating}
+            >
+              <MessageSquare className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Join Password Dialog */}
