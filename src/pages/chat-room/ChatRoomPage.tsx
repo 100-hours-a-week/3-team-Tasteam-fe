@@ -321,6 +321,10 @@ export function ChatRoomPage() {
 
   const hasMoreMembers = visibleMemberCount < members.length
   const visibleMembers = members.slice(0, visibleMemberCount)
+  const memberProfileImageById = useMemo(
+    () => new Map(members.map((member) => [member.memberId, member.profileImageUrl ?? null])),
+    [members],
+  )
 
   const handleMembersScroll = (event: UIEvent<HTMLDivElement>) => {
     if (!hasMoreMembers) return
@@ -408,10 +412,17 @@ export function ChatRoomPage() {
                       prevMessage.memberId !== message.memberId ||
                       message.messageType === 'system'
                     const showSender = showAvatar && message.memberId !== ownMemberId
+                    const messageWithProfile = message.memberProfileImageUrl
+                      ? message
+                      : {
+                          ...message,
+                          memberProfileImageUrl:
+                            memberProfileImageById.get(message.memberId) ?? null,
+                        }
                     return (
                       <ChatMessageBubble
                         key={message.id}
-                        message={message}
+                        message={messageWithProfile}
                         isOwn={message.memberId === ownMemberId}
                         showAvatar={showAvatar}
                         showSender={showSender}
