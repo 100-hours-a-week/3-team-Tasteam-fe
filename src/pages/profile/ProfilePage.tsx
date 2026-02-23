@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { AppVersionText } from '@/shared/ui/app-version'
 import { useAuth } from '@/entities/user'
 import { getMe } from '@/entities/member'
 import type { MemberProfileDto } from '@/entities/member'
@@ -252,13 +253,27 @@ export function ProfilePage({
         </AlertDialog>
       )}
 
-      <Container className="pt-8">
+      <Container className="mt-[50px]">
         <div className="text-center text-sm text-muted-foreground space-y-1">
-          <p>Tasteam v1.0.0</p>
+          <p>
+            Tasteam <AppVersionText />
+          </p>
           <div className="flex items-center justify-center gap-4">
-            <button className="hover:text-foreground">이용약관</button>
+            <button
+              type="button"
+              className="hover:text-foreground"
+              onClick={() => navigate(ROUTES.terms)}
+            >
+              이용약관
+            </button>
             <Separator orientation="vertical" className="h-3" />
-            <button className="hover:text-foreground">개인정보처리방침</button>
+            <button
+              type="button"
+              className="hover:text-foreground"
+              onClick={() => navigate(ROUTES.privacyPolicy)}
+            >
+              개인정보처리방침
+            </button>
           </div>
         </div>
       </Container>
