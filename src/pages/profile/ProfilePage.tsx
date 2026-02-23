@@ -94,7 +94,16 @@ export function ProfilePage({
 
   const isLoading = isAuthenticated && member === null && !profileError
 
-  const menuItems = [
+  type ProfileMenuItem = {
+    label: string
+    icon: typeof Bell
+    onClick?: () => void
+    requiresAuth?: boolean
+    tone?: 'default' | 'destructive'
+    showChevron?: boolean
+  }
+
+  const menuItems: ProfileMenuItem[] = [
     { label: '공지사항', icon: Bell, onClick: onNotices },
     { label: '이벤트', icon: Gift, onClick: onEvents },
     { label: '내 리뷰', icon: FileText, onClick: onMyReviews, requiresAuth: true },
@@ -102,25 +111,22 @@ export function ProfilePage({
       ? [{ label: '알림', icon: Bell, onClick: onNotifications, requiresAuth: true }]
       : []),
     { label: '설정', icon: Settings, onClick: onSettingsClick },
+    ...(isAuthenticated
+      ? [
+          {
+            label: '로그아웃',
+            icon: LogOut,
+            onClick: () => setLogoutDialogOpen(true),
+            tone: 'destructive' as const,
+            showChevron: false,
+          },
+        ]
+      : []),
   ]
 
   return (
     <div className="pb-20 min-h-screen bg-background">
-      <TopAppBar
-        title="프로필"
-        actions={
-          isAuthenticated ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLogoutDialogOpen(true)}
-              aria-label="로그아웃"
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
-          ) : undefined
-        }
-      />
+      <TopAppBar title="프로필" />
 
       <Container className="pt-6 pb-6">
         <div className="p-6 h-[200px] flex items-center justify-center relative">
@@ -199,7 +205,8 @@ export function ProfilePage({
         <Card className="divide-y">
           {menuItems.map((item, idx) => {
             const Icon = item.icon
-            const isDestructive = (item as { tone?: string }).tone === 'destructive'
+            const isDestructive = item.tone === 'destructive'
+            const showChevron = item.showChevron ?? true
             const handleClick = () => {
               if (item.requiresAuth && !isAuthenticated) {
                 openLogin()
@@ -221,7 +228,7 @@ export function ProfilePage({
                     {item.label}
                   </span>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                {showChevron ? <ChevronRight className="h-5 w-5 text-muted-foreground" /> : null}
               </button>
             )
           })}
