@@ -335,7 +335,7 @@ export function ChatRoomPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-background min-h-screen">
+    <div className="relative flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-background">
       <TopAppBar
         title={roomTitle}
         showBackButton
@@ -381,7 +381,11 @@ export function ChatRoomPage() {
         }
       />
 
-      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto" onScroll={handleScroll}>
+      <div
+        ref={scrollAreaRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        onScroll={handleScroll}
+      >
         {isLoading ? (
           <div className="h-full flex items-center justify-center">
             <ListState type="loading" />
@@ -462,7 +466,9 @@ export function ChatRoomPage() {
         </div>
       )}
 
-      <ChatInput onSendMessage={(text) => void handleSendMessage(text)} />
+      <div className="sticky bottom-0 z-20 bg-background">
+        <ChatInput onSendMessage={(text) => void handleSendMessage(text)} />
+      </div>
     </div>
   )
 }
