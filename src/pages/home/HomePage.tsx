@@ -9,6 +9,7 @@ import { LocationHeader } from '@/widgets/location-header'
 import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
 import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/restaurant-card'
 import { Input } from '@/shared/ui/input'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main'
 import type { BannerDto } from '@/entities/banner'
@@ -85,6 +86,21 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
   const hotSection = resolvedSections.find((section) => section.type === 'HOT')
+  const isInitialMainLoading = isMainLoading && !hasLoadedMain
+  const shouldRenderBannerSection = isInitialMainLoading || banners.length > 0
+
+  const renderBannerSkeleton = () => (
+    <div aria-hidden="true" className="w-full">
+      <div className="relative h-24 overflow-hidden rounded-lg sm:h-28">
+        <Skeleton className="h-full w-full rounded-lg" />
+      </div>
+      <div className="mt-3 flex items-center justify-center gap-1.5">
+        <Skeleton className="h-1.5 w-6 rounded-full" />
+        <Skeleton className="h-1.5 w-1.5 rounded-full" />
+        <Skeleton className="h-1.5 w-1.5 rounded-full" />
+      </div>
+    </div>
+  )
 
   const renderHorizontal = (section?: MainSectionDto) => {
     const items = section?.items ?? []
@@ -100,8 +116,17 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex w-max gap-3 px-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="w-[260px] shrink-0">
-                <div className="h-48 bg-background rounded-lg" />
+              <div key={i} className="w-[260px] shrink-0" aria-hidden="true">
+                <div className="overflow-hidden rounded-lg border bg-card">
+                  <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                  <div className="space-y-2 px-4 pb-4 pt-3">
+                    <Skeleton className="h-5 w-2/3" />
+                    <div className="flex items-center justify-between gap-3">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -157,7 +182,21 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
         <Container>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-52 bg-background rounded-lg" />
+              <div key={i} className="space-y-2" aria-hidden="true">
+                <div className="rounded-md border border-primary/10 bg-primary/5 px-2.5 py-1.5">
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
+                <div className="overflow-hidden rounded-lg border bg-card">
+                  <Skeleton className="aspect-[21/10] w-full rounded-none" />
+                  <div className="space-y-2 px-4 pb-4 pt-3">
+                    <Skeleton className="h-5 w-1/2" />
+                    <div className="flex items-center justify-between gap-3">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </Container>
@@ -237,17 +276,21 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
         </div>
       </Container>
 
-      {banners.length > 0 && (
+      {shouldRenderBannerSection && (
         <section className="mb-6">
           <Container>
-            <HomeAdCarousel
-              banners={banners}
-              onBannerClick={(banner) => {
-                if (banner.deeplinkUrl) {
-                  navigate(banner.deeplinkUrl)
-                }
-              }}
-            />
+            {banners.length > 0 ? (
+              <HomeAdCarousel
+                banners={banners}
+                onBannerClick={(banner) => {
+                  if (banner.deeplinkUrl) {
+                    navigate(banner.deeplinkUrl)
+                  }
+                }}
+              />
+            ) : (
+              renderBannerSkeleton()
+            )}
           </Container>
         </section>
       )}

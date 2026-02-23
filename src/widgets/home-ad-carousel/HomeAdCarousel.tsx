@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
@@ -26,9 +26,9 @@ export function HomeAdCarousel({
     }
   }
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % banners.length)
-  }
+  }, [banners.length])
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index)
@@ -56,7 +56,7 @@ export function HomeAdCarousel({
     return () => {
       resetAutoSlide()
     }
-  }, [currentIndex, isPaused, banners.length, autoSlideInterval])
+  }, [currentIndex, isPaused, banners.length, autoSlideInterval, nextSlide])
 
   useEffect(() => {
     return () => {
@@ -87,6 +87,9 @@ export function HomeAdCarousel({
                 alt={banner.title ?? `Banner ${index + 1}`}
                 className="w-full h-full object-cover"
                 disableInteraction
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+                decoding="async"
               />
             </div>
           ))}
