@@ -14,13 +14,7 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/shared/ui/carousel'
+import { Carousel, CarouselContent, CarouselItem } from '@/shared/ui/carousel'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { RestaurantMetaRow } from '@/entities/restaurant'
 import { DetailReviewCard } from '@/entities/review'
@@ -306,6 +300,10 @@ export function RestaurantDetailPage() {
       businessHoursWeek: restaurantData.businessHoursWeek ?? null,
     }
   })()
+  const hasMultipleRestaurantImages = restaurant.images.length > 1
+  const isRestaurantFavorited =
+    favoriteStatus?.personal ||
+    (favoriteStatus?.subgroups && favoriteStatus.subgroups.some((sg) => sg.isFavorited))
 
   const dayOfWeekLabel: Record<string, string> = {
     MON: '월',
@@ -433,62 +431,34 @@ export function RestaurantDetailPage() {
             <Skeleton className="w-full h-full" />
           </div>
         ) : restaurant.images.length > 0 ? (
-          <Carousel className="w-full">
-            <CarouselContent>
-              {restaurant.images.map((image, idx) => (
-                <CarouselItem key={idx}>
-                  <div className="aspect-[4/3] bg-muted relative">
-                    <img
-                      src={image}
-                      alt={`${restaurant.name} ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* 찜 버튼 - 우측 상단 */}
-                    {idx === 0 && (
-                      <button
-                        onClick={handleFavoriteSheetOpen}
-                        className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
-                        aria-label="찜하기"
-                      >
-                        <Heart
-                          className={cn(
-                            'w-5 h-5',
-                            favoriteStatus?.personal ||
-                              (favoriteStatus?.subgroups &&
-                                favoriteStatus.subgroups.some((sg) => sg.isFavorited))
-                              ? 'text-primary fill-primary'
-                              : 'text-foreground/80',
-                          )}
-                        />
-                      </button>
-                    )}
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious className="left-2" />
-            <CarouselNext className="right-2" />
-          </Carousel>
-        ) : (
-          <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center text-sm text-muted-foreground relative">
-            이미지가 없습니다
-            {/* 찜 버튼 - 이미지가 없을 때도 표시 */}
-            <button
-              onClick={handleFavoriteSheetOpen}
-              className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full bg-white hover:bg-white/90 transition-colors z-10"
-              aria-label="찜하기"
-            >
-              <Heart
-                className={cn(
-                  'w-5 h-5',
-                  favoriteStatus?.personal ||
-                    (favoriteStatus?.subgroups &&
-                      favoriteStatus.subgroups.some((sg) => sg.isFavorited))
-                    ? 'text-primary fill-primary'
-                    : 'text-foreground/80',
-                )}
+          hasMultipleRestaurantImages ? (
+            <Carousel className="w-full" opts={{ loop: true }}>
+              <CarouselContent>
+                {restaurant.images.map((image, idx) => (
+                  <CarouselItem key={idx}>
+                    <div className="aspect-[4/3] bg-muted relative">
+                      <img
+                        src={image}
+                        alt={`${restaurant.name} ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          ) : (
+            <div className="aspect-[4/3] bg-muted relative">
+              <img
+                src={restaurant.images[0]}
+                alt={`${restaurant.name} 1`}
+                className="w-full h-full object-cover"
               />
-            </button>
+            </div>
+          )
+        ) : (
+          <div className="aspect-[4/3] w-full bg-muted flex items-center justify-center text-sm text-muted-foreground">
+            이미지가 없습니다
           </div>
         )}
       </div>
@@ -505,10 +475,34 @@ export function RestaurantDetailPage() {
                 </>
               ) : (
                 <>
-                  <p className="text-muted-foreground">{restaurant.category || '카테고리 없음'}</p>
-                  <h1 className="text-2xl font-bold mb-1 truncate">
-                    {restaurant.name || '음식점 정보 없음'}
-                  </h1>
+                  <div className="mb-1 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                    <div className="min-w-0 flex flex-col">
+                      <p className="text-sm text-muted-foreground">
+                        {restaurant.category || '카테고리 없음'}
+                      </p>
+                      <h1 className="truncate text-2xl font-bold" title={restaurant.name || ''}>
+                        {restaurant.name || '음식점 정보 없음'}
+                      </h1>
+                    </div>
+                    <button
+                      onClick={handleFavoriteSheetOpen}
+                      aria-pressed={Boolean(isRestaurantFavorited)}
+                      className={cn(
+                        'w-10 h-10 shrink-0 flex items-center justify-center rounded-full border shadow-sm transition-colors',
+                        isRestaurantFavorited
+                          ? 'border-primary/20 bg-primary/10 text-primary hover:bg-primary/15'
+                          : 'border-border/70 bg-background text-muted-foreground hover:border-primary/20 hover:bg-primary/5 hover:text-primary',
+                      )}
+                      aria-label="찜하기"
+                    >
+                      <Heart
+                        className={cn(
+                          'w-5 h-5 transition-colors',
+                          isRestaurantFavorited ? 'text-primary fill-primary' : 'text-current',
+                        )}
+                      />
+                    </button>
+                  </div>
                 </>
               )}
             </div>
