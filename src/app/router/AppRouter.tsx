@@ -209,14 +209,12 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
           <Route
             path="/favorites"
             element={
-              <RequireAuth>
-                <FavoritesPage
-                  onRestaurantClick={(id) => {
-                    trackRestaurantClick(id, -1)
-                    navigate(`/restaurants/${id}`, { state: { fromPageKey } })
-                  }}
-                />
-              </RequireAuth>
+              <FavoritesPage
+                onRestaurantClick={(id) => {
+                  trackRestaurantClick(id, -1)
+                  navigate(`/restaurants/${id}`, { state: { fromPageKey } })
+                }}
+              />
             }
           />
 
