@@ -117,25 +117,25 @@ export function HomeAdCarousel({
             >
               <ChevronRight className="h-5 w-5" />
             </button>
+            <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center gap-1.5">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToSlide(index)
+                  }}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    currentIndex === index ? 'w-6 bg-primary' : 'w-1.5 bg-primary/45',
+                  )}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>
-
-      {banners.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 mt-3">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={cn(
-                'h-1.5 rounded-full transition-all',
-                currentIndex === index ? 'w-6 bg-primary' : 'w-1.5 bg-muted-foreground/30',
-              )}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }

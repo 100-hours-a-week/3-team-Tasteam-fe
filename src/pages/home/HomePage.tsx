@@ -94,11 +94,6 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       <div className="relative h-24 overflow-hidden rounded-lg sm:h-28">
         <Skeleton className="h-full w-full rounded-lg" />
       </div>
-      <div className="mt-3 flex items-center justify-center gap-1.5">
-        <Skeleton className="h-1.5 w-6 rounded-full" />
-        <Skeleton className="h-1.5 w-1.5 rounded-full" />
-        <Skeleton className="h-1.5 w-1.5 rounded-full" />
-      </div>
     </div>
   )
 
