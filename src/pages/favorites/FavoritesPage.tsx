@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart } from 'lucide-react'
+import { Heart, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
@@ -8,6 +8,7 @@ import { EmptyState } from '@/widgets/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { ROUTES } from '@/shared/config/routes'
+import { useAuth } from '@/entities/user'
 import { FavoriteCategoryFilter } from './components/FavoriteCategoryFilter'
 import { FavoriteRestaurantCard } from './components/FavoriteRestaurantCard'
 import { SubgroupSelectorSheet } from './components/SubgroupSelectorSheet'
@@ -26,6 +27,7 @@ type FavoritesPageProps = {
 
 export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [selectedTab, setSelectedTab] = useState<FavoriteTab>('personal')
   const [selectedSubgroupId, setSelectedSubgroupId] = useState<number | null>(null)
   const [showSubgroupSelector, setShowSubgroupSelector] = useState(false)
@@ -48,6 +50,17 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
 
   // 찜 타겟 목록 조회
   useEffect(() => {
+    if (!isAuthenticated) {
+      setFavoriteTargets([])
+      setPersonalFavorites([])
+      setSubgroupFavorites([])
+      setSelectedSubgroupId(null)
+      setIsLoading(false)
+      setIsLoadingFavorites(false)
+      setError(null)
+      return
+    }
+
     const loadTargets = async () => {
       setIsLoading(true)
       setError(null)
@@ -86,10 +99,11 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
     }
 
     loadTargets()
-  }, [])
+  }, [isAuthenticated, selectedSubgroupId])
 
   // 내 찜 목록 조회
   useEffect(() => {
+    if (!isAuthenticated) return
     if (selectedTab !== 'personal') return
 
     const loadPersonalFavorites = async () => {
@@ -114,10 +128,11 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
     }
 
     loadPersonalFavorites()
-  }, [selectedTab])
+  }, [isAuthenticated, selectedTab])
 
   // 하위그룹 찜 목록 조회
   useEffect(() => {
+    if (!isAuthenticated) return
     if (selectedTab !== 'group' || !selectedSubgroupId) return
 
     const loadSubgroupFavorites = async () => {
@@ -144,7 +159,7 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
     }
 
     loadSubgroupFavorites()
-  }, [selectedTab, selectedSubgroupId])
+  }, [isAuthenticated, selectedTab, selectedSubgroupId])
 
   // 찜 해제 핸들러
   const handleRemoveFavorite = async (restaurantId: number, e: React.MouseEvent) => {
@@ -192,7 +207,7 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
       <TopAppBar title="찜" />
 
       {/* Category Filter */}
-      {!isLoading && (
+      {isAuthenticated && !isLoading && (
         <FavoriteCategoryFilter
           selectedTab={selectedTab}
           selectedSubgroup={selectedSubgroup || null}
@@ -203,7 +218,21 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
 
       {/* Content */}
       <Container className="flex-1 py-4 overflow-auto">
-        {isLoading || isLoadingFavorites ? (
+        {!isAuthenticated ? (
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <EmptyState
+              icon={LogIn}
+              title="로그인이 필요해요"
+              description="찜 목록을 보려면 로그인해주세요"
+              actionLabel="로그인하기"
+              onAction={() => {
+                const returnTo = ROUTES.favorites
+                sessionStorage.setItem('auth:return_to', returnTo)
+                navigate(ROUTES.login, { state: { returnTo } })
+              }}
+            />
+          </div>
+        ) : isLoading || isLoadingFavorites ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-24 w-full" />

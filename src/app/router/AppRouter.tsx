@@ -59,6 +59,10 @@ const NotificationSettingsPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('@/pages/settings').then((m) => ({ default: m.SettingsPage })),
 )
+const TermsPage = lazy(() => import('@/pages/terms').then((m) => ({ default: m.TermsPage })))
+const PrivacyPolicyPage = lazy(() =>
+  import('@/pages/privacy-policy').then((m) => ({ default: m.PrivacyPolicyPage })),
+)
 const RestaurantDetailPage = lazy(() =>
   import('@/pages/restaurant-detail').then((m) => ({ default: m.RestaurantDetailPage })),
 )
@@ -205,14 +209,12 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
           <Route
             path="/favorites"
             element={
-              <RequireAuth>
-                <FavoritesPage
-                  onRestaurantClick={(id) => {
-                    trackRestaurantClick(id, -1)
-                    navigate(`/restaurants/${id}`, { state: { fromPageKey } })
-                  }}
-                />
-              </RequireAuth>
+              <FavoritesPage
+                onRestaurantClick={(id) => {
+                  trackRestaurantClick(id, -1)
+                  navigate(`/restaurants/${id}`, { state: { fromPageKey } })
+                }}
+              />
             }
           />
 
@@ -370,6 +372,11 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             element={<NotificationSettingsPage onBack={() => navigate(-1)} />}
           />
           <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
+          <Route path="/terms" element={<TermsPage onBack={() => navigate(-1)} />} />
+          <Route
+            path="/privacy-policy"
+            element={<PrivacyPolicyPage onBack={() => navigate(-1)} />}
+          />
           <Route path="/notices" element={<NoticesPage onBack={() => navigate(-1)} />} />
           <Route
             path="/events"

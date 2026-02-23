@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
@@ -26,9 +26,9 @@ export function HomeAdCarousel({
     }
   }
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % banners.length)
-  }
+  }, [banners.length])
 
   const goToSlide = (index: number) => {
     setCurrentIndex(index)
@@ -56,7 +56,7 @@ export function HomeAdCarousel({
     return () => {
       resetAutoSlide()
     }
-  }, [currentIndex, isPaused, banners.length, autoSlideInterval])
+  }, [currentIndex, isPaused, banners.length, autoSlideInterval, nextSlide])
 
   useEffect(() => {
     return () => {
@@ -87,6 +87,9 @@ export function HomeAdCarousel({
                 alt={banner.title ?? `Banner ${index + 1}`}
                 className="w-full h-full object-cover"
                 disableInteraction
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+                decoding="async"
               />
             </div>
           ))}
@@ -114,25 +117,25 @@ export function HomeAdCarousel({
             >
               <ChevronRight className="h-5 w-5" />
             </button>
+            <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center justify-center gap-1.5">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToSlide(index)
+                  }}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    currentIndex === index ? 'w-6 bg-primary' : 'w-1.5 bg-primary/45',
+                  )}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>
-
-      {banners.length > 1 && (
-        <div className="flex items-center justify-center gap-1.5 mt-3">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={cn(
-                'h-1.5 rounded-full transition-all',
-                currentIndex === index ? 'w-6 bg-primary' : 'w-1.5 bg-muted-foreground/30',
-              )}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }

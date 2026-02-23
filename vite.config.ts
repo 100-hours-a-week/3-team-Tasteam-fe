@@ -1,12 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 
 // https://vite.dev/config/
 const disablePwaByEnv = process.env.DISABLE_PWA === 'true'
 const appEnv = process.env.VITE_APP_ENV
 const isLocal = appEnv === 'local'
+const packageJson = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
+) as {
+  version?: string
+}
+const appVersion = process.env.VITE_APP_VERSION ?? packageJson.version ?? '0.0.0'
 
 export default defineConfig(({ command }) => {
   const disablePwa = disablePwaByEnv || command === 'serve'
@@ -55,6 +62,9 @@ export default defineConfig(({ command }) => {
     },
     server: {
       port: 3000,
+    },
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
     },
   }
 })

@@ -9,6 +9,7 @@ import { Separator } from '@/shared/ui/separator'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { getNotifications } from '@/entities/notification'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { useLoadingSkeletonGate } from '@/shared/lib/use-loading-skeleton-gate'
 
 type Notification = {
   id: string
@@ -38,6 +39,7 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState<boolean>(notificationsEnabled)
+  const showLoadingSkeleton = useLoadingSkeletonGate(isLoading)
 
   useEffect(() => {
     if (!notificationsEnabled) return
@@ -164,17 +166,25 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
             onAction={handleRetry}
           />
         ) : isLoading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-3 py-3 px-4">
-                <Skeleton className="w-10 h-10 rounded-full" />
-                <div className="flex-1">
-                  <Skeleton className="h-4 w-3/4 mb-2" />
-                  <Skeleton className="h-3 w-1/4" />
+          showLoadingSkeleton ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1">
+                    <Skeleton className="mb-2 h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/4" />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Bell}
+              title="알림을 불러오는 중이에요"
+              description="네트워크 상태에 따라 시간이 조금 더 걸릴 수 있습니다"
+            />
+          )
         ) : notifications.length > 0 ? (
           <>
             {unreadCount > 0 && (
