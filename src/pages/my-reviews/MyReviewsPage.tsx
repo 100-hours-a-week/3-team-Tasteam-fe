@@ -11,16 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 import { getMyReviews } from '@/entities/member'
 import { deleteReview } from '@/entities/review'
 import { SimpleReviewCard } from '@/entities/review'
@@ -135,21 +127,13 @@ export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps)
       </Container>
 
       <AlertDialog open={!!deleteTargetId} onOpenChange={() => setDeleteTargetId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>리뷰를 삭제하시겠습니까?</AlertDialogTitle>
-            <AlertDialogDescription>삭제된 리뷰는 복구할 수 없습니다.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={() => deleteTargetId && handleDelete(deleteTargetId)}
-            >
-              삭제
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <ConfirmAlertDialogContent
+          title="리뷰를 삭제하시겠습니까?"
+          description="삭제된 리뷰는 복구할 수 없습니다."
+          confirmText="삭제"
+          confirmVariant="destructive"
+          onConfirm={() => deleteTargetId && handleDelete(deleteTargetId)}
+        />
       </AlertDialog>
     </div>
   )

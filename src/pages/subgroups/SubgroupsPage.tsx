@@ -24,17 +24,8 @@ import { getGroup } from '@/entities/group'
 import { useMemberGroups } from '@/entities/member'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog, AlertDialogTrigger } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -428,25 +419,14 @@ export function SubgroupsPage() {
                         하위 그룹 나가기
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
-                    <AlertDialogContent size="sm">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>하위 그룹을 나가시겠습니까?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          하위 그룹을 나가면 이 하위 그룹의 모든 정보와 활동 내역을 볼 수 없습니다.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>취소</AlertDialogCancel>
-                        <AlertDialogAction
-                          variant="default"
-                          className="bg-primary text-primary-foreground hover:bg-primary/90"
-                          onClick={handleLeaveSubGroup}
-                          disabled={isLeaving}
-                        >
-                          나가기
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
+                    <ConfirmAlertDialogContent
+                      size="sm"
+                      title="하위 그룹을 나가시겠습니까?"
+                      description="하위 그룹을 나가면 이 하위 그룹의 모든 정보와 활동 내역을 볼 수 없습니다."
+                      confirmText="나가기"
+                      onConfirm={handleLeaveSubGroup}
+                      confirmDisabled={isLeaving}
+                    />
                   </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>

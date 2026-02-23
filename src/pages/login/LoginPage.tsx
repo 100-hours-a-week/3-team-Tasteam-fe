@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { SocialLoginButtons } from '@/features/auth/social-login/SocialLoginButtons'
 import { Container } from '@/shared/ui/container'
@@ -22,8 +22,15 @@ type DevMemberResponse = {
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [isDevLoading, setIsDevLoading] = useState(false)
   const isDev = APP_ENV === 'development'
+  const loginState = (location.state as { returnTo?: string } | null) ?? null
+
+  useEffect(() => {
+    if (!loginState?.returnTo) return
+    sessionStorage.setItem('auth:return_to', loginState.returnTo)
+  }, [loginState?.returnTo])
 
   const handleDevLogin = async () => {
     setIsDevLoading(true)
@@ -32,7 +39,9 @@ export function LoginPage() {
       const { accessToken } = response.data.data
       setAccessToken(accessToken)
       setRefreshEnabled(true)
-      navigate('/')
+      const returnTo = sessionStorage.getItem('auth:return_to') ?? '/'
+      sessionStorage.removeItem('auth:return_to')
+      navigate(returnTo, { replace: true })
     } catch {
       setIsDevLoading(false)
     }

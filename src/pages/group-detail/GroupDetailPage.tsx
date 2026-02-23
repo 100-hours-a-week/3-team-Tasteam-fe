@@ -16,16 +16,8 @@ import { useMemberGroups } from '@/entities/member'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { Skeleton } from '@/shared/ui/skeleton'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 
 const CATEGORY_OPTIONS = [
   '한식',
@@ -343,38 +335,26 @@ export function GroupDetailPage() {
       </Container>
 
       <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>그룹 탈퇴</AlertDialogTitle>
-            <AlertDialogDescription>
-              그룹 및 해당 그룹의 하위그룹에서 모두 나가게 됩니다. 다시 참가하려면 인증이
-              필요합니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction
-              variant="default"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => {
-                if (!isValidId(groupId)) return
-                leaveGroup(groupId)
-                  .then(() => {
-                    toast.success('그룹에서 탈퇴했습니다')
-                    refresh()
-                  })
-                  .catch(() => {
-                    toast.error('그룹 탈퇴에 실패했습니다')
-                  })
-                  .finally(() => {
-                    setLeaveDialogOpen(false)
-                  })
-              }}
-            >
-              나가기
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <ConfirmAlertDialogContent
+          size="sm"
+          title="그룹 탈퇴"
+          description="그룹 및 해당 그룹의 하위그룹에서 모두 나가게 됩니다. 다시 참가하려면 인증이 필요합니다."
+          confirmText="나가기"
+          onConfirm={() => {
+            if (!isValidId(groupId)) return
+            leaveGroup(groupId)
+              .then(() => {
+                toast.success('그룹에서 탈퇴했습니다')
+                refresh()
+              })
+              .catch(() => {
+                toast.error('그룹 탈퇴에 실패했습니다')
+              })
+              .finally(() => {
+                setLeaveDialogOpen(false)
+              })
+          }}
+        />
       </AlertDialog>
     </div>
   )

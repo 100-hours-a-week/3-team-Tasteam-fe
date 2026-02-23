@@ -15,16 +15,8 @@ import { useAuth } from '@/entities/user'
 import { getMe } from '@/entities/member'
 import type { MemberProfileDto } from '@/entities/member'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 
 type ProfilePageProps = {
   onSettingsClick?: () => void
@@ -238,18 +230,14 @@ export function ProfilePage({
 
       {isAuthenticated && (
         <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-          <AlertDialogContent size="sm">
-            <AlertDialogHeader>
-              <AlertDialogTitle>로그아웃</AlertDialogTitle>
-              <AlertDialogDescription>정말 로그아웃 하시겠어요?</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>취소</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" onClick={onLogout}>
-                로그아웃
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
+          <ConfirmAlertDialogContent
+            size="sm"
+            title="로그아웃"
+            description="정말 로그아웃 하시겠어요?"
+            confirmText="로그아웃"
+            confirmVariant="destructive"
+            onConfirm={onLogout}
+          />
         </AlertDialog>
       )}
 

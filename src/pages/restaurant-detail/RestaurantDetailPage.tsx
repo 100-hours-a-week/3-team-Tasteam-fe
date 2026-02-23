@@ -31,15 +31,8 @@ import type { MenuCategoryDto } from '@/entities/restaurant'
 import { useAuth } from '@/entities/user'
 import { useMemberGroups } from '@/entities/member'
 import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 
 export function RestaurantDetailPage() {
   type BusinessHoursWeekItem = {
@@ -366,6 +359,12 @@ export function RestaurantDetailPage() {
       })
     }
     navigate(`/restaurants/${restaurantId}/review`)
+  }
+
+  const handleLoginRequiredReview = () => {
+    const returnTo = restaurantId ? `/restaurants/${restaurantId}/review` : '/login'
+    sessionStorage.setItem('auth:return_to', returnTo)
+    navigate('/login', { state: { returnTo } })
   }
 
   const handleFavoriteSheetOpen = () => {
@@ -937,29 +936,22 @@ export function RestaurantDetailPage() {
       </Tabs>
 
       <AlertDialog open={showLoginModal} onOpenChange={setShowLoginModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>로그인이 필요합니다</AlertDialogTitle>
-            <AlertDialogDescription>리뷰를 작성하려면 로그인이 필요합니다.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowLoginModal(false)}>확인</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <ConfirmAlertDialogContent
+          title="로그인이 필요합니다"
+          description="리뷰를 작성하려면 로그인이 필요합니다."
+          confirmText="로그인하기"
+          onConfirm={handleLoginRequiredReview}
+        />
       </AlertDialog>
 
       <AlertDialog open={showGroupJoinModal} onOpenChange={setShowGroupJoinModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>그룹 가입이 필요합니다</AlertDialogTitle>
-            <AlertDialogDescription>
-              리뷰를 작성하려면 그룹에 가입해야 합니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowGroupJoinModal(false)}>확인</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <ConfirmAlertDialogContent
+          title="그룹 가입이 필요합니다"
+          description="리뷰를 작성하려면 그룹에 가입해야 합니다."
+          hideCancel
+          confirmText="확인"
+          onConfirm={() => setShowGroupJoinModal(false)}
+        />
       </AlertDialog>
 
       {/* 찜 선택 시트 */}

@@ -1,13 +1,5 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 import { MapPin } from 'lucide-react'
 
 type LocationPermissionModalProps = {
@@ -23,21 +15,15 @@ export const LocationPermissionModal = ({
 }: LocationPermissionModalProps) => {
   return (
     <AlertDialog open={open} onOpenChange={(nextOpen) => (!nextOpen ? onDeny() : undefined)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
-            <AlertDialogTitle>위치 서비스 사용</AlertDialogTitle>
-          </div>
-          <AlertDialogDescription>
-            주변 맛집을 추천받으려면 위치 정보 접근을 허용해주세요.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={onDeny}>나중에</AlertDialogCancel>
-          <AlertDialogAction onClick={onAllow}>허용</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+      <ConfirmAlertDialogContent
+        title="위치 서비스 사용"
+        description="주변 맛집을 추천받으려면 위치 정보 접근을 허용해주세요."
+        cancelText="나중에"
+        confirmText="허용"
+        onCancel={onDeny}
+        onConfirm={onAllow}
+        icon={<MapPin className="h-5 w-5 text-primary" />}
+      />
     </AlertDialog>
   )
 }
