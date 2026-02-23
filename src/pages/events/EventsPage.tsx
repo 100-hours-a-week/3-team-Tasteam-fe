@@ -10,6 +10,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { getEvents } from '@/entities/event'
 import type { EventDto } from '@/entities/event'
 import { formatIsoTimestamp } from '@/shared/lib/time'
+import { useLoadingSkeletonGate } from '@/shared/lib/use-loading-skeleton-gate'
 
 type EventsPageProps = {
   onBack?: () => void
@@ -21,6 +22,7 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
   const [events, setEvents] = useState<EventDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
+  const showLoadingSkeleton = useLoadingSkeletonGate(isLoading)
 
   useEffect(() => {
     let cancelled = false
@@ -112,17 +114,25 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
             onAction={handleRetry}
           />
         ) : isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="overflow-hidden">
-                <Skeleton className="h-40 w-full" />
-                <div className="p-4">
-                  <Skeleton className="h-5 w-3/4 mb-2" />
-                  <Skeleton className="h-4 w-1/4" />
-                </div>
-              </Card>
-            ))}
-          </div>
+          showLoadingSkeleton ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <Skeleton className="h-40 w-full" />
+                  <div className="p-4">
+                    <Skeleton className="mb-2 h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/4" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Calendar}
+              title="이벤트를 불러오는 중이에요"
+              description="네트워크 상태에 따라 시간이 조금 더 걸릴 수 있습니다"
+            />
+          )
         ) : events.length === 0 ? (
           <EmptyState
             icon={Calendar}
