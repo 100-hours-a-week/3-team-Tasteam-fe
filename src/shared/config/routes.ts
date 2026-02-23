@@ -28,6 +28,8 @@ export const ROUTES = {
   notices: '/notices',
   events: '/events',
   settings: '/settings',
+  terms: '/terms',
+  privacyPolicy: '/privacy-policy',
   restaurantDetail: (id: string) => `/restaurants/${id}`,
   writeReview: (restaurantId: string) => `/restaurants/${restaurantId}/review`,
   chatRoom: (roomId: string) => `/chat/${roomId}`,

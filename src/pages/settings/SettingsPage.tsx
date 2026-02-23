@@ -7,6 +7,7 @@ import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
+import { AppVersionText } from '@/shared/ui/app-version'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { ROUTES } from '@/shared/config/routes'
 import { deleteMe } from '@/entities/member'
@@ -197,7 +198,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                 <span>앱 정보</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">v1.0.0</span>
+                <AppVersionText className="text-sm text-muted-foreground" />
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </button>
