@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type UIEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Client, type IMessage } from '@stomp/stompjs'
 import { ChevronDown, Users } from 'lucide-react'
@@ -35,7 +35,10 @@ type ChatRoomLocationState = {
 }
 
 const MEMBER_PAGE_SIZE = 10
+const INITIAL_MESSAGE_PAGE_SIZE = 50
 const MESSAGE_PAGE_SIZE = 20
+const MAX_AUTO_PREFETCH_ROUNDS = 2
+const EARLY_LOAD_TRIGGER_PX = 360
 
 const toWsUrl = (apiBaseUrl: string) => {
   const url = new URL(apiBaseUrl)
@@ -89,7 +92,8 @@ export function ChatRoomPage() {
   const [messages, setMessages] = useState<ChatMessageDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(false)
+  // 서버가 nextCursor를 누락해도 hasNext=true면 추가 페이지를 시도할 수 있어야 한다.
+  const [hasNext, setHasNext] = useState(false)
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [wsErrorMessage, setWsErrorMessage] = useState<string | null>(null)
@@ -97,7 +101,10 @@ export function ChatRoomPage() {
 
   const clientRef = useRef<Client | null>(null)
   const readCursorSyncedRef = useRef<number | null>(null)
+  const autoPrefetchRoundsRef = useRef(0)
+  const nullCursorProbeExhaustedRef = useRef(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const topSentinelRef = useRef<HTMLDivElement>(null)
   const isAtBottomRef = useRef(true)
 
   const scrollToBottom = (force = false) => {
@@ -120,13 +127,15 @@ export function ChatRoomPage() {
       setIsLoading(true)
       setErrorMessage(null)
       try {
-        const response = await getChatMessages(chatRoomId, { size: MESSAGE_PAGE_SIZE })
+        const response = await getChatMessages(chatRoomId, { size: INITIAL_MESSAGE_PAGE_SIZE })
         if (cancelled) return
 
         const normalized = response.items.map(normalizeMessage).reverse()
         setMessages(normalized)
         setNextCursor(response.pagination.nextCursor)
-        setHasMore(response.pagination.hasNext)
+        setHasNext(response.pagination.hasNext)
+        nullCursorProbeExhaustedRef.current = false
+        autoPrefetchRoundsRef.current = 0
       } catch {
         if (!cancelled) {
           setErrorMessage('메시지를 불러오지 못했습니다.')
@@ -231,30 +240,102 @@ export function ChatRoomPage() {
     })
   }, [chatRoomId, isValidRoomId, messages])
 
-  const loadOlderMessages = async () => {
-    if (!isValidRoomId || !hasMore || !nextCursor || isLoadingMore) return
+  const loadOlderMessages = useCallback(
+    async (force = false) => {
+      if (!isValidRoomId || isLoadingMore) return
+      // 트리거는 강제로 발생시킬 수 있게 두되, 서버가 커서를 주지 않아 같은 페이지 반복 시도는 막는다.
+      if (!force && !hasNext) return
+      if (nextCursor == null && nullCursorProbeExhaustedRef.current) return
 
-    setIsLoadingMore(true)
-    try {
-      const response = await getChatMessages(chatRoomId, {
-        cursor: nextCursor,
-        size: MESSAGE_PAGE_SIZE,
-      })
-      const normalized = response.items.map(normalizeMessage).reverse()
-      setMessages((prev) => {
-        const merged = [...normalized, ...prev]
-        const uniqueById = Array.from(new Map(merged.map((item) => [item.id, item])).values())
-        uniqueById.sort((a, b) => a.id - b.id)
-        return uniqueById
-      })
-      setNextCursor(response.pagination.nextCursor)
-      setHasMore(response.pagination.hasNext)
-    } catch {
-      // keep current timeline
-    } finally {
-      setIsLoadingMore(false)
+      const container = scrollAreaRef.current
+      const prevScrollHeight = container?.scrollHeight ?? 0
+      const prevScrollTop = container?.scrollTop ?? 0
+
+      setIsLoadingMore(true)
+      try {
+        // 커서가 없으면 백엔드 기본 페이징 규칙으로 다음 페이지를 재요청한다.
+        const response = await getChatMessages(chatRoomId, {
+          cursor: nextCursor ?? undefined,
+          size: MESSAGE_PAGE_SIZE,
+        })
+        const normalized = response.items.map(normalizeMessage).reverse()
+        if (normalized.length === 0) {
+          setNextCursor(null)
+          setHasNext(false)
+          nullCursorProbeExhaustedRef.current = true
+          return
+        }
+
+        let addedCount = 0
+        setMessages((prev) => {
+          const merged = [...normalized, ...prev]
+          const uniqueById = Array.from(new Map(merged.map((item) => [item.id, item])).values())
+          uniqueById.sort((a, b) => a.id - b.id)
+          addedCount = uniqueById.length - prev.length
+          return uniqueById
+        })
+        setNextCursor(response.pagination.nextCursor)
+        setHasNext(response.pagination.hasNext)
+
+        // nextCursor가 계속 null이고 새 메시지가 전혀 늘지 않으면 같은 첫 페이지 반복으로 간주한다.
+        if (response.pagination.nextCursor == null && addedCount <= 0) {
+          nullCursorProbeExhaustedRef.current = true
+          setHasNext(false)
+        } else {
+          nullCursorProbeExhaustedRef.current = false
+        }
+
+        requestAnimationFrame(() => {
+          const node = scrollAreaRef.current
+          if (!node) return
+          const addedHeight = node.scrollHeight - prevScrollHeight
+          node.scrollTop = prevScrollTop + addedHeight
+        })
+      } catch {
+        // keep current timeline
+      } finally {
+        setIsLoadingMore(false)
+      }
+    },
+    [chatRoomId, hasNext, isLoadingMore, isValidRoomId, nextCursor],
+  )
+
+  useEffect(() => {
+    if (isLoading || isLoadingMore) return
+    const container = scrollAreaRef.current
+    if (!container) return
+
+    const notScrollable = container.scrollHeight <= container.clientHeight + 1
+    if (!notScrollable) return
+    if (autoPrefetchRoundsRef.current >= MAX_AUTO_PREFETCH_ROUNDS) return
+
+    autoPrefetchRoundsRef.current += 1
+    if (autoPrefetchRoundsRef.current <= MAX_AUTO_PREFETCH_ROUNDS) {
+      void loadOlderMessages(true)
     }
-  }
+  }, [isLoading, isLoadingMore, loadOlderMessages, messages])
+
+  useEffect(() => {
+    if (isLoading) return
+    const root = scrollAreaRef.current
+    const target = topSentinelRef.current
+    if (!root || !target || typeof IntersectionObserver === 'undefined') return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry?.isIntersecting && !isLoadingMore) {
+          void loadOlderMessages(true)
+        }
+      },
+      { root, threshold: 0, rootMargin: '400px 0px 0px 0px' },
+    )
+
+    observer.observe(target)
+    return () => {
+      observer.disconnect()
+    }
+  }, [isLoading, isLoadingMore, loadOlderMessages])
 
   const handleScroll = () => {
     const container = scrollAreaRef.current
@@ -266,8 +347,9 @@ export function ChatRoomPage() {
     isAtBottomRef.current = atBottom
     setShowScrollButton(!atBottom)
 
-    if (scrollTop < 120) {
-      void loadOlderMessages()
+    // 상단 인접 구간에서 미리 이전 메시지를 불러와 체감 지연을 줄인다.
+    if (scrollTop <= EARLY_LOAD_TRIGGER_PX && !isLoadingMore) {
+      void loadOlderMessages(true)
     }
   }
 
@@ -386,6 +468,7 @@ export function ChatRoomPage() {
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
         onScroll={handleScroll}
       >
+        <div ref={topSentinelRef} className="h-1 w-full" aria-hidden />
         {isLoading ? (
           <div className="h-full flex items-center justify-center">
             <ListState type="loading" />

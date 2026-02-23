@@ -17,10 +17,48 @@ const emptyPage: ChatMessageListResponseDto = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
+const extractChatPayload = (response: unknown): unknown => {
+  if (!isRecord(response)) return response
+
+  const directData = response.data
+  if (isRecord(directData)) {
+    if (isRecord(directData.page) || isRecord(directData.pagination)) {
+      return directData
+    }
+
+    const nestedData = directData.data
+    if (isRecord(nestedData)) {
+      if (isRecord(nestedData.page) || isRecord(nestedData.pagination)) {
+        return nestedData
+      }
+    }
+  }
+
+  return extractResponseData<unknown>(response)
+}
+
+const toBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'string') return value.toLowerCase() === 'true'
+  return Boolean(value)
+}
+
+const normalizePagePayload = (
+  items: ChatMessageListResponseDto['items'],
+  page: Record<string, unknown>,
+): ChatMessageListResponseDto => ({
+  items,
+  pagination: {
+    nextCursor: page.nextCursor == null ? null : String(page.nextCursor),
+    size: typeof page.size === 'number' ? page.size : items.length,
+    hasNext: toBoolean(page.hasNext),
+  },
+})
+
 const normalizeChatMessagesResponse = (response: unknown): ChatMessageListResponseDto => {
   if (!isRecord(response)) return emptyPage
 
-  const payload = extractResponseData<unknown>(response)
+  const payload = extractChatPayload(response)
 
   if (isRecord(payload) && Array.isArray(payload.items) && isRecord(payload.pagination)) {
     return {
@@ -38,13 +76,19 @@ const normalizeChatMessagesResponse = (response: unknown): ChatMessageListRespon
   }
 
   if (isRecord(payload) && Array.isArray(payload.data) && isRecord(payload.page)) {
-    return {
-      items: payload.data as ChatMessageListResponseDto['items'],
-      pagination: {
-        nextCursor: payload.page.nextCursor == null ? null : String(payload.page.nextCursor),
-        size: typeof payload.page.size === 'number' ? payload.page.size : payload.data.length,
-        hasNext: Boolean(payload.page.hasNext),
-      },
+    return normalizePagePayload(payload.data as ChatMessageListResponseDto['items'], payload.page)
+  }
+
+  // Backward/variant support: { messages: [...], page: {...} } or { items: [...], page: {...} }
+  if (isRecord(payload) && isRecord(payload.page)) {
+    const pageItems = Array.isArray(payload.items)
+      ? (payload.items as ChatMessageListResponseDto['items'])
+      : Array.isArray(payload.messages)
+        ? (payload.messages as ChatMessageListResponseDto['items'])
+        : null
+
+    if (pageItems) {
+      return normalizePagePayload(pageItems, payload.page)
     }
   }
 

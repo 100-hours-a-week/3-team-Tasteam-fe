@@ -6,7 +6,6 @@ import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -464,17 +463,20 @@ export function SubgroupsPage() {
                       />
                     ))
                   : members.length > 0
-                    ? members
-                        .slice(0, 5)
-                        .map((member) => (
-                          <ProfileImage
-                            key={member.memberId}
-                            image={member.profileImage}
-                            name={member.nickname}
-                            size="sm"
-                            className="h-8 w-8 border-2 border-background"
+                    ? members.slice(0, 5).map((member) => (
+                        <Avatar
+                          key={member.memberId}
+                          className="h-8 w-8 border-2 border-background"
+                        >
+                          <AvatarImage
+                            src={member.profileImage?.url ?? member.profileImageUrl ?? undefined}
+                            alt={member.nickname}
                           />
-                        ))
+                          <AvatarFallback className="text-xs">
+                            {member.nickname.slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))
                     : Array.from({
                         length: Math.min(5, memberCount),
                       }).map((_, idx) => (
