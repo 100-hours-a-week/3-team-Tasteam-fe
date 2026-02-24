@@ -10,6 +10,7 @@ import {
   setAccessToken,
 } from '@/shared/lib/authToken'
 import { logger } from '@/shared/lib/logger'
+import { captureException } from '@/shared/lib/sentry'
 import type { SuccessResponse } from '@/shared/types/api'
 
 type RefreshResponse = SuccessResponse<{ accessToken?: string }>
@@ -158,6 +159,9 @@ http.interceptors.response.use(
     }
 
     if (status !== 401 || originalRequest?._retry || isRefreshCall) {
+      if (status && status >= 500) {
+        captureException(error)
+      }
       return Promise.reject(error)
     }
 
