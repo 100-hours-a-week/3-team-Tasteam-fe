@@ -14,7 +14,12 @@ import type { SuccessResponse } from '@/shared/types/api'
 
 type RefreshResponse = SuccessResponse<{ accessToken?: string }>
 
-const PUBLIC_ENDPOINTS = ['/api/v1/main', '/api/v1/promotions', '/api/v1/announcements']
+const PUBLIC_ENDPOINTS = [
+  '/api/v1/main',
+  '/api/v1/promotions',
+  '/api/v1/announcements',
+  '/api/v1/geocode/reverse',
+]
 
 const isPublicEndpoint = (url?: string) => {
   if (!url) return false
