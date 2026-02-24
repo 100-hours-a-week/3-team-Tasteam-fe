@@ -7,25 +7,30 @@ export type ChatMessageDto = {
   memberId: number
   memberNickname: string
   memberProfileImageUrl?: string | null
-  content: string
-  messageType: 'TEXT' | 'IMAGE' | 'SYSTEM' | string
+  content: string | null
+  messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM' | string
+  files?: ChatMessageFileItemDto[]
   createdAt: IsoDateTimeString
+}
+
+export type ChatMessageFileItemDto = {
+  fileType: 'IMAGE' | string
+  fileUrl: string
 }
 
 export type ChatMessageListResponseDto = CursorPageResponse<ChatMessageDto>
 
 export type ChatMessageSendRequestDto = {
-  messageType?: 'TEXT' | 'IMAGE' | 'SYSTEM'
-  content: string
+  messageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM'
+  content: string | null
+  files?: ChatMessageFileRequestDto[]
 }
 
-export type ChatMessageSendResponseDto = SuccessResponse<{
-  id: number
-  messageType: string
-  content: string
-  image: string | null
-  createdAt: IsoDateTimeString
-}>
+export type ChatMessageFileRequestDto = {
+  fileUuid: string
+}
+
+export type ChatMessageSendResponseDto = SuccessResponse<ChatMessageDto>
 
 export type ChatReadCursorRequestDto = {
   lastReadMessageId: number

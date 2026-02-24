@@ -3,12 +3,14 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Client, type IMessage } from '@stomp/stompjs'
 import { ChevronDown, Users } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
+import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { ChatInput } from '@/widgets/chat-input'
 import { ListState } from '@/widgets/list-state'
 import { Button } from '@/shared/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/ui/dropdown-menu'
+import { extractResponseData } from '@/shared/lib/apiResponse'
 import { getAccessToken } from '@/shared/lib/authToken'
 import { API_BASE_URL } from '@/shared/config/env'
 import {
@@ -18,6 +20,16 @@ import {
   sendChatMessage,
   updateChatReadCursor,
 } from '@/entities/chat'
+import {
+  ALLOWED_IMAGE_EXTENSIONS,
+  ALLOWED_IMAGE_TYPES,
+  MAX_IMAGE_SIZE_MB,
+  MAX_IMAGE_SIZE_BYTES,
+  MIN_IMAGE_SIZE_BYTES,
+  createUploadGrant,
+  uploadFileToS3,
+  type UploadGrantResponseDto,
+} from '@/entities/upload'
 import { getSubgroupMembers } from '@/entities/subgroup'
 import type { ChatMessageDto } from '@/entities/chat'
 
@@ -98,6 +110,7 @@ export function ChatRoomPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [wsErrorMessage, setWsErrorMessage] = useState<string | null>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
+  const [isSendingImage, setIsSendingImage] = useState(false)
 
   const clientRef = useRef<Client | null>(null)
   const readCursorSyncedRef = useRef<number | null>(null)
@@ -353,7 +366,7 @@ export function ChatRoomPage() {
     }
   }
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendTextMessage = async (text: string) => {
     if (!isValidRoomId || !text.trim()) return
 
     const payload = {
@@ -389,6 +402,80 @@ export function ChatRoomPage() {
     } catch {
       setErrorMessage('메시지 전송에 실패했습니다.')
     }
+  }
+
+  const handleSendImageMessage = async (attachment: File, text: string) => {
+    if (!isValidRoomId) return
+    if (text.trim()) {
+      toast.error('이미지 메시지는 텍스트 없이 전송할 수 있습니다.')
+      return
+    }
+    if (!ALLOWED_IMAGE_TYPES.includes(attachment.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
+      toast.error(`지원하지 않는 이미지 형식입니다. (${ALLOWED_IMAGE_EXTENSIONS})`)
+      return
+    }
+    if (attachment.size < MIN_IMAGE_SIZE_BYTES) {
+      toast.error('파일이 비어있거나 너무 작습니다.')
+      return
+    }
+    if (attachment.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error(`파일 크기는 ${MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`)
+      return
+    }
+
+    setIsSendingImage(true)
+    try {
+      const grantResponse = await createUploadGrant({
+        purpose: 'CHAT_IMAGE',
+        files: [
+          {
+            fileName: attachment.name,
+            contentType: attachment.type,
+            size: attachment.size,
+          },
+        ],
+      })
+      const grantPayload = extractResponseData<UploadGrantResponseDto>(grantResponse)
+      const [grant] = grantPayload?.uploads ?? []
+      if (!grant) throw new Error('Upload grant is empty')
+
+      await uploadFileToS3(grant.url, grant.fields, attachment)
+
+      const response = await sendChatMessage(chatRoomId, {
+        messageType: 'FILE',
+        content: null,
+        files: [{ fileUuid: grant.fileUuid }],
+      })
+
+      const sentMessage = extractResponseData<ChatMessageDto>(response)
+      if (sentMessage) {
+        const normalized = normalizeMessage(sentMessage)
+        setMessages((prev) => {
+          if (prev.some((item) => item.id === normalized.id)) return prev
+          const next = [...prev, normalized]
+          next.sort((a, b) => a.id - b.id)
+          return next
+        })
+      }
+
+      scrollToBottom(true)
+      setShowScrollButton(false)
+    } catch {
+      toast.error('이미지 메시지 전송에 실패했습니다.')
+    } finally {
+      setIsSendingImage(false)
+    }
+  }
+
+  const handleSendMessage = async (text: string, attachments?: File[]) => {
+    if (attachments && attachments.length > 0) {
+      const [firstImage] = attachments
+      if (!firstImage) return
+      await handleSendImageMessage(firstImage, text)
+      return
+    }
+
+    await handleSendTextMessage(text)
   }
 
   const groupedMessages = messages.reduce(
@@ -550,7 +637,10 @@ export function ChatRoomPage() {
       )}
 
       <div className="sticky bottom-0 z-20 bg-background">
-        <ChatInput onSendMessage={(text) => void handleSendMessage(text)} />
+        <ChatInput
+          onSendMessage={(text, attachments) => void handleSendMessage(text, attachments)}
+          disabled={isSendingImage}
+        />
       </div>
     </div>
   )

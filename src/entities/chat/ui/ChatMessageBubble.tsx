@@ -33,7 +33,8 @@ export function ChatMessageBubble({
   showSender = true,
   onRetry,
 }: ChatMessageBubbleProps) {
-  if (message.messageType === 'system') {
+  const normalizedType = message.messageType.toLowerCase()
+  if (normalizedType === 'system') {
     return (
       <div className="flex justify-center py-2">
         <div className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs text-center max-w-[80%]">
@@ -44,6 +45,8 @@ export function ChatMessageBubble({
   }
 
   const time = formatTime(message.createdAt)
+  const fileUrl = message.files?.[0]?.fileUrl
+  const isFileMessage = normalizedType === 'file'
 
   return (
     <div className={cn('flex gap-2 px-4 py-1', isOwn && 'flex-row-reverse')}>
@@ -68,8 +71,16 @@ export function ChatMessageBubble({
               message.status === 'failed' && 'bg-destructive/10 border border-destructive',
             )}
           >
-            {message.content && (
-              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+            {isFileMessage && fileUrl ? (
+              <img
+                src={fileUrl}
+                alt="채팅 이미지"
+                className="max-h-72 w-full rounded-lg object-cover"
+              />
+            ) : (
+              message.content && (
+                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+              )
             )}
           </div>
 

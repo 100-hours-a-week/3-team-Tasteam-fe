@@ -47,8 +47,11 @@ export function ChatInput({
 
   const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    setAttachments((prev) => [...prev, ...files])
+    const selected = files[0]
+    if (!selected) return
+    setAttachments([selected])
     setIsSheetOpen(false)
+    e.target.value = ''
   }
 
   const removeAttachment = (index: number) => {
@@ -117,7 +120,6 @@ export function ChatInput({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                multiple
                 className="hidden"
                 onChange={handleImageSelect}
               />
