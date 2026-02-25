@@ -111,8 +111,10 @@ export function ChatRoomPage() {
   const [wsErrorMessage, setWsErrorMessage] = useState<string | null>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [isSendingImage, setIsSendingImage] = useState(false)
+  const [firstUnreadMessageId, setFirstUnreadMessageId] = useState<number | null>(null)
 
   const clientRef = useRef<Client | null>(null)
+  const forceScrollOnNextIncomingRef = useRef(false)
   const readCursorSyncedRef = useRef<number | null>(null)
   const autoPrefetchRoundsRef = useRef(0)
   const nullCursorProbeExhaustedRef = useRef(false)
@@ -129,6 +131,19 @@ export function ChatRoomPage() {
     }
   }
 
+  const scrollToFirstUnreadMarker = () => {
+    const container = scrollAreaRef.current
+    if (!container) return false
+    const marker = container.querySelector<HTMLElement>('[data-read-marker="true"]')
+    if (!marker) return false
+
+    const targetTop = Math.max(marker.offsetTop - Math.round(container.clientHeight * 0.35), 0)
+    container.scrollTop = targetTop
+    isAtBottomRef.current = false
+    setShowScrollButton(true)
+    return true
+  }
+
   useEffect(() => {
     if (!isValidRoomId) {
       setIsLoading(false)
@@ -141,13 +156,34 @@ export function ChatRoomPage() {
       setIsLoading(true)
       setErrorMessage(null)
       try {
-        const response = await getChatMessages(chatRoomId, { size: INITIAL_MESSAGE_PAGE_SIZE })
+        const enterResponse = await getChatMessages(chatRoomId, {
+          size: INITIAL_MESSAGE_PAGE_SIZE,
+          mode: 'ENTER',
+        })
         if (cancelled) return
 
-        const normalized = response.items.map(normalizeMessage).reverse()
-        setMessages(normalized)
-        setNextCursor(response.pagination.nextCursor)
-        setHasNext(response.pagination.hasNext)
+        const enterMessages = enterResponse.items.map(normalizeMessage).reverse()
+        const readBoundaryId = enterMessages[enterMessages.length - 1]?.id
+
+        let newerMessages: ChatMessageDto[] = []
+        if (readBoundaryId) {
+          const afterResponse = await getChatMessages(chatRoomId, {
+            cursor: String(readBoundaryId),
+            size: INITIAL_MESSAGE_PAGE_SIZE,
+            mode: 'AFTER',
+          })
+          if (cancelled) return
+          newerMessages = afterResponse.items.map(normalizeMessage).reverse()
+        }
+
+        const merged = [...enterMessages, ...newerMessages]
+        const uniqueById = Array.from(new Map(merged.map((item) => [item.id, item])).values())
+        uniqueById.sort((a, b) => a.id - b.id)
+
+        setMessages(uniqueById)
+        setNextCursor(enterResponse.pagination.nextCursor)
+        setHasNext(enterResponse.pagination.hasNext)
+        setFirstUnreadMessageId(newerMessages[0]?.id ?? null)
         nullCursorProbeExhaustedRef.current = false
         autoPrefetchRoundsRef.current = 0
       } catch {
@@ -157,7 +193,11 @@ export function ChatRoomPage() {
       } finally {
         if (!cancelled) {
           setIsLoading(false)
-          requestAnimationFrame(() => scrollToBottom(true))
+          requestAnimationFrame(() => {
+            if (!scrollToFirstUnreadMarker()) {
+              scrollToBottom(true)
+            }
+          })
         }
       }
     }
@@ -221,8 +261,14 @@ export function ChatRoomPage() {
               return next
             })
             requestAnimationFrame(() => {
-              scrollToBottom(incoming.memberId === ownMemberId)
-              if (incoming.memberId === ownMemberId) {
+              const shouldForceScroll =
+                forceScrollOnNextIncomingRef.current || incoming.memberId === ownMemberId
+              if (shouldForceScroll) {
+                forceScrollOnNextIncomingRef.current = false
+              }
+              scrollToBottom(shouldForceScroll)
+              if (shouldForceScroll) {
+                requestAnimationFrame(() => scrollToBottom(true))
                 setShowScrollButton(false)
               }
             })
@@ -250,6 +296,7 @@ export function ChatRoomPage() {
 
   useEffect(() => {
     if (!isValidRoomId || messages.length === 0) return
+    if (!isAtBottomRef.current) return
     const lastMessageId = messages[messages.length - 1]?.id
     if (!lastMessageId || readCursorSyncedRef.current === lastMessageId) return
 
@@ -276,6 +323,7 @@ export function ChatRoomPage() {
         const response = await getChatMessages(chatRoomId, {
           cursor: nextCursor ?? undefined,
           size: MESSAGE_PAGE_SIZE,
+          mode: 'BEFORE',
         })
         const normalized = response.items.map(normalizeMessage).reverse()
         if (normalized.length === 0) {
@@ -382,6 +430,7 @@ export function ChatRoomPage() {
 
     const client = clientRef.current
     if (client?.connected) {
+      forceScrollOnNextIncomingRef.current = true
       client.publish({
         destination: `/pub/chat-rooms/${chatRoomId}/messages`,
         body: JSON.stringify(payload),
@@ -600,13 +649,22 @@ export function ChatRoomPage() {
                             memberProfileImageById.get(message.memberId) ?? null,
                         }
                     return (
-                      <ChatMessageBubble
-                        key={message.id}
-                        message={messageWithProfile}
-                        isOwn={message.memberId === ownMemberId}
-                        showAvatar={showAvatar}
-                        showSender={showSender}
-                      />
+                      <div key={message.id}>
+                        {firstUnreadMessageId === message.id && (
+                          <div
+                            data-read-marker="true"
+                            className="mx-4 my-3 rounded-full border border-border bg-background px-3 py-1 text-center text-xs text-muted-foreground"
+                          >
+                            여기까지 읽었습니다.
+                          </div>
+                        )}
+                        <ChatMessageBubble
+                          message={messageWithProfile}
+                          isOwn={message.memberId === ownMemberId}
+                          showAvatar={showAvatar}
+                          showSender={showSender}
+                        />
+                      </div>
                     )
                   })}
                 </div>

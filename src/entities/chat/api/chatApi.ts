@@ -104,7 +104,7 @@ const normalizeChatMessagesResponse = (response: unknown): ChatMessageListRespon
 
 export const getChatMessages = async (
   chatRoomId: number,
-  params?: { cursor?: string; size?: number },
+  params?: { cursor?: string; size?: number; mode?: 'ENTER' | 'BEFORE' | 'AFTER' },
 ): Promise<ChatMessageListResponseDto> => {
   const res = await request<unknown>({
     method: 'GET',
