@@ -219,7 +219,12 @@ export function ChatRoomPage() {
               next.sort((a, b) => a.id - b.id)
               return next
             })
-            requestAnimationFrame(() => scrollToBottom())
+            requestAnimationFrame(() => {
+              scrollToBottom(incoming.memberId === ownMemberId)
+              if (incoming.memberId === ownMemberId) {
+                setShowScrollButton(false)
+              }
+            })
           } catch {
             // ignore malformed payload
           }

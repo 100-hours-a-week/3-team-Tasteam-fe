@@ -69,15 +69,15 @@ export function ChatMessageBubble({
               'rounded-2xl px-3 py-2',
               isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm',
               message.status === 'failed' && 'bg-destructive/10 border border-destructive',
-              isFileMessage && fileUrl && 'p-1',
+              isFileMessage && fileUrl && 'overflow-hidden p-0',
             )}
           >
             {isFileMessage && fileUrl ? (
-              <div className="w-52 max-w-[60vw] overflow-hidden rounded-lg">
+              <div className="w-fit max-w-full bg-black/5">
                 <img
                   src={fileUrl}
                   alt="채팅 이미지"
-                  className="h-auto max-h-72 w-full object-cover"
+                  className="block max-h-72 w-auto max-w-full object-contain"
                   loading="lazy"
                 />
               </div>
