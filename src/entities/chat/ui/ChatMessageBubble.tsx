@@ -69,7 +69,10 @@ export function ChatMessageBubble({
               'rounded-2xl px-3 py-2',
               isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm',
               message.status === 'failed' && 'bg-destructive/10 border border-destructive',
-              isFileMessage && fileUrl && 'overflow-hidden border border-border p-0',
+              isFileMessage &&
+                fileUrl &&
+                'overflow-hidden p-0 border ' +
+                  (isOwn ? 'border-primary-foreground/30' : 'border-border'),
             )}
           >
             {isFileMessage && fileUrl ? (
