@@ -43,3 +43,6 @@ export const ACTIVITY_FLUSH_INTERVAL_MS = getNumberEnv('VITE_ACTIVITY_FLUSH_INTE
 export const ACTIVITY_MAX_BATCH_SIZE = getNumberEnv('VITE_ACTIVITY_MAX_BATCH_SIZE', 20)
 export const ACTIVITY_MAX_QUEUE_SIZE = getNumberEnv('VITE_ACTIVITY_MAX_QUEUE_SIZE', 500)
 export const ACTIVITY_DEBUG = getBooleanEnv('VITE_ACTIVITY_DEBUG', false)
+
+export const SENTRY_DSN = getEnv('VITE_SENTRY_DSN')
+export const SENTRY_ENABLED = getBooleanEnv('VITE_SENTRY_ENABLED', APP_ENV !== 'development')
