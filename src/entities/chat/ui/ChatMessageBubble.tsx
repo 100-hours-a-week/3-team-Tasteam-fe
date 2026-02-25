@@ -69,11 +69,11 @@ export function ChatMessageBubble({
               'rounded-2xl px-3 py-2',
               isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm',
               message.status === 'failed' && 'bg-destructive/10 border border-destructive',
-              isFileMessage && fileUrl && 'p-1',
+              isFileMessage && fileUrl && 'overflow-hidden p-0',
             )}
           >
             {isFileMessage && fileUrl ? (
-              <div className="w-fit max-w-full overflow-hidden rounded-lg bg-black/5">
+              <div className="w-fit max-w-full bg-black/5">
                 <img
                   src={fileUrl}
                   alt="채팅 이미지"
