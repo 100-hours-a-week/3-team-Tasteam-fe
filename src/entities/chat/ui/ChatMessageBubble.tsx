@@ -69,14 +69,18 @@ export function ChatMessageBubble({
               'rounded-2xl px-3 py-2',
               isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm',
               message.status === 'failed' && 'bg-destructive/10 border border-destructive',
+              isFileMessage && fileUrl && 'p-1',
             )}
           >
             {isFileMessage && fileUrl ? (
-              <img
-                src={fileUrl}
-                alt="채팅 이미지"
-                className="max-h-72 w-full rounded-lg object-cover"
-              />
+              <div className="w-52 max-w-[60vw] overflow-hidden rounded-lg">
+                <img
+                  src={fileUrl}
+                  alt="채팅 이미지"
+                  className="h-auto max-h-72 w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
             ) : (
               message.content && (
                 <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
