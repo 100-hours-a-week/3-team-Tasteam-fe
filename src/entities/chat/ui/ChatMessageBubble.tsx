@@ -73,11 +73,11 @@ export function ChatMessageBubble({
             )}
           >
             {isFileMessage && fileUrl ? (
-              <div className="w-52 max-w-[60vw] overflow-hidden rounded-lg">
+              <div className="w-fit max-w-full overflow-hidden rounded-lg bg-black/5">
                 <img
                   src={fileUrl}
                   alt="채팅 이미지"
-                  className="h-auto max-h-72 w-full object-cover"
+                  className="block max-h-72 w-auto max-w-full object-contain"
                   loading="lazy"
                 />
               </div>
