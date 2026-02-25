@@ -163,12 +163,12 @@ export function ChatRoomPage() {
         if (cancelled) return
 
         const enterMessages = enterResponse.items.map(normalizeMessage).reverse()
-        const readBoundaryId = enterMessages[enterMessages.length - 1]?.id
+        const afterCursor = enterResponse.pagination.nextCursor
 
         let newerMessages: ChatMessageDto[] = []
-        if (readBoundaryId) {
+        if (afterCursor) {
           const afterResponse = await getChatMessages(chatRoomId, {
-            cursor: String(readBoundaryId),
+            cursor: afterCursor,
             size: INITIAL_MESSAGE_PAGE_SIZE,
             mode: 'AFTER',
           })
