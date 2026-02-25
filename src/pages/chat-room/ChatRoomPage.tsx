@@ -441,17 +441,17 @@ export function ChatRoomPage() {
     }
 
     try {
-      await sendChatMessage(chatRoomId, payload)
-      const fallbackMessage: ChatMessageDto = {
-        id: Date.now(),
-        memberId: ownMemberId,
-        memberNickname: '나',
-        memberProfileImageUrl: '',
-        content: payload.content,
-        messageType: 'text',
-        createdAt: new Date().toISOString(),
+      const response = await sendChatMessage(chatRoomId, payload)
+      const sentMessage = extractResponseData<ChatMessageDto>(response)
+      if (sentMessage) {
+        const normalized = normalizeMessage(sentMessage)
+        setMessages((prev) => {
+          if (prev.some((item) => item.id === normalized.id)) return prev
+          const next = [...prev, normalized]
+          next.sort((a, b) => a.id - b.id)
+          return next
+        })
       }
-      setMessages((prev) => [...prev, fallbackMessage])
       scrollToBottom(true)
       setShowScrollButton(false)
     } catch {
