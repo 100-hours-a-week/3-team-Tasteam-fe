@@ -125,6 +125,7 @@ export function ChatRoomPage() {
     if (!container) return
     if (force || isAtBottomRef.current) {
       container.scrollTop = container.scrollHeight
+      isAtBottomRef.current = true
     }
   }
 
