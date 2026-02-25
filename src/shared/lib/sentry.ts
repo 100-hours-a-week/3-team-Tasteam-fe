@@ -1,6 +1,15 @@
-import * as Sentry from '@sentry/react'
-import { browserTracingIntegration, replayIntegration } from '@sentry/react'
 import { APP_ENV, API_BASE_URL, SENTRY_DSN, SENTRY_ENABLED } from '@/shared/config/env'
+import { logger } from '@/shared/lib/logger'
+
+type SentryUser = { id?: string | number; username?: string } | null
+
+type SentryModule = {
+  init: (options: Record<string, unknown>) => void
+  captureException: (error: unknown) => void
+  setUser: (user: SentryUser) => void
+  browserTracingIntegration: () => unknown
+  replayIntegration: () => unknown
+}
 
 const TRACES_SAMPLE_RATE: Record<string, number> = {
   production: 0.1,
@@ -8,22 +17,49 @@ const TRACES_SAMPLE_RATE: Record<string, number> = {
   development: 1.0,
 }
 
-export function initSentry() {
-  if (!SENTRY_DSN || !SENTRY_ENABLED) return
+let sentryModule: SentryModule | null = null
+let initialized = false
+const importModule = new Function('modulePath', 'return import(modulePath)') as (
+  modulePath: string,
+) => Promise<unknown>
 
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: APP_ENV,
-    release: __APP_VERSION__,
-    sendDefaultPii: true,
-    tracesSampleRate: TRACES_SAMPLE_RATE[APP_ENV] ?? 1.0,
-    integrations: [browserTracingIntegration(), replayIntegration()],
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    tracePropagationTargets: ['localhost', API_BASE_URL],
-    enableLogs: true,
-  })
+export function initSentry() {
+  if (!SENTRY_DSN || !SENTRY_ENABLED || initialized) return
+  initialized = true
+
+  void importModule('@sentry/react')
+    .then((mod) => {
+      const sentry = mod as unknown as SentryModule
+      sentry.init({
+        dsn: SENTRY_DSN,
+        environment: APP_ENV,
+        release: __APP_VERSION__,
+        sendDefaultPii: true,
+        tracesSampleRate: TRACES_SAMPLE_RATE[APP_ENV] ?? 1.0,
+        integrations: [sentry.browserTracingIntegration(), sentry.replayIntegration()],
+        replaysSessionSampleRate: 0.1,
+        replaysOnErrorSampleRate: 1.0,
+        tracePropagationTargets: ['localhost', API_BASE_URL],
+        enableLogs: true,
+      })
+      sentryModule = sentry
+    })
+    .catch((error) => {
+      initialized = false
+      logger.warn('[sentry] failed to load @sentry/react; continuing without Sentry', error)
+    })
 }
 
-export const captureException = Sentry.captureException
-export { Sentry }
+export const captureException = (error: unknown) => {
+  if (sentryModule) {
+    sentryModule.captureException(error)
+  }
+}
+
+export const Sentry = {
+  setUser(user: SentryUser) {
+    if (sentryModule) {
+      sentryModule.setUser(user)
+    }
+  },
+}
