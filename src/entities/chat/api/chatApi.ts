@@ -55,12 +55,28 @@ const normalizePagePayload = (
   },
 })
 
+const extractLastReadMessageId = (payload: Record<string, unknown>): number | null | undefined => {
+  const meta = payload.meta
+  if (isRecord(meta)) {
+    const value = meta.lastReadMessageId
+    if (typeof value === 'number') return value
+    if (value == null) return null
+  }
+
+  const direct = payload.lastReadMessageId
+  if (typeof direct === 'number') return direct
+  if (direct == null) return null
+
+  return undefined
+}
+
 const normalizeChatMessagesResponse = (response: unknown): ChatMessageListResponseDto => {
   if (!isRecord(response)) return emptyPage
 
   const payload = extractChatPayload(response)
 
   if (isRecord(payload) && Array.isArray(payload.items) && isRecord(payload.pagination)) {
+    const lastReadMessageId = extractLastReadMessageId(payload)
     return {
       items: payload.items as ChatMessageListResponseDto['items'],
       pagination: {
@@ -72,6 +88,7 @@ const normalizeChatMessagesResponse = (response: unknown): ChatMessageListRespon
             : payload.items.length,
         hasNext: Boolean(payload.pagination.hasNext),
       },
+      ...(lastReadMessageId !== undefined ? { meta: { lastReadMessageId } } : {}),
     }
   }
 
