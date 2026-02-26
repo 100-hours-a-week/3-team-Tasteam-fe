@@ -1,5 +1,5 @@
 import { ThumbsUp, ThumbsDown, Image as ImageIcon } from 'lucide-react'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/lib/utils'
@@ -88,6 +88,7 @@ export function SimpleReviewCard(props: SimpleReviewCardProps) {
     <Card className={cn('p-4 gap-0', className)}>
       <div className="flex items-start gap-3 mb-3">
         <Avatar className="h-10 w-10">
+          <AvatarImage src={review.author.profileImageUrl ?? undefined} />
           <AvatarFallback>{review.author.nickname.slice(0, 2)}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">

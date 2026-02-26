@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ThumbsUp, ThumbsDown, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/shared/ui/card'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { ImagePreviewDialog } from '@/shared/ui/image-preview-dialog'
 import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
@@ -255,6 +255,7 @@ export function DetailReviewCard({
       <div className="flex items-center justify-between gap-3 pt-5 mt-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <Avatar className="h-5 w-5 shrink-0">
+            <AvatarImage src={review.author.profileImageUrl ?? undefined} />
             <AvatarFallback className="text-[9px]">
               {review.author.nickname.slice(0, 2)}
             </AvatarFallback>
