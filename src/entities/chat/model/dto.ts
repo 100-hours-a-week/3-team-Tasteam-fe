@@ -18,7 +18,11 @@ export type ChatMessageFileItemDto = {
   fileUrl: string
 }
 
-export type ChatMessageListResponseDto = CursorPageResponse<ChatMessageDto>
+export type ChatMessageListResponseDto = CursorPageResponse<ChatMessageDto> & {
+  meta?: {
+    lastReadMessageId?: number | null
+  }
+}
 
 export type ChatMessageSendRequestDto = {
   messageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM'
