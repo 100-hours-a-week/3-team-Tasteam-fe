@@ -17,6 +17,7 @@ import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
 import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
 import { toMainPageData } from '@/entities/main'
+import { getMainPageCache } from '@/app/bootstrap/mainPageCache'
 
 type HomePageProps = {
   onSearchClick?: () => void
@@ -37,6 +38,22 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
   const longitude = location?.longitude ?? 126.978
 
   useEffect(() => {
+    const cached = getMainPageCache(latitude, longitude)
+    if (cached) {
+      queueMicrotask(() => {
+        setMainData(cached)
+        const splashEvent = cached.data?.splashEvent
+        if (splashEvent) {
+          const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
+          const today = new Date().toDateString()
+          setShowSplashPopup(!dismissedDate || dismissedDate !== today)
+        }
+        setIsMainLoading(false)
+        setHasLoadedMain(true)
+      })
+      return
+    }
+
     queueMicrotask(() => setIsMainLoading(true))
     getMainPage({ latitude, longitude })
       .then((data) => {

@@ -1,8 +1,8 @@
 import { request } from '@/shared/api/request'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import { clearAccessToken, setAccessToken, setRefreshEnabled } from '@/shared/lib/authToken'
-
-const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+import { getMainPage } from '@/entities/main'
+import { setMainPageCache, clearMainPageCache } from './mainPageCache'
 
 type RefreshResponse = {
   accessToken?: string
@@ -11,37 +11,47 @@ type RefreshResponse = {
   }
 }
 
+const DEFAULT_LAT = 37.5665
+const DEFAULT_LNG = 126.978
+
 const runBootstrapTasks = async () => {
   setRefreshEnabled(true)
-  try {
-    const data = await request<RefreshResponse>({
+
+  const [refreshResult, mainResult] = await Promise.allSettled([
+    request<RefreshResponse>({
       method: 'POST',
       url: API_ENDPOINTS.tokenRefresh,
       data: { accessToken: null },
       withCredentials: true,
-    })
-    const token = data.accessToken ?? data.data?.accessToken
+    }),
+    getMainPage({ latitude: DEFAULT_LAT, longitude: DEFAULT_LNG }),
+  ])
+
+  if (refreshResult.status === 'fulfilled') {
+    const token = refreshResult.value.accessToken ?? refreshResult.value.data?.accessToken
     if (token) {
       setAccessToken(token)
+    } else {
+      clearAccessToken()
     }
-  } catch {
+  } else {
     clearAccessToken()
-    // refresh 실패는 무시하고 비로그인 상태로 진행
-  } finally {
-    setRefreshEnabled(true)
   }
+
+  if (mainResult.status === 'fulfilled') {
+    setMainPageCache(mainResult.value, DEFAULT_LAT, DEFAULT_LNG)
+  } else {
+    clearMainPageCache()
+  }
+
+  setRefreshEnabled(true)
 }
 
 let bootstrapPromise: Promise<void> | null = null
 
 export const bootstrapApp = async () => {
   if (!bootstrapPromise) {
-    bootstrapPromise = (async () => {
-      const startedAt = Date.now()
-      await runBootstrapTasks()
-      const elapsed = Date.now() - startedAt
-      await delay(Math.max(0, 3000 - elapsed))
-    })()
+    bootstrapPromise = runBootstrapTasks()
   }
   await bootstrapPromise
 }
