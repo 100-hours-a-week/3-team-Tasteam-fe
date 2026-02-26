@@ -57,7 +57,7 @@ function getCardImages(props: RestaurantCardProps): string[] {
   if ('thumbnailImage' in restaurant) {
     return [restaurant.thumbnailImage.url]
   }
-  return restaurant.images.map((img) => img.url)
+  return (restaurant.images ?? []).map((img) => img.url)
 }
 
 export function RestaurantCard(props: RestaurantCardProps) {
@@ -239,7 +239,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
           <span>{restaurant.foodCategories[0]}</span>
           <div className="flex items-center gap-1">
             <MapPin className="h-3 w-3" />
-            <span>{formatDistance(restaurant.distanceMeter)}</span>
+            <span>{formatDistance(restaurant.distanceMeter ?? 0)}</span>
           </div>
         </div>
         {restaurant.foodCategories.length > 1 && (
