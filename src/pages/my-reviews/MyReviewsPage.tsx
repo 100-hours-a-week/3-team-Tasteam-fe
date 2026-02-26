@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { FileText, MoreVertical, Trash2 } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { FileText, Loader2, MoreVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
@@ -33,31 +33,95 @@ type MyReviewsPageProps = {
 
 export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps) {
   const [reviews, setReviews] = useState<Review[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [hasNextPage, setHasNextPage] = useState(true)
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+
+  const fetchReviews = useCallback(async (cursor?: string) => {
+    try {
+      const response = await getMyReviews({ cursor, size: 10 })
+      const payload =
+        response.data?.items != null
+          ? response.data
+          : (
+              response.data as {
+                data?: {
+                  items?: Array<{
+                    id: number
+                    restaurantName: string
+                    reviewContent: string
+                    createdAt?: string
+                  }>
+                  pagination?: {
+                    nextCursor: string | null
+                    hasNext: boolean
+                  }
+                }
+              }
+            )?.data
+
+      const rawItems = payload?.items ?? []
+      const mapped = rawItems.map((item) => ({
+        id: String((item as { id: number }).id),
+        restaurantName: (item as { restaurantName: string }).restaurantName,
+        rating: 5,
+        content: (item as { reviewContent: string }).reviewContent,
+        createdAt: (item as { createdAt?: string }).createdAt ?? '',
+      }))
+
+      setReviews((prev) => (cursor ? [...prev, ...mapped] : mapped))
+      setNextCursor(payload?.pagination?.nextCursor ?? null)
+      setHasNextPage(Boolean(payload?.pagination?.hasNext))
+    } catch {
+      if (!cursor) {
+        setReviews([])
+      }
+      setHasNextPage(false)
+    } finally {
+      if (!cursor) {
+        setIsInitialLoading(false)
+      } else {
+        setIsLoadingMore(false)
+      }
+    }
+  }, [])
 
   useEffect(() => {
-    getMyReviews()
-      .then((response) => {
-        const rawItems =
-          response.data?.items ??
-          (
-            response.data as {
-              data?: {
-                items?: Array<{ id: number; restaurantName: string; reviewContent: string }>
-              }
-            }
-          )?.data?.items ??
-          []
-        const apiData = rawItems.map((item) => ({
-          id: String((item as { id: number }).id),
-          restaurantName: (item as { restaurantName: string }).restaurantName,
-          rating: 5,
-          content: (item as { reviewContent: string }).reviewContent,
-          createdAt: '',
-        }))
-        setReviews(apiData)
+    void fetchReviews()
+  }, [fetchReviews])
+
+  const loadMore = useCallback(() => {
+    if (isInitialLoading || isLoadingMore || !hasNextPage) return
+    setIsLoadingMore(true)
+    void fetchReviews(nextCursor ?? undefined)
+  }, [fetchReviews, hasNextPage, isInitialLoading, isLoadingMore, nextCursor])
+
+  const lastReviewRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+      if (!node || isInitialLoading || isLoadingMore || !hasNextPage) return
+
+      observerRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore()
+        }
       })
-      .catch(() => setReviews([]))
+      observerRef.current.observe(node)
+    },
+    [hasNextPage, isInitialLoading, isLoadingMore, loadMore],
+  )
+
+  useEffect(() => {
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+      }
+    }
   }, [])
 
   const handleDelete = async (id: string) => {
@@ -77,10 +141,18 @@ export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps)
       <TopAppBar title="내 리뷰" showBackButton onBack={onBack} />
 
       <Container className="flex-1 py-4 overflow-auto">
-        {reviews.length > 0 ? (
+        {isInitialLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : reviews.length > 0 ? (
           <div className="space-y-3">
-            {reviews.map((review) => (
-              <div key={review.id} className="relative">
+            {reviews.map((review, index) => (
+              <div
+                key={review.id}
+                className="relative"
+                ref={index === reviews.length - 1 ? lastReviewRef : undefined}
+              >
                 <button
                   className="text-left w-full"
                   onClick={() => onRestaurantClick?.(review.restaurantName)}
@@ -116,6 +188,11 @@ export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps)
                 </div>
               </div>
             ))}
+            {isLoadingMore && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            )}
           </div>
         ) : (
           <EmptyState

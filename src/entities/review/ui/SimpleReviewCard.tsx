@@ -71,7 +71,7 @@ export function SimpleReviewCard(props: SimpleReviewCardProps) {
           </span>
         </div>
         <p
-          className="text-sm leading-relaxed line-clamp-2 text-muted-foreground whitespace-pre-wrap break-words"
+          className="text-sm leading-relaxed line-clamp-3 text-muted-foreground whitespace-pre-wrap break-words"
           title={content}
         >
           {content}

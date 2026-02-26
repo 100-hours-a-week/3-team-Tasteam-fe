@@ -71,7 +71,7 @@ export const getMyGroupRequests = (params?: { cursor?: string }) =>
     url: `/api/v1/members/me/group-requests${buildQuery(params ?? {})}`,
   })
 
-export const getMyReviews = (params?: { cursor?: string }) =>
+export const getMyReviews = (params?: { cursor?: string; size?: number }) =>
   request<SuccessResponse<MemberReviewListResponseDto>>({
     method: 'GET',
     url: `/api/v1/members/me/reviews${buildQuery(params ?? {})}`,
