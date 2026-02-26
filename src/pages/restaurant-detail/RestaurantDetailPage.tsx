@@ -897,183 +897,195 @@ export function RestaurantDetailPage() {
                     <Skeleton className="h-16 w-full" />
                   </div>
                 ) : (
-                  <>
-                    {/* 비교 분석 (제목 없음) */}
-                    {hasComparisonDetails && (
-                      <div className="rounded-lg border border-primary/20 border-l-4 border-l-primary bg-primary/5 p-4">
-                        <div className="space-y-3">
-                          {(() => {
-                            const comparisonConfig: Array<{
-                              key: string
-                              icon: React.ComponentType<{ className?: string }>
-                            }> = [
-                              { key: 'PRICE', icon: DollarSign },
-                              { key: 'SERVICE', icon: Heart },
-                            ]
-                            return comparisonConfig.map(({ key, icon: Icon }) => {
-                              const comp = aiComparisonDetails?.[key] as
-                                | AiCategoryComparisonDto
-                                | undefined
-                              if (!comp) return null
-                              return (
-                                <div key={key} className="flex items-start gap-3">
-                                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                                    <Icon className="h-3.5 w-3.5" />
-                                  </span>
-                                  <p
-                                    className="text-sm text-muted-foreground leading-relaxed line-clamp-2 min-w-0 break-words"
-                                    style={{
-                                      display: '-webkit-box',
-                                      WebkitBoxOrient: 'vertical',
-                                      WebkitLineClamp: 2,
-                                    }}
-                                  >
-                                    {comp.summary || '요약 없음'}
-                                  </p>
-                                </div>
-                              )
-                            })
-                          })()}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 긍정 바 + 카테고리별 요약(번호 뱃지) + 가로 스크롤 리뷰 카드 */}
-                    <div className="p-4">
-                      <div className="space-y-2 mb-4">
-                        {isRestaurantLoading ? (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <Skeleton className="h-4 w-20" />
-                              <Skeleton className="h-4 w-20" />
+                  <div className="relative">
+                    <div
+                      className={cn(
+                        restaurant.reviewCount === 0 && 'blur-sm pointer-events-none select-none',
+                      )}
+                    >
+                      <>
+                        {/* 비교 분석 (제목 없음) */}
+                        {hasComparisonDetails && (
+                          <div className="rounded-lg border border-primary/20 border-l-4 border-l-primary bg-primary/5 p-4">
+                            <div className="space-y-3">
+                              {(() => {
+                                const comparisonConfig: Array<{
+                                  key: string
+                                  icon: React.ComponentType<{ className?: string }>
+                                }> = [
+                                  { key: 'PRICE', icon: DollarSign },
+                                  { key: 'SERVICE', icon: Heart },
+                                ]
+                                return comparisonConfig.map(({ key, icon: Icon }) => {
+                                  const comp = aiComparisonDetails?.[key] as
+                                    | AiCategoryComparisonDto
+                                    | undefined
+                                  if (!comp) return null
+                                  return (
+                                    <div key={key} className="flex items-start gap-3">
+                                      <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                                        <Icon className="h-3.5 w-3.5" />
+                                      </span>
+                                      <p
+                                        className="text-sm text-muted-foreground leading-relaxed line-clamp-2 min-w-0 break-words"
+                                        style={{
+                                          display: '-webkit-box',
+                                          WebkitBoxOrient: 'vertical',
+                                          WebkitLineClamp: 2,
+                                        }}
+                                      >
+                                        {comp.summary || '아직 준비 중이에요.'}
+                                      </p>
+                                    </div>
+                                  )
+                                })
+                              })()}
                             </div>
-                            <Skeleton className="h-4 w-full rounded-full" />
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex justify-between items-center text-sm font-medium">
-                              <span className="flex items-center gap-1 text-primary">
-                                <ThumbsUp className="h-3.5 w-3.5" /> 긍정적 리뷰
-                              </span>
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                부정적 리뷰 <ThumbsDown className="h-3.5 w-3.5" />
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 w-full">
-                              <span className="text-sm font-medium text-primary flex-shrink-0">
-                                {restaurant.sentiment.positive}%
-                              </span>
-                              <div className="flex h-4 flex-1 min-w-0 rounded-full overflow-hidden bg-muted">
-                                <div
-                                  className="h-full bg-primary"
-                                  style={{ width: `${restaurant.sentiment.positive}%` }}
-                                />
-                                <div
-                                  className="h-full bg-muted-foreground/30"
-                                  style={{ width: `${restaurant.sentiment.negative}%` }}
-                                />
-                              </div>
-                              <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
-                                {restaurant.sentiment.negative}%
-                              </span>
-                            </div>
-                          </>
+                          </div>
                         )}
-                      </div>
-                      {hasCategoryDetails ? (
-                        <>
-                          <p className="text-sm font-medium text-muted-foreground mb-2 mt-5">
-                            리뷰 요약
-                          </p>
-                          <ul className="space-y-2">
-                            {(['TASTE', 'PRICE', 'SERVICE'] as const).map((key) => {
-                              const detail = aiCategoryDetails?.[key] as
-                                | AiCategorySummaryDto
-                                | undefined
-                              if (!detail) return null
-                              const numbers = summaryEvidenceOrder.numbersByCategory[key] ?? []
-                              return (
-                                <li
-                                  key={key}
-                                  className="flex flex-wrap items-center gap-x-2 gap-y-1"
-                                >
-                                  <span className="text-muted-foreground">•</span>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {detail.summary || '요약 없음'}
-                                  </p>
-                                  {numbers.length > 0 && (
-                                    <span className="flex items-center gap-1 flex-shrink-0">
-                                      {numbers.map((n) => (
-                                        <button
-                                          key={n}
-                                          type="button"
-                                          onClick={() => scrollToEvidenceCard(n)}
-                                          className="inline-flex w-4 h-4 rounded-full bg-muted text-muted-foreground text-[9px] font-medium items-center justify-center hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-muted-foreground focus:ring-offset-1"
-                                        >
-                                          {n}
-                                        </button>
-                                      ))}
-                                    </span>
-                                  )}
-                                </li>
-                              )
-                            })}
-                          </ul>
-                          {summaryEvidenceOrder.ordered.length > 0 && (
-                            <div className="mt-6 overflow-hidden py-1 -mx-4">
-                              <div
-                                ref={evidenceScrollRef}
-                                className="overflow-x-auto overflow-y-hidden py-1 px-4 flex gap-3 scroll-smooth"
-                              >
-                                {summaryEvidenceOrder.ordered.map(({ number, evidence }) => (
-                                  <div
-                                    key={`${evidence.reviewId}-${number}`}
-                                    data-card-number={number}
-                                    className="flex flex-col flex-shrink-0 w-44 p-3 rounded-lg border border-border bg-background text-left"
-                                  >
-                                    <div className="flex items-start justify-between mb-2 gap-2 flex-shrink-0">
-                                      <div className="flex items-center gap-1.5 min-w-0">
-                                        <span className="flex-shrink-0 w-4 h-4 rounded-full bg-muted text-muted-foreground text-[9px] font-medium flex items-center justify-center">
-                                          {number}
-                                        </span>
-                                        {evidence.authorName && (
-                                          <span className="text-[11px] font-medium truncate">
-                                            {evidence.authorName}
-                                          </span>
-                                        )}
-                                      </div>
-                                      {evidence.createdAt && (
-                                        <span className="text-[10px] text-muted-foreground/70 flex-shrink-0">
-                                          {formatEvidenceDate(evidence.createdAt)}
+
+                        {/* 긍정 바 + 카테고리별 요약(번호 뱃지) + 가로 스크롤 리뷰 카드 */}
+                        <div className="p-4">
+                          <div className="space-y-2 mb-4">
+                            {isRestaurantLoading ? (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <Skeleton className="h-4 w-20" />
+                                  <Skeleton className="h-4 w-20" />
+                                </div>
+                                <Skeleton className="h-4 w-full rounded-full" />
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex justify-between items-center text-sm font-medium">
+                                  <span className="flex items-center gap-1 text-primary">
+                                    <ThumbsUp className="h-3.5 w-3.5" /> 긍정적 리뷰
+                                  </span>
+                                  <span className="flex items-center gap-1 text-muted-foreground">
+                                    부정적 리뷰 <ThumbsDown className="h-3.5 w-3.5" />
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 w-full">
+                                  <span className="text-sm font-medium text-primary flex-shrink-0">
+                                    {restaurant.sentiment.positive}%
+                                  </span>
+                                  <div className="flex h-4 flex-1 min-w-0 rounded-full overflow-hidden bg-muted">
+                                    <div
+                                      className="h-full bg-primary"
+                                      style={{ width: `${restaurant.sentiment.positive}%` }}
+                                    />
+                                    <div
+                                      className="h-full bg-muted-foreground/30"
+                                      style={{ width: `${restaurant.sentiment.negative}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium text-muted-foreground flex-shrink-0">
+                                    {restaurant.sentiment.negative}%
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          {hasCategoryDetails ? (
+                            <>
+                              <p className="text-sm font-medium text-muted-foreground mb-2 mt-5">
+                                리뷰 요약
+                              </p>
+                              <ul className="space-y-2">
+                                {(['TASTE', 'PRICE', 'SERVICE'] as const).map((key) => {
+                                  const detail = aiCategoryDetails?.[key] as
+                                    | AiCategorySummaryDto
+                                    | undefined
+                                  if (!detail) return null
+                                  const numbers = summaryEvidenceOrder.numbersByCategory[key] ?? []
+                                  return (
+                                    <li
+                                      key={key}
+                                      className="flex flex-wrap items-center gap-x-2 gap-y-1"
+                                    >
+                                      <span className="text-muted-foreground">•</span>
+                                      <p className="text-sm text-muted-foreground leading-relaxed">
+                                        {detail.summary || '아직 준비 중이에요.'}
+                                      </p>
+                                      {numbers.length > 0 && (
+                                        <span className="flex items-center gap-1 flex-shrink-0">
+                                          {numbers.map((n) => (
+                                            <button
+                                              key={n}
+                                              type="button"
+                                              onClick={() => scrollToEvidenceCard(n)}
+                                              className="inline-flex w-4 h-4 rounded-full bg-muted text-muted-foreground text-[9px] font-medium items-center justify-center hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-muted-foreground focus:ring-offset-1"
+                                            >
+                                              {n}
+                                            </button>
+                                          ))}
                                         </span>
                                       )}
-                                    </div>
-                                    <p
-                                      className="text-[11px] text-muted-foreground leading-snug break-words min-w-0 overflow-hidden text-ellipsis max-h-[1.75rem]"
-                                      style={{
-                                        display: '-webkit-box',
-                                        WebkitBoxOrient: 'vertical',
-                                        WebkitLineClamp: 2,
-                                      }}
-                                    >
-                                      {evidence.snippet}
-                                    </p>
+                                    </li>
+                                  )
+                                })}
+                              </ul>
+                              {summaryEvidenceOrder.ordered.length > 0 && (
+                                <div className="mt-6 overflow-hidden py-1 -mx-4">
+                                  <div
+                                    ref={evidenceScrollRef}
+                                    className="overflow-x-auto overflow-y-hidden py-1 px-4 flex gap-3 scroll-smooth"
+                                  >
+                                    {summaryEvidenceOrder.ordered.map(({ number, evidence }) => (
+                                      <div
+                                        key={`${evidence.reviewId}-${number}`}
+                                        data-card-number={number}
+                                        className="flex flex-col flex-shrink-0 w-44 p-3 rounded-lg border border-border bg-background text-left"
+                                      >
+                                        <div className="flex items-start justify-between mb-2 gap-2 flex-shrink-0">
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <span className="flex-shrink-0 w-4 h-4 rounded-full bg-muted text-muted-foreground text-[9px] font-medium flex items-center justify-center">
+                                              {number}
+                                            </span>
+                                            {evidence.authorName && (
+                                              <span className="text-[11px] font-medium truncate">
+                                                {evidence.authorName}
+                                              </span>
+                                            )}
+                                          </div>
+                                          {evidence.createdAt && (
+                                            <span className="text-[10px] text-muted-foreground/70 flex-shrink-0">
+                                              {formatEvidenceDate(evidence.createdAt)}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p
+                                          className="text-[11px] text-muted-foreground leading-snug break-words min-w-0 overflow-hidden text-ellipsis max-h-[1.75rem]"
+                                          style={{
+                                            display: '-webkit-box',
+                                            WebkitBoxOrient: 'vertical',
+                                            WebkitLineClamp: 2,
+                                          }}
+                                        >
+                                          {evidence.snippet}
+                                        </p>
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
-                            </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {restaurant.aiSummary || '아직 준비 중이에요.'}
+                            </p>
                           )}
-                        </>
-                      ) : (
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {restaurant.aiSummary ||
-                            (restaurant.reviewCount === 0
-                              ? '아직 리뷰가 없어요. 첫 리뷰를 작성해 보세요!'
-                              : '아직 준비 중이에요.')}
-                        </p>
-                      )}
+                        </div>
+                      </>
                     </div>
-                  </>
+                    {restaurant.reviewCount === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/70">
+                        <p className="text-sm font-medium text-center text-muted-foreground px-4">
+                          아직 리뷰가 없어요. 첫 리뷰를 작성해 보세요!
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </Card>
