@@ -1,4 +1,3 @@
-export { ReviewCard } from './ReviewCard'
 export {
   DetailReviewCard,
   type DetailReviewCardProps,

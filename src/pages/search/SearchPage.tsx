@@ -20,7 +20,7 @@ import {
 import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
+import { RestaurantCard } from '@/entities/restaurant'
 import { searchAll } from '@/entities/search'
 import { useRecentSearches } from '@/entities/search'
 import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
@@ -407,13 +407,11 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                       <h3 className="text-sm font-semibold">연관 음식점</h3>
                       {hasRestaurantResults ? (
                         restaurantResults.map((restaurant, index) => (
-                          <VerticalRestaurantCard
+                          <RestaurantCard
                             key={restaurant.restaurantId}
-                            id={restaurant.restaurantId}
                             name={restaurant.name}
                             address={restaurant.address}
-                            category=""
-                            distance=""
+                            category="기타"
                             image={restaurant.imageUrl}
                             onClick={() =>
                               onRestaurantClick?.(String(restaurant.restaurantId), {

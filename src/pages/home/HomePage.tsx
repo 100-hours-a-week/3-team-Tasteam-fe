@@ -7,7 +7,7 @@ import { HomeAdCarousel } from '@/widgets/home-ad-carousel'
 import { Container } from '@/shared/ui/container'
 import { LocationHeader } from '@/widgets/location-header'
 import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
-import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/restaurant-card'
+import { RestaurantCard } from '@/entities/restaurant'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ROUTES } from '@/shared/config/routes'
@@ -114,6 +114,9 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     </div>
   )
 
+  const formatDistanceLabel = (meters: number) =>
+    meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`
+
   const renderHorizontal = (section?: MainSectionDto) => {
     const items = section?.items ?? []
     if (isMainLoading && items.length === 0) {
@@ -157,15 +160,13 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
         <div className="flex w-max gap-3 px-4">
           {items.map((item: MainSectionItemDto, index) => (
             <div key={item.restaurantId} className="w-[260px] shrink-0">
-              <HorizontalRestaurantCard
-                id={item.restaurantId}
+              <RestaurantCard
                 name={item.name}
                 category={item.category}
-                distance={item.distanceMeter}
+                distance={formatDistanceLabel(item.distanceMeter)}
                 image={item.thumbnailImageUrl}
-                tags={[]}
-                onClick={(id) =>
-                  onRestaurantClick?.(id, {
+                onClick={() =>
+                  onRestaurantClick?.(String(item.restaurantId), {
                     position: index,
                     section: section?.type ?? 'UNKNOWN',
                   })
@@ -227,17 +228,15 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       <Container>
         <div className="space-y-4">
           {items.map((item: MainSectionItemDto, index) => (
-            <VerticalRestaurantCard
+            <RestaurantCard
               key={item.restaurantId}
-              id={item.restaurantId}
               name={item.name}
               category={item.category}
-              distance={item.distanceMeter}
+              distance={formatDistanceLabel(item.distanceMeter)}
               image={item.thumbnailImageUrl}
-              tags={[]}
-              reason={item.reviewSummary}
-              onClick={(id) =>
-                onRestaurantClick?.(id, {
+              reviewSummary={item.reviewSummary}
+              onClick={() =>
+                onRestaurantClick?.(String(item.restaurantId), {
                   position: index,
                   section: section?.type ?? 'UNKNOWN',
                 })

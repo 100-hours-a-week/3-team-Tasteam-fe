@@ -21,7 +21,7 @@ type RestaurantSimpleProps = {
   category: string
   rating?: number
   reviewCount?: number
-  distance?: string
+  distance?: number | string
   address?: string
   image?: string
   imageUrl?: string
@@ -43,6 +43,28 @@ function isSimpleProps(props: RestaurantCardProps): props is RestaurantSimplePro
 function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)}m`
   return `${(meters / 1000).toFixed(1)}km`
+}
+
+function normalizeDistanceLabel(distance?: number | string): string {
+  if (distance == null) return ''
+
+  if (typeof distance === 'number') {
+    if (!Number.isFinite(distance)) return ''
+    return formatDistance(Math.max(0, distance))
+  }
+
+  const raw = distance.trim()
+  if (!raw) return ''
+
+  const match = raw.match(/^([0-9]+(?:\.[0-9]+)?)\s*(km|m)?$/i)
+  if (!match) return raw
+
+  const value = Number(match[1])
+  if (!Number.isFinite(value)) return raw
+
+  const unit = (match[2] ?? 'm').toLowerCase()
+  const meters = unit === 'km' ? value * 1000 : value
+  return formatDistance(Math.max(0, meters))
 }
 
 function getCardImages(props: RestaurantCardProps): string[] {
@@ -121,7 +143,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
       onClick,
       className,
     } = props
-    const locationText = distance || address || ''
+    const locationText = normalizeDistanceLabel(distance) || address || ''
     const summary = normalizeReviewSummary(reviewSummary)
     const primaryCategory = resolvePrimaryCategory(category)
 
@@ -153,18 +175,18 @@ export function RestaurantCard(props: RestaurantCardProps) {
             </Button>
           )}
         </div>
-        <div className="px-4 pb-4 pt-3 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="flex-1 min-w-0 truncate">{name}</h3>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{primaryCategory}</span>
+        <div className="px-4 pb-4 pt-4 space-y-2">
+          <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+            <span className="min-w-0 truncate">{primaryCategory}</span>
             {locationText && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 <MapPin className="h-3 w-3" />
                 <span>{locationText}</span>
               </div>
             )}
+          </div>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="flex-1 min-w-0 truncate text-[17px]">{name}</h3>
           </div>
           {!images.length && onSave && (
             <Button
@@ -190,7 +212,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
             </div>
           )}
           {summary && (
-            <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
+            <div className="!mt-6 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs font-bold text-primary/80 uppercase tracking-wider">
                 <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
                 <span>AI 리뷰 요약</span>
@@ -244,16 +266,16 @@ export function RestaurantCard(props: RestaurantCardProps) {
           </Button>
         )}
       </div>
-      <div className="px-4 pb-4 pt-3 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="flex-1 min-w-0 truncate">{restaurant.name}</h3>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{primaryCategory}</span>
-          <div className="flex items-center gap-1">
+      <div className="px-4 pb-4 pt-4 space-y-2">
+        <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span className="min-w-0 truncate">{primaryCategory}</span>
+          <div className="flex items-center gap-1 shrink-0">
             <MapPin className="h-3 w-3" />
             <span>{formatDistance(restaurant.distanceMeter ?? 0)}</span>
           </div>
+        </div>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="flex-1 min-w-0 truncate text-[17px]">{restaurant.name}</h3>
         </div>
         {restaurant.foodCategories.length > 1 && (
           <div className="flex flex-wrap gap-1">
@@ -265,7 +287,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
           </div>
         )}
         {summary && (
-          <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
+          <div className="!mt-6 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-primary/80 uppercase tracking-wider">
               <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
               <span>AI 리뷰 요약</span>
