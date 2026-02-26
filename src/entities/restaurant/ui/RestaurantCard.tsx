@@ -60,6 +60,17 @@ function getCardImages(props: RestaurantCardProps): string[] {
   return (restaurant.images ?? []).map((img) => img.url)
 }
 
+function normalizeReviewSummary(value?: string): string {
+  const trimmed = value?.trim()
+  if (!trimmed) return ''
+  return trimmed.replace(/^["'`“”‘’]\s*(.*?)\s*["'`“”‘’]$/, '$1')
+}
+
+function resolvePrimaryCategory(value?: string): string {
+  const trimmed = value?.trim()
+  return trimmed && trimmed.length > 0 ? trimmed : '기타'
+}
+
 export function RestaurantCard(props: RestaurantCardProps) {
   const images = getCardImages(props)
 
@@ -111,7 +122,8 @@ export function RestaurantCard(props: RestaurantCardProps) {
       className,
     } = props
     const locationText = distance || address || ''
-    const summary = reviewSummary?.trim()
+    const summary = normalizeReviewSummary(reviewSummary)
+    const primaryCategory = resolvePrimaryCategory(category)
 
     return (
       <Card
@@ -141,12 +153,12 @@ export function RestaurantCard(props: RestaurantCardProps) {
             </Button>
           )}
         </div>
-        <div className="px-4 pb-4 pt-1 space-y-2">
+        <div className="px-4 pb-4 pt-3 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="flex-1 min-w-0 truncate">{name}</h3>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{category}</span>
+            <span>{primaryCategory}</span>
             {locationText && (
               <div className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />
@@ -184,7 +196,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
                 <span>AI 리뷰 요약</span>
               </div>
               <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
-                "{summary}"
+                {summary}
               </p>
             </div>
           )}
@@ -201,7 +213,8 @@ export function RestaurantCard(props: RestaurantCardProps) {
     onClick,
     className,
   } = props
-  const summary = reviewSummary?.trim()
+  const summary = normalizeReviewSummary(reviewSummary)
+  const primaryCategory = resolvePrimaryCategory(restaurant.foodCategories[0])
 
   return (
     <Card
@@ -231,12 +244,12 @@ export function RestaurantCard(props: RestaurantCardProps) {
           </Button>
         )}
       </div>
-      <div className="px-4 pb-4 pt-1 space-y-2">
+      <div className="px-4 pb-4 pt-3 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <h3 className="flex-1 min-w-0 truncate">{restaurant.name}</h3>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{restaurant.foodCategories[0]}</span>
+          <span>{primaryCategory}</span>
           <div className="flex items-center gap-1">
             <MapPin className="h-3 w-3" />
             <span>{formatDistance(restaurant.distanceMeter ?? 0)}</span>
@@ -258,7 +271,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
               <span>AI 리뷰 요약</span>
             </div>
             <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
-              "{summary}"
+              {summary}
             </p>
           </div>
         )}
