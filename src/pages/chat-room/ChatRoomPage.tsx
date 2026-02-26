@@ -137,7 +137,10 @@ export function ChatRoomPage() {
     const marker = container.querySelector<HTMLElement>('[data-read-marker="true"]')
     if (!marker) return false
 
-    const targetTop = Math.max(marker.offsetTop - Math.round(container.clientHeight * 0.35), 0)
+    const targetTop = Math.max(
+      marker.offsetTop - Math.round((container.clientHeight - marker.offsetHeight) / 2),
+      0,
+    )
     container.scrollTop = targetTop
     isAtBottomRef.current = false
     setShowScrollButton(true)
@@ -163,16 +166,31 @@ export function ChatRoomPage() {
         if (cancelled) return
 
         const enterMessages = enterResponse.items.map(normalizeMessage).reverse()
-        const lastReadMessageId = enterResponse.meta?.lastReadMessageId ?? null
-        const firstUnreadId =
-          lastReadMessageId == null
-            ? null
-            : (enterMessages.find((message) => message.id > lastReadMessageId)?.id ?? null)
+        const enterAfterCursor = enterResponse.pagination.afterCursor
+        let newerMessages: ChatMessageDto[] = []
 
-        setMessages(enterMessages)
+        if (enterAfterCursor) {
+          try {
+            const afterResponse = await getChatMessages(chatRoomId, {
+              cursor: enterAfterCursor,
+              size: INITIAL_MESSAGE_PAGE_SIZE,
+              mode: 'AFTER',
+            })
+            if (cancelled) return
+            newerMessages = afterResponse.items.map(normalizeMessage).reverse()
+          } catch {
+            newerMessages = []
+          }
+        }
+
+        const merged = [...enterMessages, ...newerMessages]
+        const uniqueById = Array.from(new Map(merged.map((item) => [item.id, item])).values())
+        uniqueById.sort((a, b) => a.id - b.id)
+
+        setMessages(uniqueById)
         setNextCursor(enterResponse.pagination.nextCursor)
         setHasNext(enterResponse.pagination.hasNext)
-        setFirstUnreadMessageId(firstUnreadId)
+        setFirstUnreadMessageId(newerMessages[0]?.id ?? null)
         nullCursorProbeExhaustedRef.current = false
         autoPrefetchRoundsRef.current = 0
       } catch {

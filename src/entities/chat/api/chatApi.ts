@@ -11,7 +11,7 @@ import type {
 
 const emptyPage: ChatMessageListResponseDto = {
   items: [],
-  pagination: { nextCursor: null, size: 0, hasNext: false },
+  pagination: { nextCursor: null, afterCursor: null, size: 0, hasNext: false },
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -50,6 +50,7 @@ const normalizePagePayload = (
   items,
   pagination: {
     nextCursor: page.nextCursor == null ? null : String(page.nextCursor),
+    afterCursor: page.afterCursor == null ? null : String(page.afterCursor),
     size: typeof page.size === 'number' ? page.size : items.length,
     hasNext: toBoolean(page.hasNext),
   },
@@ -82,6 +83,8 @@ const normalizeChatMessagesResponse = (response: unknown): ChatMessageListRespon
       pagination: {
         nextCursor:
           payload.pagination.nextCursor == null ? null : String(payload.pagination.nextCursor),
+        afterCursor:
+          payload.pagination.afterCursor == null ? null : String(payload.pagination.afterCursor),
         size:
           typeof payload.pagination.size === 'number'
             ? payload.pagination.size
@@ -93,7 +96,15 @@ const normalizeChatMessagesResponse = (response: unknown): ChatMessageListRespon
   }
 
   if (isRecord(payload) && Array.isArray(payload.data) && isRecord(payload.page)) {
-    return normalizePagePayload(payload.data as ChatMessageListResponseDto['items'], payload.page)
+    const normalized = normalizePagePayload(
+      payload.data as ChatMessageListResponseDto['items'],
+      payload.page,
+    )
+    const lastReadMessageId = extractLastReadMessageId(payload)
+    return {
+      ...normalized,
+      ...(lastReadMessageId !== undefined ? { meta: { lastReadMessageId } } : {}),
+    }
   }
 
   // Backward/variant support: { messages: [...], page: {...} } or { items: [...], page: {...} }
@@ -105,14 +116,19 @@ const normalizeChatMessagesResponse = (response: unknown): ChatMessageListRespon
         : null
 
     if (pageItems) {
-      return normalizePagePayload(pageItems, payload.page)
+      const normalized = normalizePagePayload(pageItems, payload.page)
+      const lastReadMessageId = extractLastReadMessageId(payload)
+      return {
+        ...normalized,
+        ...(lastReadMessageId !== undefined ? { meta: { lastReadMessageId } } : {}),
+      }
     }
   }
 
   if (Array.isArray(payload)) {
     return {
       items: payload as ChatMessageListResponseDto['items'],
-      pagination: { nextCursor: null, size: payload.length, hasNext: false },
+      pagination: { nextCursor: null, afterCursor: null, size: payload.length, hasNext: false },
     }
   }
 
