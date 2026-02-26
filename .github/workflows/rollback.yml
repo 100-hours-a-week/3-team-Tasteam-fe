@@ -70,8 +70,8 @@ jobs:
           echo "=== Downloaded Files ==="
           ls -la ./rollback-temp/
 
-      # 4. 서버로 파일 전송
-      - name: Transfer to Server
+      # 4. 롤백 대상 아티팩트를 staging 디렉토리로 업로드 (고유 경로)
+      - name: Upload Rollback Files to Staging
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -79,11 +79,11 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           source: "./rollback-temp/*"
-          target: "/home/${{ secrets.USERNAME }}/frontend/rollback"
+          target: "/home/${{ secrets.USERNAME }}/frontend/staging/rollback/${{ inputs.environment }}/${{ inputs.run_number }}"
           strip_components: 1
 
-      # 5. 롤백 실행
-      - name: Deploy Rollback
+      # 5. staging -> 새 release 생성 후 current 링크 전환
+      - name: Promote Rollback Release
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -91,35 +91,58 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            ROLLBACK_DIR="/home/${{ secrets.USERNAME }}/frontend/rollback"
-            WEB_ROOT="/var/www/html"
+            set -euo pipefail
 
-            # 현재 배포된 버전 백업 생성
-            BACKUP_DIR="/home/${{ secrets.USERNAME }}/frontend/backup-$(date +%Y%m%d-%H%M%S)"
-            mkdir -p $BACKUP_DIR
-            if [ "$(ls -A $WEB_ROOT)" ]; then
-              cp -r $WEB_ROOT/* $BACKUP_DIR/
-              echo "✅ 현재 버전 백업 완료: $BACKUP_DIR"
-            else
-              echo "⚠️  배포된 파일이 없어 백업을 건너뜁니다."
+            STAGING_DIR="/home/${{ secrets.USERNAME }}/frontend/staging/rollback/${{ inputs.environment }}/${{ inputs.run_number }}"
+            DEPLOY_BASE="/opt/caddy/www/html"
+            RELEASES_DIR="${DEPLOY_BASE}/releases"
+            CURRENT_LINK="${DEPLOY_BASE}/current"
+            ROLLBACK_STAMP="$(date +%Y%m%d-%H%M%S)"
+            RELEASE_ID="rollback-${{ inputs.environment }}-${{ inputs.run_number }}-${ROLLBACK_STAMP}"
+            RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
+            # Use a relative symlink target so Caddy can resolve it inside the
+            # container mount path (/var/www/html), not just on the host path.
+            RELEASE_LINK_TARGET="releases/${RELEASE_ID}"
+            TMP_LINK="${DEPLOY_BASE}/.current_tmp"
+
+            if [ ! -d "$STAGING_DIR" ]; then
+              echo "❌ Staging directory not found: $STAGING_DIR"
+              exit 1
             fi
 
-            # 롤백 실행
-            echo "🔄 롤백 시작..."
-            rm -rf $WEB_ROOT/*
-            cp -r $ROLLBACK_DIR/* $WEB_ROOT/
+            sudo mkdir -p "$RELEASES_DIR"
+            sudo mkdir -p "$RELEASE_DIR"
+            sudo cp -a "$STAGING_DIR"/. "$RELEASE_DIR"/
 
-            # 정리
-            rm -rf $ROLLBACK_DIR/*
+            sudo rm -f "$TMP_LINK"
+            sudo ln -s "$RELEASE_LINK_TARGET" "$TMP_LINK"
+            sudo mv -Tf "$TMP_LINK" "$CURRENT_LINK"
 
-            echo "✅ 롤백 완료!"
-            if [ -f $WEB_ROOT/version.txt ]; then
+            rm -rf "$STAGING_DIR"
+
+            # 최근 5개 릴리즈만 유지
+            (sudo ls -1dt "$RELEASES_DIR"/* 2>/dev/null || true) | tail -n +6 | xargs -r sudo rm -rf
+
+            echo "✅ 롤백 완료! Current -> $(readlink "$CURRENT_LINK")"
+            if [ -f "$CURRENT_LINK/version.txt" ]; then
               echo ""
               echo "=== 배포된 버전 정보 ==="
-              cat $WEB_ROOT/version.txt
+              cat "$CURRENT_LINK/version.txt"
             fi
 
-      # 6. 롤백 결과 알림
+      # 6. 실패/중단 포함 staging 잔여물 정리
+      - name: Cleanup Rollback Staging Directory
+        if: always()
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            rm -rf "/home/${{ secrets.USERNAME }}/frontend/staging/rollback/${{ inputs.environment }}/${{ inputs.run_number }}"
+
+      # 7. 롤백 결과 알림
       - name: Notify Rollback Result
         if: always()
         uses: sarisia/actions-status-discord@v1
