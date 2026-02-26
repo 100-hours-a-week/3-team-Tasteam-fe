@@ -26,6 +26,7 @@ import { getRestaurantReviews } from '@/entities/review'
 import { getRestaurantFavoriteTargets } from '@/entities/favorite'
 import { FavoriteSelectionSheet } from '@/features/favorites'
 import { toast } from 'sonner'
+import { ROUTES } from '@/shared/config/routes'
 import type { ReviewListItemDto } from '@/entities/review'
 import type {
   MenuCategoryDto,
@@ -1197,9 +1198,11 @@ export function RestaurantDetailPage() {
         <ConfirmAlertDialogContent
           title="그룹 가입이 필요합니다"
           description="리뷰를 작성하려면 그룹에 가입해야 합니다."
-          hideCancel
           confirmText="확인"
-          onConfirm={() => setShowGroupJoinModal(false)}
+          onConfirm={() => {
+            setShowGroupJoinModal(false)
+            navigate(ROUTES.groups)
+          }}
         />
       </AlertDialog>
 
