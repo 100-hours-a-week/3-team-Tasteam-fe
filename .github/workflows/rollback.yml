@@ -100,6 +100,9 @@ jobs:
             ROLLBACK_STAMP="$(date +%Y%m%d-%H%M%S)"
             RELEASE_ID="rollback-${{ inputs.environment }}-${{ inputs.run_number }}-${ROLLBACK_STAMP}"
             RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
+            # Use a relative symlink target so Caddy can resolve it inside the
+            # container mount path (/var/www/html), not just on the host path.
+            RELEASE_LINK_TARGET="releases/${RELEASE_ID}"
             TMP_LINK="${DEPLOY_BASE}/.current_tmp"
 
             if [ ! -d "$STAGING_DIR" ]; then
@@ -112,7 +115,7 @@ jobs:
             sudo cp -a "$STAGING_DIR"/. "$RELEASE_DIR"/
 
             sudo rm -f "$TMP_LINK"
-            sudo ln -s "$RELEASE_DIR" "$TMP_LINK"
+            sudo ln -s "$RELEASE_LINK_TARGET" "$TMP_LINK"
             sudo mv -Tf "$TMP_LINK" "$CURRENT_LINK"
 
             rm -rf "$STAGING_DIR"
