@@ -53,7 +53,7 @@ export function FavoriteRestaurantCard({
             {restaurant.address && (
               <div className="flex items-start gap-1 text-xs text-muted-foreground">
                 <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                <span className="line-clamp-2">{restaurant.address}</span>
+                <span className="line-clamp-2 break-words">{restaurant.address}</span>
               </div>
             )}
           </div>

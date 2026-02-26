@@ -238,13 +238,13 @@ export function DetailReviewCard({
         imageUrl={previewImageUrl ?? ''}
         alt="리뷰 이미지"
       />
-      <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{content}</p>
+      <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">{content}</p>
       {(review.keywords?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {(review.keywords ?? []).map((keyword) => (
             <span
               key={keyword}
-              className="inline-flex items-center rounded-lg border border-border bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
+              className="inline-flex items-center rounded-lg border border-border bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground break-words"
             >
               {keyword}
             </span>

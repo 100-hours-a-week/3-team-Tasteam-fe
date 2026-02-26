@@ -179,9 +179,9 @@ export function RestaurantCard(props: RestaurantCardProps) {
           <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
             <span className="min-w-0 truncate">{primaryCategory}</span>
             {locationText && (
-              <div className="flex items-center gap-1 shrink-0">
-                <MapPin className="h-3 w-3" />
-                <span>{locationText}</span>
+              <div className="flex items-start gap-1 min-w-0 max-w-[55%]">
+                <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                <span className="break-words text-right leading-tight">{locationText}</span>
               </div>
             )}
           </div>
@@ -217,7 +217,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
                 <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
                 <span>AI 리뷰 요약</span>
               </div>
-              <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
+              <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic break-words">
                 {summary}
               </p>
             </div>
@@ -292,7 +292,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
               <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
               <span>AI 리뷰 요약</span>
             </div>
-            <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
+            <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic break-words">
               {summary}
             </p>
           </div>
