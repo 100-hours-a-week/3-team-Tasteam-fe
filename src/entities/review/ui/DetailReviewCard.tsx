@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { ThumbsUp, ThumbsDown, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/shared/ui/card'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { ImagePreviewDialog } from '@/shared/ui/image-preview-dialog'
+import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
 import { ROUTES } from '@/shared/config/routes'
 import type { ReviewListItemDto, ReviewDetailDto } from '../model/dto'
@@ -58,6 +61,8 @@ export function DetailReviewCard({
 }: DetailReviewCardProps) {
   const images = getImages(review)
   const content = getContent(review)
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
+  const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(new Set())
 
   const groupName =
     'groupName' in review && review.groupName != null && review.groupName !== ''
@@ -186,20 +191,53 @@ export function DetailReviewCard({
             </>
           )}
       </div>
-      {/* 사진 → 본문 → 키워드 순 */}
+      {/* 사진 → 본문 → 키워드 순 (가로 슬라이드, 큰 사진) */}
       {images.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-3">
-          {images.map((image, idx) => (
-            <div key={idx} className="w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
-              <img
-                src={image}
-                alt={`리뷰 이미지 ${idx + 1}`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ))}
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide mb-3 -mx-1 px-1 scroll-smooth">
+          {images.map((image, idx) => {
+            const isFailed = failedImageUrls.has(image)
+            const onError = () => setFailedImageUrls((prev) => new Set(prev).add(image))
+            if (isFailed) {
+              return (
+                <div
+                  key={idx}
+                  className="w-56 h-56 sm:w-64 sm:h-64 rounded-lg overflow-hidden bg-muted shrink-0 cursor-default"
+                  aria-hidden
+                >
+                  <ImageWithFallback
+                    src={image}
+                    alt={`리뷰 이미지 ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={onError}
+                  />
+                </div>
+              )
+            }
+            return (
+              <button
+                key={idx}
+                type="button"
+                className="w-56 h-56 sm:w-64 sm:h-64 rounded-lg overflow-hidden bg-muted shrink-0 p-0 border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                onClick={() => setPreviewImageUrl(image)}
+                aria-label={`리뷰 이미지 ${idx + 1} 크게 보기`}
+              >
+                <ImageWithFallback
+                  src={image}
+                  alt={`리뷰 이미지 ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={onError}
+                />
+              </button>
+            )
+          })}
         </div>
       )}
+      <ImagePreviewDialog
+        open={previewImageUrl != null}
+        onClose={() => setPreviewImageUrl(null)}
+        imageUrl={previewImageUrl ?? ''}
+        alt="리뷰 이미지"
+      />
       <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{content}</p>
       {(review.keywords?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
