@@ -13,6 +13,7 @@ const EVENT_NAMES: TrackEventName[] = [
   'ui.favorite.updated',
   'ui.event.clicked',
   'ui.tab.changed',
+  'ui.restaurant.shared',
 ]
 
 const REQUIRED_PROPERTIES: Record<TrackEventName, readonly string[]> = {
@@ -34,6 +35,7 @@ const REQUIRED_PROPERTIES: Record<TrackEventName, readonly string[]> = {
   'ui.favorite.updated': ['restaurantId', 'selectedTargetCount', 'fromPageKey'],
   'ui.event.clicked': ['eventId', 'fromPageKey'],
   'ui.tab.changed': ['fromTab', 'toTab', 'fromPageKey'],
+  'ui.restaurant.shared': ['restaurantId', 'fromPageKey', 'shareMethod'],
 }
 
 const EVENT_NAME_SET = new Set<string>(EVENT_NAMES)

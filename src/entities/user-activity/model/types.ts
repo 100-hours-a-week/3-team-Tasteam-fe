@@ -11,6 +11,7 @@ export type TrackEventName =
   | 'ui.favorite.updated'
   | 'ui.event.clicked'
   | 'ui.tab.changed'
+  | 'ui.restaurant.shared'
 
 export type TrackEventInput<TName extends TrackEventName = TrackEventName> = {
   eventName: TName

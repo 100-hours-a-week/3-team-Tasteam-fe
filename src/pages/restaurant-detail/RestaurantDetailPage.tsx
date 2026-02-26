@@ -9,6 +9,7 @@ import {
   Sparkles,
   ThumbsUp,
   ThumbsDown,
+  Share2,
 } from 'lucide-react'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
@@ -338,6 +339,28 @@ export function RestaurantDetailPage() {
     return `${price.toLocaleString('ko-KR')}원`
   }
 
+  const handleShare = async () => {
+    const shareMethod = navigator.share ? 'native' : 'clipboard'
+    const url = window.location.href
+
+    if (navigator.share) {
+      await navigator.share({
+        title: restaurant.name,
+        text: restaurant.aiSummary ?? '',
+        url,
+      })
+    } else {
+      await navigator.clipboard.writeText(url)
+    }
+
+    if (Number.isFinite(parsedRestaurantId)) {
+      track({
+        eventName: 'ui.restaurant.shared',
+        properties: { restaurantId: parsedRestaurantId, fromPageKey, shareMethod },
+      })
+    }
+  }
+
   const handleWriteReview = () => {
     if (!isAuthenticated) {
       setShowLoginModal(true)
@@ -421,7 +444,15 @@ export function RestaurantDetailPage() {
 
   return (
     <div className="pb-6">
-      <TopAppBar showBackButton onBack={() => navigate(-1)} />
+      <TopAppBar
+        showBackButton
+        onBack={() => navigate(-1)}
+        actions={
+          <Button variant="ghost" size="icon" onClick={handleShare} aria-label="공유">
+            <Share2 className="h-5 w-5" />
+          </Button>
+        }
+      />
 
       {/* Image Carousel */}
       <div className="relative mb-4">
