@@ -4,14 +4,13 @@ on:
   push:
     branches:
       - develop
-      - infra/deploy
       - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'infra/deploy' && 'v2' || 'development' }}
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
 
     steps:
       # 1. 소스코드 체크아웃
@@ -50,7 +49,7 @@ jobs:
       - name: Upload Build Artifact (with run number)
         uses: actions/upload-artifact@v4
         with:
-          name: fe-${{ github.ref_name == 'infra/deploy' && 'infra-deploy' || github.ref_name }}-${{ github.run_number }}
+          name: fe-${{ github.ref_name }}-${{ github.run_number }}
           path: dist/
           retention-days: 7
 
@@ -59,8 +58,8 @@ jobs:
         run: |
           echo "### Build Success :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** ${{ github.ref_name == 'main' && '운영' || github.ref_name == 'infra/deploy' && 'v2' || '개발' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Artifact Name:** \`fe-${{ github.ref_name == 'infra/deploy' && 'infra-deploy' || github.ref_name }}-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ github.ref_name == 'main' && '운영' || '개발' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifact Name:** \`fe-${{ github.ref_name }}-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Run Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -72,7 +71,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || github.ref_name == 'infra/deploy' && 'v2' || '개발' }} 서버 빌드 실패 💔"
+          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 빌드 실패 💔"
           description: |
             **결과:** 빌드 실패
             **브랜치:** ${{ github.ref_name }}
@@ -84,7 +83,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'infra/deploy' && 'v2' || 'development' }}
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
     timeout-minutes: 20
 
     steps:
@@ -92,7 +91,7 @@ jobs:
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
-          name: fe-${{ github.ref_name == 'infra/deploy' && 'infra-deploy' || github.ref_name }}-${{ github.run_number }}
+          name: fe-${{ github.ref_name }}-${{ github.run_number }}
           path: ./deploy-temp
 
       # 2. 서버로 빌드 산출물 업로드 (고유 staging 경로)
@@ -126,6 +125,9 @@ jobs:
             BRANCH_SLUG="$(printf '%s' '${{ github.ref_name }}' | tr '/' '-')"
             RELEASE_ID="${BRANCH_SLUG}-${{ github.run_number }}-${SHORT_SHA}"
             RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
+            # Use a relative symlink target so it resolves correctly both on host
+            # (/opt/caddy/www/html) and inside the Caddy container (/var/www/html).
+            RELEASE_LINK_TARGET="releases/${RELEASE_ID}"
             TMP_LINK="${DEPLOY_BASE}/.current_tmp"
 
             if [ ! -d "$STAGING_DIR" ]; then
@@ -138,7 +140,7 @@ jobs:
             sudo cp -a "$STAGING_DIR"/. "$RELEASE_DIR"/
 
             sudo rm -f "$TMP_LINK"
-            sudo ln -s "$RELEASE_DIR" "$TMP_LINK"
+            sudo ln -s "$RELEASE_LINK_TARGET" "$TMP_LINK"
             sudo mv -Tf "$TMP_LINK" "$CURRENT_LINK"
 
             rm -rf "$STAGING_DIR"
@@ -171,12 +173,12 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || github.ref_name == 'infra/deploy' && 'v2' || '개발' }} 서버 배포 ${{ job.status == 'success' && '성공 💗' || '실패 💔💀' }}"
+          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 배포 ${{ job.status == 'success' && '성공 💗' || '실패 💔💀' }}"
           description: |
             **결과:** ${{ job.status }}
             **브랜치:** ${{ github.ref_name }}
             **Run Number:** ${{ github.run_number }}
             **작성자:** ${{ github.actor }}
             **커밋:** ${{ github.sha }}
-            **서버 환경:** ${{ github.ref_name == 'main' && '운영' || github.ref_name == 'infra/deploy' && 'v2' || '개발' }} 서버
+            **서버 환경:** ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버
           color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
