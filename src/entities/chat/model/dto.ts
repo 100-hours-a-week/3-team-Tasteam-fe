@@ -1,6 +1,5 @@
 import type { SuccessResponse } from '@/shared/types/api'
 import type { IsoDateTimeString } from '@/shared/types/common'
-import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type ChatMessageDto = {
   id: number
@@ -18,7 +17,14 @@ export type ChatMessageFileItemDto = {
   fileUrl: string
 }
 
-export type ChatMessageListResponseDto = CursorPageResponse<ChatMessageDto> & {
+export type ChatMessageListResponseDto = {
+  items: ChatMessageDto[]
+  pagination: {
+    nextCursor: string | null
+    afterCursor?: string | null
+    size: number
+    hasNext: boolean
+  }
   meta?: {
     lastReadMessageId?: number | null
   }
