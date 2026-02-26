@@ -65,11 +65,6 @@ const PATH_RULES: Array<{ regex: RegExp; pageKey: string; pathTemplate: string }
     pageKey: 'review_write',
     pathTemplate: '/restaurants/:id/review',
   },
-  {
-    regex: /^\/restaurants\/[^/]+\/reviews$/,
-    pageKey: 'restaurant_reviews',
-    pathTemplate: '/restaurants/:id/reviews',
-  },
   { regex: /^\/chat\/[^/]+$/, pageKey: 'chat_room', pathTemplate: '/chat/:roomId' },
   { regex: /^\/error$/, pageKey: 'error', pathTemplate: '/error' },
 ]

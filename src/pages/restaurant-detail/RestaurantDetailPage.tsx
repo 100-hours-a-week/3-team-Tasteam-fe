@@ -5,7 +5,6 @@ import {
   MapPin,
   Clock,
   Phone,
-  ChevronRight,
   Sparkles,
   ThumbsUp,
   ThumbsDown,
@@ -123,7 +122,10 @@ export function RestaurantDetailPage() {
 
   const [isReviewsLoading, setIsReviewsLoading] = React.useState(true)
   const [, setReviewsError] = React.useState(false)
-  const [previewReviews, setPreviewReviews] = React.useState<ReviewListItemDto[]>([])
+  const [reviews, setReviews] = React.useState<ReviewListItemDto[]>([])
+  const [reviewsNextCursor, setReviewsNextCursor] = React.useState<string | null>(null)
+  const [hasMoreReviews, setHasMoreReviews] = React.useState(false)
+  const [isLoadingMoreReviews, setIsLoadingMoreReviews] = React.useState(false)
   const [isMenusLoading, setIsMenusLoading] = React.useState(true)
   const [menusError, setMenusError] = React.useState(false)
   const [menuCategories, setMenuCategories] = React.useState<MenuCategoryDto[]>([])
@@ -134,6 +136,7 @@ export function RestaurantDetailPage() {
   )
   const menuCategoryRefsMap = useRef<Record<number, HTMLDivElement | null>>({})
   const evidenceScrollRef = useRef<HTMLDivElement>(null)
+  const reviewObserverRef = useRef<IntersectionObserver | null>(null)
 
   const MENU_ITEM_FOLD_LIMIT = 6
 
@@ -183,21 +186,75 @@ export function RestaurantDetailPage() {
     if (!restaurantId) return
     setIsReviewsLoading(true)
     setReviewsError(false)
-    getRestaurantReviews(Number(restaurantId), { size: 3 })
+    getRestaurantReviews(Number(restaurantId), { size: 10 })
       .then((res) => {
         const anyRes = res as {
           items?: ReviewListItemDto[]
+          pagination?: { nextCursor: string | null; hasNext: boolean }
           data?: { items?: ReviewListItemDto[] }
         }
-        const items = anyRes.items ?? anyRes.data?.items
-        setPreviewReviews(items?.slice(0, 3) ?? [])
+        const items = anyRes.items ?? anyRes.data?.items ?? []
+        setReviews(items)
+        setReviewsNextCursor(anyRes.pagination?.nextCursor ?? null)
+        setHasMoreReviews(Boolean(anyRes.pagination?.hasNext))
       })
       .catch(() => {
-        setPreviewReviews([])
+        setReviews([])
+        setReviewsNextCursor(null)
+        setHasMoreReviews(false)
         setReviewsError(true)
       })
       .finally(() => setIsReviewsLoading(false))
   }, [restaurantId])
+
+  const loadMoreReviews = React.useCallback(async () => {
+    if (!restaurantId || isReviewsLoading || isLoadingMoreReviews || !hasMoreReviews) return
+
+    setIsLoadingMoreReviews(true)
+    try {
+      const res = await getRestaurantReviews(Number(restaurantId), {
+        cursor: reviewsNextCursor ?? undefined,
+        size: 10,
+      })
+      const anyRes = res as {
+        items?: ReviewListItemDto[]
+        pagination?: { nextCursor: string | null; hasNext: boolean }
+        data?: { items?: ReviewListItemDto[] }
+      }
+      const nextItems = anyRes.items ?? anyRes.data?.items ?? []
+      setReviews((prev) => [...prev, ...nextItems])
+      setReviewsNextCursor(anyRes.pagination?.nextCursor ?? null)
+      setHasMoreReviews(Boolean(anyRes.pagination?.hasNext))
+    } catch {
+      setHasMoreReviews(false)
+    } finally {
+      setIsLoadingMoreReviews(false)
+    }
+  }, [restaurantId, isReviewsLoading, isLoadingMoreReviews, hasMoreReviews, reviewsNextCursor])
+
+  const lastReviewElementRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (reviewObserverRef.current) reviewObserverRef.current.disconnect()
+      if (isReviewsLoading || isLoadingMoreReviews || !hasMoreReviews) return
+      reviewObserverRef.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          void loadMoreReviews()
+        }
+      })
+      if (node) {
+        reviewObserverRef.current.observe(node)
+      }
+    },
+    [isReviewsLoading, isLoadingMoreReviews, hasMoreReviews, loadMoreReviews],
+  )
+
+  React.useEffect(() => {
+    return () => {
+      if (reviewObserverRef.current) {
+        reviewObserverRef.current.disconnect()
+      }
+    }
+  }, [])
 
   React.useEffect(() => {
     if (!restaurantId) return
@@ -1104,23 +1161,25 @@ export function RestaurantDetailPage() {
                   <Skeleton className="h-24 w-full" />
                   <Skeleton className="h-24 w-full" />
                 </>
-              ) : previewReviews.length > 0 ? (
-                previewReviews.map((review) => (
-                  <DetailReviewCard key={review.id} variant="restaurant" review={review} />
+              ) : reviews.length > 0 ? (
+                reviews.map((review, index) => (
+                  <div
+                    key={review.id}
+                    ref={index === reviews.length - 1 ? lastReviewElementRef : undefined}
+                  >
+                    <DetailReviewCard variant="restaurant" review={review} />
+                  </div>
                 ))
-              ) : null}
+              ) : (
+                <Card className="p-4 text-sm text-muted-foreground">등록된 리뷰가 없습니다.</Card>
+              )}
+              {isLoadingMoreReviews && (
+                <>
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </>
+              )}
             </div>
-
-            {restaurant.reviewCount > 3 && (
-              <Button
-                variant="outline"
-                className="w-full text-base"
-                onClick={() => navigate(`/restaurants/${restaurantId}/reviews`)}
-              >
-                리뷰 더보기
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            )}
           </Container>
         </TabsContent>
       </Tabs>

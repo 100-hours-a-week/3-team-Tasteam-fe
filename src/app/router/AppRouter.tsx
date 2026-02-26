@@ -66,9 +66,6 @@ const PrivacyPolicyPage = lazy(() =>
 const RestaurantDetailPage = lazy(() =>
   import('@/pages/restaurant-detail').then((m) => ({ default: m.RestaurantDetailPage })),
 )
-const RestaurantReviewsPage = lazy(() =>
-  import('@/pages/restaurant-reviews').then((m) => ({ default: m.RestaurantReviewsPage })),
-)
 const WriteReviewPage = lazy(() =>
   import('@/pages/write-review').then((m) => ({ default: m.WriteReviewPage })),
 )
@@ -401,8 +398,6 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
               </RequireAuth>
             }
           />
-          <Route path="/restaurants/:id/reviews" element={<RestaurantReviewsPage />} />
-
           <Route
             path="/chat/:roomId"
             element={
