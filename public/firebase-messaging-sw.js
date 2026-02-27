@@ -1,6 +1,15 @@
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js')
 importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js')
 
+const normalizeDeepLink = (deepLink) => {
+  if (typeof deepLink !== 'string' || !deepLink) return '/'
+  if (deepLink.startsWith('/chat-rooms/')) {
+    const roomId = deepLink.slice('/chat-rooms/'.length)
+    return roomId ? `/chat/${roomId}` : '/'
+  }
+  return deepLink
+}
+
 try {
   const params = new URLSearchParams(self.location.search)
   const firebaseConfig = {
@@ -45,3 +54,24 @@ try {
 } catch (error) {
   console.error('[firebase-sw] Service Worker initialization failed', error)
 }
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const rawDeepLink = event.notification?.data?.deepLink
+  const deepLink = normalizeDeepLink(rawDeepLink)
+  const targetUrl = new URL(deepLink, self.location.origin).toString()
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus()
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl)
+      }
+      return undefined
+    }),
+  )
+})

@@ -4,6 +4,7 @@ import { logger } from '@/shared/lib/logger'
 import { getOrCreateDeviceId } from '@/shared/lib/deviceId'
 import { getFirebaseMessaging, registerFirebaseMessagingServiceWorker } from '@/shared/lib/firebase'
 import { registerPushNotificationTarget } from '../api/notificationApi'
+import { normalizeNotificationDeepLink } from './deepLink'
 
 const FCM_TOKEN_STORAGE_KEY = 'fcm:token:v1'
 const FCM_LAST_SYNC_KEY = 'fcm:token:last-sync:v1'
@@ -171,11 +172,17 @@ const setupForegroundMessageListener = async () => {
         const body = payload.notification?.body || ''
 
         if (Notification.permission === 'granted') {
-          new Notification(title, {
+          const notification = new Notification(title, {
             body,
             icon: '/icons/icon-192x192.png',
             data: payload.data,
           })
+          notification.onclick = () => {
+            const deepLink = payload.data?.deepLink
+            if (!deepLink) return
+            window.focus()
+            window.location.assign(normalizeNotificationDeepLink(deepLink))
+          }
         }
       } catch (error) {
         logger.error('[fcm] Failed to handle foreground message', error)
