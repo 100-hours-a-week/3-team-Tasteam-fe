@@ -9,6 +9,7 @@ export type FavoriteRestaurantItemDto = {
   foodCategories: string[]
   category?: string
   address: string
+  groupFavoriteCount?: number
   createdAt: IsoDateTimeString
 }
 

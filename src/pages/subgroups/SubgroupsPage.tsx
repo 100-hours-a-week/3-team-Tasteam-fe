@@ -517,6 +517,7 @@ export function SubgroupsPage() {
                   onRemove={() => {}}
                   onClick={() => navigate(ROUTES.restaurantDetail(String(favorite.restaurantId)))}
                   showRemoveButton={false}
+                  showGroupFavoriteCount
                 />
               ))
             ) : (
