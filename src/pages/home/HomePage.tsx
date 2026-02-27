@@ -162,6 +162,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
             <div key={item.restaurantId} className="w-[260px] shrink-0">
               <RestaurantCard
                 name={item.name}
+                foodCategories={item.foodCategories}
                 category={item.category}
                 distance={formatDistanceLabel(item.distanceMeter)}
                 image={item.thumbnailImageUrl}
@@ -231,6 +232,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
             <RestaurantCard
               key={item.restaurantId}
               name={item.name}
+              foodCategories={item.foodCategories}
               category={item.category}
               distance={formatDistanceLabel(item.distanceMeter)}
               image={item.thumbnailImageUrl}

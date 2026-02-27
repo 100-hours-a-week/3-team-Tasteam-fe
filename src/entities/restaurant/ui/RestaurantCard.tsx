@@ -18,7 +18,8 @@ type RestaurantDtoProps = {
 type RestaurantSimpleProps = {
   id?: string
   name: string
-  category: string
+  category?: string
+  foodCategories?: string[]
   rating?: number
   reviewCount?: number
   distance?: number | string
@@ -88,9 +89,18 @@ function normalizeReviewSummary(value?: string): string {
   return trimmed.replace(/^["'`“”‘’]\s*(.*?)\s*["'`“”‘’]$/, '$1')
 }
 
-function resolvePrimaryCategory(value?: string): string {
-  const trimmed = value?.trim()
-  return trimmed && trimmed.length > 0 ? trimmed : '기타'
+function normalizeFoodCategories(categories?: string[]): string[] {
+  if (!Array.isArray(categories)) return []
+  return categories
+    .map((category) => (typeof category === 'string' ? category.trim() : ''))
+    .filter((category) => category.length > 0)
+}
+
+function resolveCategoryText(categories?: string[], fallbackCategory?: string): string {
+  const normalized = normalizeFoodCategories(categories)
+  if (normalized.length > 0) return normalized.join(' · ')
+  const fallback = fallbackCategory?.trim()
+  return fallback && fallback.length > 0 ? fallback : '기타'
 }
 
 export function RestaurantCard(props: RestaurantCardProps) {
@@ -134,6 +144,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
     const {
       name,
       category,
+      foodCategories,
       distance,
       address,
       tags,
@@ -143,9 +154,10 @@ export function RestaurantCard(props: RestaurantCardProps) {
       onClick,
       className,
     } = props
-    const locationText = normalizeDistanceLabel(distance) || address || ''
+    const distanceText = normalizeDistanceLabel(distance)
+    const addressText = address?.trim() ?? ''
     const summary = normalizeReviewSummary(reviewSummary)
-    const primaryCategory = resolvePrimaryCategory(category)
+    const categoryText = resolveCategoryText(foodCategories, category)
 
     return (
       <Card
@@ -177,17 +189,25 @@ export function RestaurantCard(props: RestaurantCardProps) {
         </div>
         <div className="px-4 pb-4 pt-4 space-y-2">
           <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-            <span className="min-w-0 truncate">{primaryCategory}</span>
-            {locationText && (
+            <span className="min-w-0 truncate" title={categoryText}>
+              {categoryText}
+            </span>
+            {distanceText && (
               <div className="flex items-start gap-1 min-w-0 max-w-[55%]">
                 <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                <span className="break-words text-right leading-tight">{locationText}</span>
+                <span className="break-words text-right leading-tight">{distanceText}</span>
               </div>
             )}
           </div>
           <div className="flex items-start justify-between gap-2">
             <h3 className="flex-1 min-w-0 truncate text-[17px]">{name}</h3>
           </div>
+          {!distanceText && addressText && (
+            <div className="flex items-start gap-1 text-sm text-muted-foreground">
+              <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+              <span className="line-clamp-1 break-words">{addressText}</span>
+            </div>
+          )}
           {!images.length && onSave && (
             <Button
               variant="ghost"
@@ -236,7 +256,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
     className,
   } = props
   const summary = normalizeReviewSummary(reviewSummary)
-  const primaryCategory = resolvePrimaryCategory(restaurant.foodCategories[0])
+  const categoryText = resolveCategoryText(restaurant.foodCategories)
 
   return (
     <Card
@@ -267,9 +287,11 @@ export function RestaurantCard(props: RestaurantCardProps) {
         )}
       </div>
       <div className="px-4 pb-4 pt-4 space-y-2">
-        <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
-          <span className="min-w-0 truncate">{primaryCategory}</span>
-          <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="flex-1 min-w-0 truncate" title={categoryText}>
+            {categoryText}
+          </span>
+          <div className="ml-auto flex items-center gap-1 shrink-0">
             <MapPin className="h-3 w-3" />
             <span>{formatDistance(restaurant.distanceMeter ?? 0)}</span>
           </div>
@@ -277,15 +299,6 @@ export function RestaurantCard(props: RestaurantCardProps) {
         <div className="flex items-start justify-between gap-2">
           <h3 className="flex-1 min-w-0 truncate text-[17px]">{restaurant.name}</h3>
         </div>
-        {restaurant.foodCategories.length > 1 && (
-          <div className="flex flex-wrap gap-1">
-            {restaurant.foodCategories.slice(1, 4).map((cat) => (
-              <Badge key={cat} variant="secondary" className="text-xs">
-                {cat}
-              </Badge>
-            ))}
-          </div>
-        )}
         {summary && (
           <div className="!mt-6 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-primary/80 uppercase tracking-wider">

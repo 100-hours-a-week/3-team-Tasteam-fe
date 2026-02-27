@@ -74,6 +74,7 @@ export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProp
               <RestaurantCard
                 key={item.restaurantId}
                 name={item.name}
+                foodCategories={item.foodCategories}
                 category={item.category}
                 distance={item.distanceMeter}
                 image={item.thumbnailImageUrl}
