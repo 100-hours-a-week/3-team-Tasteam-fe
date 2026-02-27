@@ -6,7 +6,8 @@ export type FavoriteRestaurantItem = {
   restaurantId: number
   name: string
   thumbnailUrl: string
-  category: string
+  foodCategories: string[]
+  category?: string
   address: string
   createdAt?: IsoDateTimeString
 }

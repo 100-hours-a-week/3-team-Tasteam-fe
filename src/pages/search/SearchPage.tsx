@@ -411,7 +411,8 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                             key={restaurant.restaurantId}
                             name={restaurant.name}
                             address={restaurant.address}
-                            category="기타"
+                            foodCategories={restaurant.foodCategories}
+                            category={restaurant.category}
                             image={restaurant.imageUrl}
                             onClick={() =>
                               onRestaurantClick?.(String(restaurant.restaurantId), {

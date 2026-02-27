@@ -10,7 +10,8 @@ import { getMyFavoriteRestaurants } from '@/entities/favorite'
 type FavoriteRestaurant = {
   id: string
   name: string
-  category: string
+  foodCategories: string[]
+  category?: string
   rating: number
   reviewCount: number
   address: string
@@ -32,7 +33,12 @@ export function MyFavoritesPage({ onRestaurantClick, onBack }: MyFavoritesPagePr
           response.items?.map((item) => ({
             id: String(item.restaurantId),
             name: item.name,
-            category: '맛집',
+            foodCategories: Array.isArray(item.foodCategories)
+              ? item.foodCategories
+                  .map((category) => (typeof category === 'string' ? category.trim() : ''))
+                  .filter((category) => category.length > 0)
+              : [],
+            category: item.category,
             rating: 4.5,
             reviewCount: 0,
             address: '',
@@ -59,6 +65,7 @@ export function MyFavoritesPage({ onRestaurantClick, onBack }: MyFavoritesPagePr
               <RestaurantCard
                 key={restaurant.id}
                 name={restaurant.name}
+                foodCategories={restaurant.foodCategories}
                 category={restaurant.category}
                 rating={restaurant.rating}
                 reviewCount={restaurant.reviewCount}

@@ -17,6 +17,14 @@ export function FavoriteRestaurantCard({
   onClick,
   showRemoveButton = true,
 }: FavoriteRestaurantCardProps) {
+  const categoryText =
+    restaurant.foodCategories
+      ?.map((category) => category.trim())
+      .filter((category) => category.length > 0)
+      .join(' · ') ||
+    restaurant.category ||
+    ''
+
   return (
     <Card
       className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow py-0"
@@ -44,8 +52,10 @@ export function FavoriteRestaurantCard({
           {/* Info - 세로 배치 */}
           <div className="flex-1 min-w-0 flex flex-col justify-center">
             {/* 카테고리 */}
-            {restaurant.category && (
-              <p className="text-xs text-muted-foreground mb-1 truncate">{restaurant.category}</p>
+            {categoryText && (
+              <p className="text-xs text-muted-foreground mb-1 truncate" title={categoryText}>
+                {categoryText}
+              </p>
             )}
             {/* 음식점명 */}
             <h4 className="font-semibold mb-3 truncate">{restaurant.name}</h4>

@@ -24,7 +24,8 @@ export type MainSectionItemDto = {
   restaurantId: number
   name: string
   distanceMeter: number
-  category: string
+  foodCategories: string[]
+  category?: string
   thumbnailImageUrl: string
   isFavorite: boolean
   reviewSummary: string

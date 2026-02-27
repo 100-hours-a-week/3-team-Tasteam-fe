@@ -286,7 +286,7 @@ export function RestaurantDetailPage() {
   const baseRestaurant = {
     id: restaurantId || '',
     name: '',
-    category: '',
+    foodCategories: [] as string[],
     reviewCount: 0,
     address: '',
     phone: '',
@@ -339,7 +339,11 @@ export function RestaurantDetailPage() {
       ...baseRestaurant,
       id: String(restaurantData.id),
       name: restaurantData.name,
-      category: restaurantData.foodCategories[0] ?? baseRestaurant.category,
+      foodCategories: Array.isArray(restaurantData.foodCategories)
+        ? restaurantData.foodCategories
+            .map((category) => (typeof category === 'string' ? category.trim() : ''))
+            .filter((category) => category.length > 0)
+        : baseRestaurant.foodCategories,
       address: restaurantData.address,
       phone: restaurantData.phoneNumber ?? baseRestaurant.phone,
       images,
@@ -351,6 +355,8 @@ export function RestaurantDetailPage() {
         (restaurantData.businessHoursWeek as BusinessHoursWeekItem[] | undefined) ?? null,
     }
   })()
+  const categoryText =
+    restaurant.foodCategories.length > 0 ? restaurant.foodCategories.join(' · ') : '카테고리 없음'
 
   const aiCategoryDetails = restaurantData?.aiDetails?.summary?.categoryDetails
   const hasCategoryDetails = aiCategoryDetails && Object.keys(aiCategoryDetails).length > 0
@@ -596,9 +602,7 @@ export function RestaurantDetailPage() {
                 <>
                   <div className="mb-1 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                     <div className="min-w-0 flex flex-col">
-                      <p className="text-sm text-muted-foreground">
-                        {restaurant.category || '카테고리 없음'}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{categoryText}</p>
                       <h1 className="truncate text-2xl font-bold" title={restaurant.name || ''}>
                         {restaurant.name || '음식점 정보 없음'}
                       </h1>
