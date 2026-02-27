@@ -37,6 +37,7 @@ export function FavoriteRestaurantCard({
 
   const shouldShowGroupFavoriteCount =
     showGroupFavoriteCount && typeof restaurant.groupFavoriteCount === 'number'
+  const groupFavoriteCount = restaurant.groupFavoriteCount
 
   return (
     <Card
@@ -85,10 +86,10 @@ export function FavoriteRestaurantCard({
             )}
           </div>
         </div>
-        {shouldShowGroupFavoriteCount && (
+        {shouldShowGroupFavoriteCount && typeof groupFavoriteCount === 'number' && (
           <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-background/80 px-2 py-1 text-xs text-muted-foreground">
             <Heart className="w-3.5 h-3.5 text-primary fill-primary" />
-            <span>{formatFavoriteCount(restaurant.groupFavoriteCount)}</span>
+            <span>{formatFavoriteCount(groupFavoriteCount)}</span>
           </div>
         )}
         {showRemoveButton && (
