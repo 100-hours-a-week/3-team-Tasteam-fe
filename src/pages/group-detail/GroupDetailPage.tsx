@@ -317,7 +317,7 @@ export function GroupDetailPage() {
             <RestaurantCard
               key={restaurant.id}
               restaurant={restaurant}
-              reviewSummary={restaurant.reviewSummary ?? '리뷰 요약을 준비 중입니다.'}
+              reviewSummary={restaurant.reviewSummary}
               onClick={() => navigate(ROUTES.restaurantDetail(String(restaurant.id)))}
             />
           ))

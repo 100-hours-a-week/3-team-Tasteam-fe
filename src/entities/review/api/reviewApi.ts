@@ -16,7 +16,12 @@ type BackendReviewListItem = {
   subgroupId?: number | null
   groupName?: string | null
   subgroupName?: string | null
-  author?: { nickname?: string | null } | null
+  author?: {
+    id?: number | null
+    nickname?: string | null
+    profileImageUrl?: string | null
+    profileImage?: { url?: string | null } | null
+  } | null
   contentPreview?: string | null
   content?: string | null
   isRecommended?: boolean | null
@@ -33,6 +38,7 @@ type BackendReviewListItem = {
   groupAddress?: string | null
   restaurantImageUrl?: string | null
   restaurantAddress?: string | null
+  authorProfileImageUrl?: string | null
 }
 
 type BackendReviewListPayload = {
@@ -83,7 +89,15 @@ const normalizeReviewListResponse = (
     subgroupId: item.subgroupId ?? undefined,
     groupName: item.groupName ?? undefined,
     subgroupName: item.subgroupName ?? undefined,
-    author: { id: item.id, nickname: item.author?.nickname ?? '알 수 없음' },
+    author: {
+      id: item.author?.id ?? item.id,
+      nickname: item.author?.nickname ?? '알 수 없음',
+      profileImageUrl:
+        item.author?.profileImageUrl ??
+        item.author?.profileImage?.url ??
+        item.authorProfileImageUrl ??
+        undefined,
+    },
     contentPreview: item.contentPreview ?? item.content ?? '',
     isRecommended: Boolean(item.isRecommended),
     keywords: item.keywords ?? [],

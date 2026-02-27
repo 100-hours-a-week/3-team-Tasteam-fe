@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ThumbsUp, ThumbsDown, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/shared/ui/card'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { ImagePreviewDialog } from '@/shared/ui/image-preview-dialog'
 import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
@@ -238,13 +238,13 @@ export function DetailReviewCard({
         imageUrl={previewImageUrl ?? ''}
         alt="리뷰 이미지"
       />
-      <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{content}</p>
+      <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap break-words">{content}</p>
       {(review.keywords?.length ?? 0) > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {(review.keywords ?? []).map((keyword) => (
             <span
               key={keyword}
-              className="inline-flex items-center rounded-lg border border-border bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground"
+              className="inline-flex items-center rounded-lg border border-border bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground break-words"
             >
               {keyword}
             </span>
@@ -255,6 +255,7 @@ export function DetailReviewCard({
       <div className="flex items-center justify-between gap-3 pt-5 mt-1">
         <div className="flex items-center gap-1.5 min-w-0">
           <Avatar className="h-5 w-5 shrink-0">
+            <AvatarImage src={review.author.profileImageUrl ?? undefined} />
             <AvatarFallback className="text-[9px]">
               {review.author.nickname.slice(0, 2)}
             </AvatarFallback>
