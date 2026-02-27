@@ -154,7 +154,8 @@ export function RestaurantCard(props: RestaurantCardProps) {
       onClick,
       className,
     } = props
-    const locationText = normalizeDistanceLabel(distance) || address || ''
+    const distanceText = normalizeDistanceLabel(distance)
+    const addressText = address?.trim() ?? ''
     const summary = normalizeReviewSummary(reviewSummary)
     const categoryText = resolveCategoryText(foodCategories, category)
 
@@ -191,16 +192,22 @@ export function RestaurantCard(props: RestaurantCardProps) {
             <span className="min-w-0 truncate" title={categoryText}>
               {categoryText}
             </span>
-            {locationText && (
+            {distanceText && (
               <div className="flex items-start gap-1 min-w-0 max-w-[55%]">
                 <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
-                <span className="break-words text-right leading-tight">{locationText}</span>
+                <span className="break-words text-right leading-tight">{distanceText}</span>
               </div>
             )}
           </div>
           <div className="flex items-start justify-between gap-2">
             <h3 className="flex-1 min-w-0 truncate text-[17px]">{name}</h3>
           </div>
+          {!distanceText && addressText && (
+            <div className="flex items-start gap-1 text-sm text-muted-foreground">
+              <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+              <span className="line-clamp-1 break-words">{addressText}</span>
+            </div>
+          )}
           {!images.length && onSave && (
             <Button
               variant="ghost"
