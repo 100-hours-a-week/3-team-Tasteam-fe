@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Bell, Users, Heart, MessageSquare, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -7,15 +8,22 @@ import { EmptyState } from '@/widgets/empty-state'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { getNotifications } from '@/entities/notification'
+import {
+  getNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '@/entities/notification'
+import { extractResponseData } from '@/shared/lib/apiResponse'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { useLoadingSkeletonGate } from '@/shared/lib/use-loading-skeleton-gate'
+import { normalizeNotificationDeepLink } from '@/entities/notification/model/deepLink'
 
 type Notification = {
   id: string
   type: 'group_invite' | 'review_like' | 'group_activity' | 'restaurant_recommendation'
   title: string
   message: string
+  deepLink: string
   timestamp: string
   isRead: boolean
 }
@@ -35,6 +43,7 @@ const mapNotificationType = (type: string): Notification['type'] => {
 }
 
 export function NotificationsPage({ onNotificationClick, onBack }: NotificationsPageProps) {
+  const navigate = useNavigate()
   const notificationsEnabled = FEATURE_FLAGS.enableNotifications
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [hasError, setHasError] = useState(false)
@@ -43,14 +52,26 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
 
   useEffect(() => {
     if (!notificationsEnabled) return
-    getNotifications()
+    getNotifications({ page: 0, size: 10 })
       .then((response) => {
+        const payload = extractResponseData<{
+          items: Array<{
+            id: number
+            notificationType: string
+            title: string
+            body: string
+            deepLink: string
+            createdAt: string
+            readAt: string | null
+          }>
+        }>(response)
         const apiData =
-          response.data?.items?.map((item) => ({
+          payload?.items?.map((item) => ({
             id: String(item.id),
             type: mapNotificationType(item.notificationType),
             title: item.title,
             message: item.body,
+            deepLink: normalizeNotificationDeepLink(item.deepLink),
             timestamp: item.createdAt,
             isRead: !!item.readAt,
           })) ?? []
@@ -76,14 +97,26 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
   const handleRetry = () => {
     setHasError(false)
     setIsLoading(true)
-    getNotifications()
+    getNotifications({ page: 0, size: 10 })
       .then((response) => {
+        const payload = extractResponseData<{
+          items: Array<{
+            id: number
+            notificationType: string
+            title: string
+            body: string
+            deepLink: string
+            createdAt: string
+            readAt: string | null
+          }>
+        }>(response)
         const apiData =
-          response.data?.items?.map((item) => ({
+          payload?.items?.map((item) => ({
             id: String(item.id),
             type: mapNotificationType(item.notificationType),
             title: item.title,
             message: item.body,
+            deepLink: normalizeNotificationDeepLink(item.deepLink),
             timestamp: item.createdAt,
             isRead: !!item.readAt,
           })) ?? []
@@ -125,12 +158,22 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
     setNotifications((prev) =>
       prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)),
     )
+    void markNotificationRead(Number(notification.id)).catch(() => {
+      toast.error('알림 읽음 처리에 실패했습니다')
+    })
     onNotificationClick?.(notification)
+    navigate(notification.deepLink)
   }
 
   const handleMarkAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-    toast.success('모든 알림을 읽음으로 처리했습니다')
+    void markAllNotificationsRead()
+      .then(() => {
+        toast.success('모든 알림을 읽음으로 처리했습니다')
+      })
+      .catch(() => {
+        toast.error('모든 알림 읽음 처리에 실패했습니다')
+      })
   }
 
   const unreadCount = notifications.filter((n) => !n.isRead).length
