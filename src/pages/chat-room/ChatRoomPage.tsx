@@ -51,6 +51,8 @@ const INITIAL_MESSAGE_PAGE_SIZE = 50
 const MESSAGE_PAGE_SIZE = 20
 const MAX_AUTO_PREFETCH_ROUNDS = 2
 const EARLY_LOAD_TRIGGER_PX = 360
+const WS_HEARTBEAT_MS = 15000
+const WS_RECONNECT_DELAYS_MS = [3000, 5000, 10000] as const
 
 const toWsUrl = (apiBaseUrl: string) => {
   const url = new URL(apiBaseUrl)
@@ -114,6 +116,9 @@ export function ChatRoomPage() {
   const [firstUnreadMessageId, setFirstUnreadMessageId] = useState<number | null>(null)
 
   const clientRef = useRef<Client | null>(null)
+  const wsReconnectAttemptRef = useRef(0)
+  const wsReconnectTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null)
+  const wsShuttingDownRef = useRef(false)
   const forceScrollOnNextIncomingRef = useRef(false)
   const readCursorSyncedRef = useRef<number | null>(null)
   const autoPrefetchRoundsRef = useRef(0)
@@ -244,62 +249,121 @@ export function ChatRoomPage() {
 
   useEffect(() => {
     if (!isValidRoomId) return
-
-    const token = getAccessToken()
+    wsShuttingDownRef.current = false
     const wsUrl = toWsUrl(API_BASE_URL)
-    if (!token) return
 
-    const wsClient = new Client({
-      brokerURL: wsUrl,
-      reconnectDelay: 0,
-      connectHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-      onConnect: () => {
-        setErrorMessage(null)
-        setWsErrorMessage(null)
-        wsClient.subscribe(`/topic/chat-rooms/${chatRoomId}`, (frame: IMessage) => {
-          try {
-            const incoming = normalizeMessage(JSON.parse(frame.body) as ChatMessageDto)
-            setMessages((prev) => {
-              if (prev.some((item) => item.id === incoming.id)) return prev
-              const next = [...prev, incoming]
-              next.sort((a, b) => a.id - b.id)
-              return next
-            })
-            requestAnimationFrame(() => {
-              const shouldForceScroll =
-                forceScrollOnNextIncomingRef.current || incoming.memberId === ownMemberId
-              if (shouldForceScroll) {
-                forceScrollOnNextIncomingRef.current = false
-              }
-              scrollToBottom(shouldForceScroll)
-              if (shouldForceScroll) {
-                requestAnimationFrame(() => scrollToBottom(true))
-                setShowScrollButton(false)
-              }
-            })
-          } catch {
-            // ignore malformed payload
-          }
-        })
-      },
-      onStompError: () => {
-        setWsErrorMessage('실시간 연결이 불안정합니다. 새로고침 후 다시 시도해주세요.')
-      },
-      onWebSocketError: () => {
-        setWsErrorMessage('실시간 연결에 실패했습니다.')
-      },
-    })
+    const clearReconnectTimer = () => {
+      if (wsReconnectTimerRef.current == null) return
+      clearTimeout(wsReconnectTimerRef.current)
+      wsReconnectTimerRef.current = null
+    }
 
-    wsClient.activate()
-    clientRef.current = wsClient
+    const scheduleReconnect = () => {
+      if (wsShuttingDownRef.current) return
+      if (wsReconnectTimerRef.current != null) return
+      const delayIndex = Math.min(wsReconnectAttemptRef.current, WS_RECONNECT_DELAYS_MS.length - 1)
+      const delay = WS_RECONNECT_DELAYS_MS[delayIndex]
+      wsReconnectAttemptRef.current += 1
+
+      wsReconnectTimerRef.current = window.setTimeout(() => {
+        wsReconnectTimerRef.current = null
+        connectWebSocket()
+      }, delay)
+    }
+
+    const connectWebSocket = () => {
+      if (wsShuttingDownRef.current) return
+      const token = getAccessToken()
+      if (!token) return
+
+      const prev = clientRef.current
+      if (prev) {
+        clientRef.current = null
+        void prev.deactivate()
+      }
+
+      const wsClient = new Client({
+        brokerURL: wsUrl,
+        reconnectDelay: 0,
+        heartbeatIncoming: WS_HEARTBEAT_MS,
+        heartbeatOutgoing: WS_HEARTBEAT_MS,
+        connectHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+        onConnect: () => {
+          wsReconnectAttemptRef.current = 0
+          clearReconnectTimer()
+          setErrorMessage(null)
+          setWsErrorMessage(null)
+
+          wsClient.subscribe(`/topic/chat-rooms/${chatRoomId}`, (frame: IMessage) => {
+            try {
+              const incoming = normalizeMessage(JSON.parse(frame.body) as ChatMessageDto)
+              setMessages((prevMessages) => {
+                if (prevMessages.some((item) => item.id === incoming.id)) return prevMessages
+                const next = [...prevMessages, incoming]
+                next.sort((a, b) => a.id - b.id)
+                return next
+              })
+              requestAnimationFrame(() => {
+                const shouldForceScroll =
+                  forceScrollOnNextIncomingRef.current || incoming.memberId === ownMemberId
+                if (shouldForceScroll) {
+                  forceScrollOnNextIncomingRef.current = false
+                }
+                scrollToBottom(shouldForceScroll)
+                if (shouldForceScroll) {
+                  requestAnimationFrame(() => scrollToBottom(true))
+                  setShowScrollButton(false)
+                }
+              })
+            } catch {
+              // ignore malformed payload
+            }
+          })
+        },
+        onStompError: () => {
+          setWsErrorMessage('실시간 연결이 불안정합니다. 재연결을 시도합니다.')
+          void wsClient.deactivate()
+          scheduleReconnect()
+        },
+        onWebSocketError: () => {
+          setWsErrorMessage('실시간 연결에 실패했습니다. 재연결을 시도합니다.')
+        },
+        onWebSocketClose: () => {
+          if (clientRef.current !== wsClient) return
+          scheduleReconnect()
+        },
+      })
+
+      clientRef.current = wsClient
+      wsClient.activate()
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return
+      const client = clientRef.current
+      if (client?.connected) return
+
+      wsReconnectAttemptRef.current = 0
+      clearReconnectTimer()
+      connectWebSocket()
+    }
+
+    connectWebSocket()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
+      wsShuttingDownRef.current = true
+      clearReconnectTimer()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      const wsClient = clientRef.current
       clientRef.current = null
-      wsClient.deactivate()
+      if (wsClient) {
+        void wsClient.deactivate()
+      }
     }
-  }, [chatRoomId, isValidRoomId])
+  }, [chatRoomId, isValidRoomId, ownMemberId])
 
   useEffect(() => {
     if (!isValidRoomId || messages.length === 0) return
