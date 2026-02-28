@@ -62,7 +62,7 @@ export function SubgroupsPage() {
   const [favoritesError, setFavoritesError] = useState<string | null>(null)
   const [isChatNavigating, setIsChatNavigating] = useState(false)
   const [chatRoomId, setChatRoomId] = useState<number | null>(null)
-  const [hasUnreadChat, setHasUnreadChat] = useState(false)
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = parseNumberParam(id)
@@ -94,7 +94,7 @@ export function SubgroupsPage() {
     try {
       const resolvedChatRoomId = chatRoomId ?? (await getSubgroupChatRoomId(parsedSubgroupId))
       setChatRoomId(resolvedChatRoomId)
-      setHasUnreadChat(false)
+      setUnreadChatCount(0)
       navigate(ROUTES.chatRoom(String(resolvedChatRoomId)), {
         state: {
           subgroupId: parsedSubgroupId,
@@ -127,7 +127,7 @@ export function SubgroupsPage() {
     if (!FEATURE_FLAGS.enableChat) return
     if (!isAuthenticated || !isMember || !isValidId(subgroupId)) {
       setChatRoomId(null)
-      setHasUnreadChat(false)
+      setUnreadChatCount(0)
       return
     }
 
@@ -147,20 +147,21 @@ export function SubgroupsPage() {
 
         const afterCursor = enterResponse.pagination.afterCursor
         if (!afterCursor) {
-          setHasUnreadChat(false)
+          setUnreadChatCount(0)
           return
         }
 
         const afterResponse = await getChatMessages(roomId, {
           mode: 'AFTER',
           cursor: afterCursor,
-          size: 1,
+          size: 99,
         })
         if (cancelled) return
-        setHasUnreadChat(afterResponse.items.length > 0)
+        const count = afterResponse.pagination.hasNext ? 100 : afterResponse.items.length
+        setUnreadChatCount(count)
       } catch {
         if (!cancelled) {
-          setHasUnreadChat(false)
+          setUnreadChatCount(0)
         }
       }
     }
@@ -617,11 +618,13 @@ export function SubgroupsPage() {
               disabled={isChatNavigating}
             >
               <MessageSquare className="h-6 w-6" />
-              {hasUnreadChat && (
+              {unreadChatCount > 0 && (
                 <span
-                  className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-primary"
+                  className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
                   aria-hidden="true"
-                />
+                >
+                  {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                </span>
               )}
             </Button>
           </div>
