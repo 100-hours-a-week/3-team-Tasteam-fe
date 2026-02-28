@@ -1,4 +1,5 @@
 export * from './api/notificationApi'
 export { FcmProvider } from './model/FcmProvider'
+export { syncFcmToken } from './model/fcm'
 export type * from './model/dto'
 export type * from './model/types'
