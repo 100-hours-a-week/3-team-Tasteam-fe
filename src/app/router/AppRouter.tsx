@@ -93,6 +93,19 @@ const EventDetailPage = lazy(() =>
   import('@/pages/events').then((m) => ({ default: m.EventDetailPage })),
 )
 
+function OAuthBackGuard() {
+  useEffect(() => {
+    const handle = () => {
+      if (sessionStorage.getItem('auth:back_guard') !== '1') return
+      sessionStorage.removeItem('auth:back_guard')
+      window.history.go(1)
+    }
+    window.addEventListener('popstate', handle)
+    return () => window.removeEventListener('popstate', handle)
+  }, [])
+  return null
+}
+
 function ScrollToTop() {
   const location = useLocation()
 
@@ -154,6 +167,7 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
 
   return (
     <>
+      <OAuthBackGuard />
       <ScrollToTop />
       <Suspense fallback={<GenericPageSkeleton />}>
         <Routes>
