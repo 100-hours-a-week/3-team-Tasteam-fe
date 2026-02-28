@@ -313,7 +313,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
           <HeroRecommendationCard
             title="오늘 점심 뭐먹지?"
             description="AI가 추천하는 맞춤 맛집을 확인해보세요"
-            image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
+            image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=330&fit=crop&fm=webp&q=80"
             onCTAClick={() => navigate(ROUTES.todayLunch)}
           />
         </Container>
