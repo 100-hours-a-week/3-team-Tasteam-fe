@@ -19,12 +19,20 @@
         href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Montserrat:wght@700&display=swap"
       />
     </noscript>
-    <!-- Pretendard webfont (WOFF/WOFF2). -->
+    <!-- Pretendard webfont: 비블로킹 로드 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/fonts-archive/Pretendard/Pretendard.css"
-      type="text/css"
+      media="print"
+      onload="this.media = 'all'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/fonts-archive/Pretendard/Pretendard.css"
+      />
+    </noscript>
     <title>tasteam</title>
   </head>
   <body>
