@@ -25,6 +25,7 @@ export default defineConfig(({ command }) => {
         disable: disablePwa,
         minify: !isLocal,
         registerType: 'autoUpdate',
+        injectRegister: 'script-defer',
         workbox: {
           navigateFallbackDenylist: [/^\/api\//, /^\/admin/],
           skipWaiting: true,
