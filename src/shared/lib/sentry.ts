@@ -6,6 +6,7 @@ type SentryUser = { id?: string | number; username?: string } | null
 type SentryModule = {
   init: (options: Record<string, unknown>) => void
   captureException: (error: unknown) => void
+  captureEvent: (event: Record<string, unknown>) => void
   setUser: (user: SentryUser) => void
   browserTracingIntegration: () => unknown
   replayIntegration: () => unknown
@@ -48,6 +49,17 @@ export function initSentry() {
       initialized = false
       logger.warn('[sentry] failed to load @sentry/react; continuing without Sentry', error)
     })
+}
+
+export const captureWebVital = (name: string, value: number, rating: string) => {
+  sentryModule?.captureEvent({
+    type: 'transaction',
+    event_id: crypto.randomUUID(),
+    transaction: `web-vitals/${name}`,
+    measurements: { [name.toLowerCase()]: { value, unit: 'millisecond' } },
+    tags: { rating },
+    level: 'info',
+  })
 }
 
 export const captureException = (error: unknown) => {
