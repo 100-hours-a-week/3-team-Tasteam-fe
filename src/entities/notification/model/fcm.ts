@@ -1,4 +1,5 @@
 import { getToken, onMessage } from 'firebase/messaging'
+import { toast } from 'sonner'
 import { FIREBASE_VAPID_KEY } from '@/shared/config/env'
 import { logger } from '@/shared/lib/logger'
 import { getOrCreateDeviceId } from '@/shared/lib/deviceId'
@@ -46,6 +47,11 @@ const getLastSync = () => {
 
 const canUseNotifications = () =>
   typeof window !== 'undefined' && typeof Notification !== 'undefined'
+
+const isInsideChatRoom = () => {
+  if (typeof window === 'undefined') return false
+  return /^\/chat\/[^/]+$/.test(window.location.pathname)
+}
 
 export const syncFcmToken = async () => {
   if (syncInFlight) {
@@ -170,20 +176,25 @@ const setupForegroundMessageListener = async () => {
 
         const title = payload.notification?.title || '알림'
         const body = payload.notification?.body || ''
+        const deepLink = payload.data?.deepLink
+          ? normalizeNotificationDeepLink(payload.data.deepLink)
+          : null
 
-        if (Notification.permission === 'granted') {
-          const notification = new Notification(title, {
-            body,
-            icon: '/icons/icon-192x192.png',
-            data: payload.data,
-          })
-          notification.onclick = () => {
-            const deepLink = payload.data?.deepLink
-            if (!deepLink) return
-            window.focus()
-            window.location.assign(normalizeNotificationDeepLink(deepLink))
-          }
-        }
+        if (isInsideChatRoom()) return
+
+        toast.message(title, {
+          description: body,
+          duration: 2000,
+          position: 'top-center',
+          ...(deepLink
+            ? {
+                action: {
+                  label: '보기',
+                  onClick: () => window.location.assign(deepLink),
+                },
+              }
+            : {}),
+        })
       } catch (error) {
         logger.error('[fcm] Failed to handle foreground message', error)
       }
