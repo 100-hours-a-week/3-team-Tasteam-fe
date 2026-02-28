@@ -14,6 +14,7 @@ import {
 import { logout as logoutApi, refreshAccessToken } from '@/entities/auth'
 import { logger } from '@/shared/lib/logger'
 import { Sentry } from '@/shared/lib/sentry'
+import { queryClient } from '@/app/providers/queryClient'
 
 const extractAccessToken = (data: { data: { accessToken?: string } }) =>
   data.data.accessToken ?? null
@@ -104,6 +105,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         resetLoginRequired()
         setShowLogin(false)
         Sentry.setUser(null)
+        queryClient.clear()
         return true
       },
     }),
