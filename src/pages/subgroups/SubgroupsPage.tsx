@@ -40,6 +40,7 @@ import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup'
 import type { ReviewListItemDto } from '@/entities/review'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { getApiErrorCode } from '@/shared/lib/apiError'
+import { getChatMessages } from '@/entities/chat'
 
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
@@ -60,6 +61,8 @@ export function SubgroupsPage() {
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false)
   const [favoritesError, setFavoritesError] = useState<string | null>(null)
   const [isChatNavigating, setIsChatNavigating] = useState(false)
+  const [chatRoomId, setChatRoomId] = useState<number | null>(null)
+  const [hasUnreadChat, setHasUnreadChat] = useState(false)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = parseNumberParam(id)
@@ -89,8 +92,10 @@ export function SubgroupsPage() {
 
     setIsChatNavigating(true)
     try {
-      const chatRoomId = await getSubgroupChatRoomId(parsedSubgroupId)
-      navigate(ROUTES.chatRoom(String(chatRoomId)), {
+      const resolvedChatRoomId = chatRoomId ?? (await getSubgroupChatRoomId(parsedSubgroupId))
+      setChatRoomId(resolvedChatRoomId)
+      setHasUnreadChat(false)
+      navigate(ROUTES.chatRoom(String(resolvedChatRoomId)), {
         state: {
           subgroupId: parsedSubgroupId,
           subgroupName: subgroup?.name ?? null,
@@ -117,6 +122,55 @@ export function SubgroupsPage() {
       setIsChatNavigating(false)
     }
   }
+
+  useEffect(() => {
+    if (!FEATURE_FLAGS.enableChat) return
+    if (!isAuthenticated || !isMember || !isValidId(subgroupId)) {
+      setChatRoomId(null)
+      setHasUnreadChat(false)
+      return
+    }
+
+    let cancelled = false
+
+    const loadUnreadState = async () => {
+      try {
+        const roomId = await getSubgroupChatRoomId(subgroupId)
+        if (cancelled) return
+        setChatRoomId(roomId)
+
+        const enterResponse = await getChatMessages(roomId, {
+          mode: 'ENTER',
+          size: 1,
+        })
+        if (cancelled) return
+
+        const afterCursor = enterResponse.pagination.afterCursor
+        if (!afterCursor) {
+          setHasUnreadChat(false)
+          return
+        }
+
+        const afterResponse = await getChatMessages(roomId, {
+          mode: 'AFTER',
+          cursor: afterCursor,
+          size: 1,
+        })
+        if (cancelled) return
+        setHasUnreadChat(afterResponse.items.length > 0)
+      } catch {
+        if (!cancelled) {
+          setHasUnreadChat(false)
+        }
+      }
+    }
+
+    void loadUnreadState()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated, isMember, subgroupId])
 
   useEffect(() => {
     if (!isValidId(subgroupId)) return
@@ -557,12 +611,18 @@ export function SubgroupsPage() {
             <Button
               variant="default"
               size="icon"
-              className="h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 pointer-events-auto"
+              className="relative h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 pointer-events-auto"
               onClick={() => void handleChatClick()}
               aria-label="채팅하기"
               disabled={isChatNavigating}
             >
               <MessageSquare className="h-6 w-6" />
+              {hasUnreadChat && (
+                <span
+                  className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-destructive ring-2 ring-primary"
+                  aria-hidden="true"
+                />
+              )}
             </Button>
           </div>
         </div>
