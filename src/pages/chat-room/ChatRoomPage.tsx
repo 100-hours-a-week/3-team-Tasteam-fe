@@ -789,6 +789,8 @@ export function ChatRoomPage() {
                 />
               </div>
             )}
+
+            <div className="h-3" aria-hidden />
           </>
         )}
       </div>
