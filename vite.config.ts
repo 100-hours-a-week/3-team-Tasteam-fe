@@ -97,7 +97,6 @@ export default defineConfig(({ command }) => {
             'vendor-charts': ['recharts'],
             'vendor-firebase': ['firebase/app', 'firebase/messaging'],
             'vendor-form': ['react-hook-form', '@hookform/resolvers'],
-            'vendor-sentry': ['@sentry/react'],
             'vendor-utils': ['lucide-react', 'embla-carousel-react', 'react-day-picker'],
           },
         },
