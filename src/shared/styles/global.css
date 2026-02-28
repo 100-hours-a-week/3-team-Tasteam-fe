@@ -5,7 +5,7 @@
 :root {
   --font-size: 16px;
   --app-max-width: 430px;
-  --app-side-bg-image: url('../assets/side-background.jpg');
+  --app-side-bg-image: url('../assets/side-background.webp');
 
   /* Tasteam Color System - Light Theme */
   --background: 0 0% 100%;
