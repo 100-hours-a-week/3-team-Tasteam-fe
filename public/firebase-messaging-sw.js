@@ -46,6 +46,12 @@ try {
           data: payload?.data,
         }
         self.registration.showNotification(title, options)
+
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({ type: 'notifications:refresh' })
+          })
+        })
       } catch (error) {
         console.error('[firebase-sw] Failed to show notification', error)
       }

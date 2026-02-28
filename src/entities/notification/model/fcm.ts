@@ -11,6 +11,7 @@ const FCM_TOKEN_STORAGE_KEY = 'fcm:token:v1'
 const FCM_LAST_SYNC_KEY = 'fcm:token:last-sync:v1'
 const FCM_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000
 let syncInFlight: Promise<void> | null = null
+let serviceWorkerMessageBound = false
 
 const getStoredToken = () => {
   try {
@@ -173,6 +174,9 @@ const setupForegroundMessageListener = async () => {
     onMessage(messaging, (payload) => {
       try {
         logger.debug('[fcm] Foreground message received', payload)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notifications:refresh'))
+        }
 
         const title = payload.notification?.title || '알림'
         const body = payload.notification?.body || ''
@@ -206,6 +210,18 @@ const setupForegroundMessageListener = async () => {
   }
 }
 
+const setupServiceWorkerMessageListener = () => {
+  if (serviceWorkerMessageBound) return
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type !== 'notifications:refresh') return
+    window.dispatchEvent(new Event('notifications:refresh'))
+  })
+
+  serviceWorkerMessageBound = true
+}
+
 export const startFcmTokenSync = () => {
   const shouldSync = () => {
     const last = getLastSync()
@@ -231,6 +247,7 @@ export const startFcmTokenSync = () => {
   const intervalId = window.setInterval(scheduleSync, FCM_SYNC_INTERVAL_MS)
 
   scheduleSync()
+  setupServiceWorkerMessageListener()
   void setupForegroundMessageListener()
 
   return () => {
