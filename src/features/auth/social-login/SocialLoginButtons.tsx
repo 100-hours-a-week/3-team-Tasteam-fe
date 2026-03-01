@@ -50,7 +50,7 @@ export const SocialLoginButtons = () => {
             if (!sessionStorage.getItem('auth:return_to')) {
               storeReturnPath(window.location.pathname)
             }
-            window.location.href = getOAuthStartUrl(provider.key, redirectUri)
+            window.location.replace(getOAuthStartUrl(provider.key, redirectUri))
           }}
         >
           <span className={styles.buttonContent}>

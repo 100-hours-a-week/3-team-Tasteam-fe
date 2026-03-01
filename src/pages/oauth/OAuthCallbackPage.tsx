@@ -40,6 +40,7 @@ export const OAuthCallbackPage = () => {
         if (token) {
           loginWithToken(token)
           sessionStorage.removeItem('auth:return_to')
+          sessionStorage.setItem('auth:back_guard', '1')
           navigate(returnTo, { replace: true })
           return
         }
