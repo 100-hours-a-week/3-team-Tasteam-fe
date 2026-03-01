@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, Users, Heart, MessageSquare, Calendar } from 'lucide-react'
 import { toast } from 'sonner'
@@ -50,55 +50,54 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
   const [isLoading, setIsLoading] = useState<boolean>(notificationsEnabled)
   const showLoadingSkeleton = useLoadingSkeletonGate(isLoading)
 
-  useEffect(() => {
+  const fetchNotifications = useCallback(async () => {
     if (!notificationsEnabled) return
-    getNotifications({ page: 0, size: 10 })
-      .then((response) => {
-        const payload = extractResponseData<{
-          items: Array<{
-            id: number
-            notificationType: string
-            title: string
-            body: string
-            deepLink: string
-            createdAt: string
-            readAt: string | null
-          }>
-        }>(response)
-        const apiData =
-          payload?.items?.map((item) => ({
-            id: String(item.id),
-            type: mapNotificationType(item.notificationType),
-            title: item.title,
-            message: item.body,
-            deepLink: normalizeNotificationDeepLink(item.deepLink),
-            timestamp: item.createdAt,
-            isRead: !!item.readAt,
-          })) ?? []
-        setNotifications(apiData)
-      })
-      .catch((error) => {
-        const status = error?.response?.status
-        console.log('[알림] API 에러:', { status, error })
-        if (status === 401) {
-          console.log('[알림] 401 에러 - 알림 없음으로 처리')
-          setNotifications([])
-        } else {
-          console.log('[알림] 네트워크 에러 - 에러 상태 표시')
-          setHasError(true)
-          setNotifications([])
-        }
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+
+    try {
+      const response = await getNotifications({ page: 0, size: 10 })
+      const payload = extractResponseData<{
+        items: Array<{
+          id: number
+          notificationType: string
+          title: string
+          body: string
+          deepLink: string
+          createdAt: string
+          readAt: string | null
+        }>
+      }>(response)
+      const apiData =
+        payload?.items?.map((item) => ({
+          id: String(item.id),
+          type: mapNotificationType(item.notificationType),
+          title: item.title,
+          message: item.body,
+          deepLink: normalizeNotificationDeepLink(item.deepLink),
+          timestamp: item.createdAt,
+          isRead: !!item.readAt,
+        })) ?? []
+      setHasError(false)
+      setNotifications(apiData)
+    } catch (error) {
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status === 401) {
+        setNotifications([])
+      } else {
+        setHasError(true)
+        setNotifications([])
+      }
+    }
   }, [notificationsEnabled])
 
-  const handleRetry = () => {
-    setHasError(false)
-    setIsLoading(true)
-    getNotifications({ page: 0, size: 10 })
-      .then((response) => {
+  useEffect(() => {
+    if (!notificationsEnabled) return
+    let isCancelled = false
+
+    const initialize = async () => {
+      try {
+        const response = await getNotifications({ page: 0, size: 10 })
+        if (isCancelled) return
+
         const payload = extractResponseData<{
           items: Array<{
             id: number
@@ -110,6 +109,7 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
             readAt: string | null
           }>
         }>(response)
+
         const apiData =
           payload?.items?.map((item) => ({
             id: String(item.id),
@@ -120,23 +120,56 @@ export function NotificationsPage({ onNotificationClick, onBack }: Notifications
             timestamp: item.createdAt,
             isRead: !!item.readAt,
           })) ?? []
+
+        setHasError(false)
         setNotifications(apiData)
-      })
-      .catch((error) => {
-        const status = error?.response?.status
-        console.log('[알림] API 에러:', { status, error })
+      } catch (error) {
+        if (isCancelled) return
+
+        const status = (error as { response?: { status?: number } })?.response?.status
         if (status === 401) {
-          console.log('[알림] 401 에러 - 알림 없음으로 처리')
           setNotifications([])
         } else {
-          console.log('[알림] 네트워크 에러 - 에러 상태 표시')
           setHasError(true)
           setNotifications([])
         }
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void initialize()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [notificationsEnabled])
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      void fetchNotifications()
+    }
+    const handleVisibilityRefresh = () => {
+      if (document.visibilityState !== 'visible') return
+      void fetchNotifications()
+    }
+    window.addEventListener('notifications:refresh', handleRefresh)
+    window.addEventListener('focus', handleRefresh)
+    document.addEventListener('visibilitychange', handleVisibilityRefresh)
+    return () => {
+      window.removeEventListener('notifications:refresh', handleRefresh)
+      window.removeEventListener('focus', handleRefresh)
+      document.removeEventListener('visibilitychange', handleVisibilityRefresh)
+    }
+  }, [fetchNotifications])
+
+  const handleRetry = () => {
+    setIsLoading(true)
+    void fetchNotifications().finally(() => {
+      setIsLoading(false)
+    })
   }
 
   const getNotificationIcon = (type: Notification['type']) => {

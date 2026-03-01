@@ -36,7 +36,7 @@ import type { ChatMessageDto } from '@/entities/chat'
 type ChatRoomMember = {
   memberId: number
   nickname: string
-  profileImageUrl?: string | null
+  profileImageUrl: string | null
 }
 
 type ChatRoomLocationState = {
@@ -80,6 +80,43 @@ const normalizeMessage = (message: ChatMessageDto): ChatMessageDto => ({
   messageType: message.messageType.toLowerCase(),
 })
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null
+
+const resolveMemberProfileImageUrl = (member: unknown): string | null => {
+  if (!isRecord(member)) return null
+
+  if (typeof member.profileImageUrl === 'string' && member.profileImageUrl.trim()) {
+    return member.profileImageUrl
+  }
+  if (typeof member.memberProfileImageUrl === 'string' && member.memberProfileImageUrl.trim()) {
+    return member.memberProfileImageUrl
+  }
+  if (isRecord(member.profileImage) && typeof member.profileImage.url === 'string') {
+    return member.profileImage.url
+  }
+
+  return null
+}
+
+const normalizeRoomMembers = (members: unknown): ChatRoomMember[] => {
+  if (!Array.isArray(members)) return []
+
+  return members.reduce<ChatRoomMember[]>((acc, member) => {
+    if (!isRecord(member)) return acc
+    const memberId = Number(member.memberId)
+    const nickname = typeof member.nickname === 'string' ? member.nickname : ''
+    if (!Number.isFinite(memberId) || !nickname) return acc
+
+    acc.push({
+      memberId,
+      nickname,
+      profileImageUrl: resolveMemberProfileImageUrl(member),
+    })
+    return acc
+  }, [])
+}
+
 export function ChatRoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
@@ -99,7 +136,9 @@ export function ChatRoomPage() {
   const ownMemberId = currentUserId ?? -1
 
   const roomTitle = state?.subgroupName?.trim() || `채팅방 ${roomId ?? ''}`
-  const [members, setMembers] = useState<ChatRoomMember[]>(state?.members ?? [])
+  const [members, setMembers] = useState<ChatRoomMember[]>(() =>
+    normalizeRoomMembers(state?.members),
+  )
   const [memberCount, setMemberCount] = useState<number>(state?.memberCount ?? members.length)
   const [visibleMemberCount, setVisibleMemberCount] = useState(MEMBER_PAGE_SIZE)
 
@@ -121,6 +160,7 @@ export function ChatRoomPage() {
   const wsShuttingDownRef = useRef(false)
   const forceScrollOnNextIncomingRef = useRef(false)
   const readCursorSyncedRef = useRef<number | null>(null)
+  const memberRefreshAttemptedRef = useRef(false)
   const autoPrefetchRoundsRef = useRef(0)
   const nullCursorProbeExhaustedRef = useRef(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -221,19 +261,24 @@ export function ChatRoomPage() {
   }, [chatRoomId, isValidRoomId])
 
   useEffect(() => {
+    memberRefreshAttemptedRef.current = false
+  }, [state?.subgroupId])
+
+  useEffect(() => {
     const subgroupId = state?.subgroupId
-    if (!subgroupId || members.length > 0) return
+    if (!subgroupId) return
+
+    const hasMissingProfile = members.some((member) => !member.profileImageUrl)
+    if (members.length > 0 && !hasMissingProfile) return
+    if (members.length > 0 && hasMissingProfile && memberRefreshAttemptedRef.current) return
 
     let cancelled = false
     const loadMembers = async () => {
+      memberRefreshAttemptedRef.current = true
       try {
         const memberList = await getSubgroupMembers(subgroupId, { size: 100 })
         if (cancelled) return
-        const mapped = memberList.map((member) => ({
-          memberId: member.memberId,
-          nickname: member.nickname,
-          profileImageUrl: member.profileImageUrl ?? member.profileImage?.url ?? null,
-        }))
+        const mapped = normalizeRoomMembers(memberList)
         setMembers(mapped)
         setMemberCount(state?.memberCount ?? mapped.length)
       } catch {
@@ -245,7 +290,7 @@ export function ChatRoomPage() {
     return () => {
       cancelled = true
     }
-  }, [members.length, state?.memberCount, state?.subgroupId])
+  }, [members, state?.memberCount, state?.subgroupId])
 
   useEffect(() => {
     if (!isValidRoomId) return
@@ -751,6 +796,8 @@ export function ChatRoomPage() {
                 />
               </div>
             )}
+
+            <div className="h-3" aria-hidden />
           </>
         )}
       </div>

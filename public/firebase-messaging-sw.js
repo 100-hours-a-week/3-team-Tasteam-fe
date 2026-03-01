@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js')
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js')
 
 const normalizeDeepLink = (deepLink) => {
   if (typeof deepLink !== 'string' || !deepLink) return '/'
@@ -46,6 +46,12 @@ try {
           data: payload?.data,
         }
         self.registration.showNotification(title, options)
+
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({ type: 'notifications:refresh' })
+          })
+        })
       } catch (error) {
         console.error('[firebase-sw] Failed to show notification', error)
       }

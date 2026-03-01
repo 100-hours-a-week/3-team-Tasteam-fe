@@ -1,4 +1,5 @@
 import { getToken, onMessage } from 'firebase/messaging'
+import { toast } from 'sonner'
 import { FIREBASE_VAPID_KEY } from '@/shared/config/env'
 import { logger } from '@/shared/lib/logger'
 import { getOrCreateDeviceId } from '@/shared/lib/deviceId'
@@ -10,6 +11,7 @@ const FCM_TOKEN_STORAGE_KEY = 'fcm:token:v1'
 const FCM_LAST_SYNC_KEY = 'fcm:token:last-sync:v1'
 const FCM_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000
 let syncInFlight: Promise<void> | null = null
+let serviceWorkerMessageBound = false
 
 const getStoredToken = () => {
   try {
@@ -46,6 +48,11 @@ const getLastSync = () => {
 
 const canUseNotifications = () =>
   typeof window !== 'undefined' && typeof Notification !== 'undefined'
+
+const isInsideChatRoom = () => {
+  if (typeof window === 'undefined') return false
+  return /^\/chat\/[^/]+$/.test(window.location.pathname)
+}
 
 export const syncFcmToken = async () => {
   if (syncInFlight) {
@@ -167,23 +174,31 @@ const setupForegroundMessageListener = async () => {
     onMessage(messaging, (payload) => {
       try {
         logger.debug('[fcm] Foreground message received', payload)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('notifications:refresh'))
+        }
 
         const title = payload.notification?.title || '알림'
         const body = payload.notification?.body || ''
+        const deepLink = payload.data?.deepLink
+          ? normalizeNotificationDeepLink(payload.data.deepLink)
+          : null
 
-        if (Notification.permission === 'granted') {
-          const notification = new Notification(title, {
-            body,
-            icon: '/icons/icon-192x192.png',
-            data: payload.data,
-          })
-          notification.onclick = () => {
-            const deepLink = payload.data?.deepLink
-            if (!deepLink) return
-            window.focus()
-            window.location.assign(normalizeNotificationDeepLink(deepLink))
-          }
-        }
+        if (isInsideChatRoom()) return
+
+        toast.message(title, {
+          description: body,
+          duration: 2000,
+          position: 'top-center',
+          ...(deepLink
+            ? {
+                action: {
+                  label: '보기',
+                  onClick: () => window.location.assign(deepLink),
+                },
+              }
+            : {}),
+        })
       } catch (error) {
         logger.error('[fcm] Failed to handle foreground message', error)
       }
@@ -193,6 +208,18 @@ const setupForegroundMessageListener = async () => {
   } catch (error) {
     logger.error('[fcm] Failed to setup foreground message listener', error)
   }
+}
+
+const setupServiceWorkerMessageListener = () => {
+  if (serviceWorkerMessageBound) return
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type !== 'notifications:refresh') return
+    window.dispatchEvent(new Event('notifications:refresh'))
+  })
+
+  serviceWorkerMessageBound = true
 }
 
 export const startFcmTokenSync = () => {
@@ -220,6 +247,7 @@ export const startFcmTokenSync = () => {
   const intervalId = window.setInterval(scheduleSync, FCM_SYNC_INTERVAL_MS)
 
   scheduleSync()
+  setupServiceWorkerMessageListener()
   void setupForegroundMessageListener()
 
   return () => {

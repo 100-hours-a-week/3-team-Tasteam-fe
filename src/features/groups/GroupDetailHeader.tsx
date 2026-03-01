@@ -114,6 +114,7 @@ export function GroupDetailHeader({
             </div>
           </div>
         </Container>
+        <div className="border-b border-border/70" aria-hidden />
       </div>
 
       <div className={cn('bg-background', className)}>
