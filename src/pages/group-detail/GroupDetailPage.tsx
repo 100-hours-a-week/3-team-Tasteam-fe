@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { ChevronRight, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Container } from '@/shared/ui/container'
 import { ROUTES } from '@/shared/config/routes'
@@ -12,6 +13,7 @@ import { RestaurantCard } from '@/entities/restaurant'
 import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group'
 import type { RestaurantListItemDto } from '@/entities/restaurant'
 import { getFoodCategories } from '@/entities/restaurant'
+import { getSubgroups, type SubgroupListItemDto } from '@/entities/subgroup'
 import { useMemberGroups } from '@/entities/member'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
@@ -56,6 +58,9 @@ export function GroupDetailPage() {
   const [isRestaurantsLoading, setIsRestaurantsLoading] = useState(false)
   const [groupError, setGroupError] = useState<string | null>(null)
   const [restaurantError, setRestaurantError] = useState<string | null>(null)
+  const [subgroupPreviews, setSubgroupPreviews] = useState<SubgroupListItemDto[]>([])
+  const [isSubgroupPreviewsLoading, setIsSubgroupPreviewsLoading] = useState(false)
+  const [hasMoreSubgroups, setHasMoreSubgroups] = useState(false)
   const [locationPosition, setLocationPosition] = useState<GeoPosition | null>(null)
   const [isLocationLoading, setIsLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
@@ -175,6 +180,33 @@ export function GroupDetailPage() {
   useEffect(() => {
     if (!isValidId(groupId)) return
     let cancelled = false
+    const fetchSubgroupPreviews = async () => {
+      setIsSubgroupPreviewsLoading(true)
+      try {
+        const response = await getSubgroups(groupId, { size: 3 })
+        if (cancelled) return
+        setSubgroupPreviews(response.items ?? [])
+        setHasMoreSubgroups(Boolean(response.pagination?.hasNext))
+      } catch {
+        if (!cancelled) {
+          setSubgroupPreviews([])
+          setHasMoreSubgroups(false)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSubgroupPreviewsLoading(false)
+        }
+      }
+    }
+    void fetchSubgroupPreviews()
+    return () => {
+      cancelled = true
+    }
+  }, [groupId])
+
+  useEffect(() => {
+    if (!isValidId(groupId)) return
+    let cancelled = false
     const fetchGroup = async () => {
       setIsGroupLoading(true)
       setGroupError(null)
@@ -254,6 +286,9 @@ export function GroupDetailPage() {
 
   const isJoined =
     isLoaded && isValidId(groupId) ? summaries.some((item) => item.groupId === groupId) : false
+  const subgroupCountLabel = hasMoreSubgroups
+    ? `${subgroupPreviews.length}+`
+    : String(subgroupPreviews.length)
 
   return (
     <div className="pb-10">
@@ -285,6 +320,79 @@ export function GroupDetailPage() {
         showJoinGuide={showJoinGuide}
         isJoinGuideVisible={isJoinGuideVisible}
       />
+
+      <div className="h-2 border-y border-border/60 bg-muted/40" aria-hidden />
+
+      <Container className="pt-4 pb-4 border-b border-border">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">하위 그룹</h2>
+            <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-primary px-2 text-sm font-semibold text-white">
+              {subgroupCountLabel}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!isValidId(groupId)) return
+              navigate(`${ROUTES.subgroupList}?groupId=${groupId}`)
+            }}
+            className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            전체보기
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <p className="mb-3 text-sm text-muted-foreground">사적인 모임들을 확인하고 참여해보세요</p>
+
+        <div className="space-y-3">
+          {isSubgroupPreviewsLoading ? (
+            <>
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="h-20 w-full rounded-2xl" />
+            </>
+          ) : subgroupPreviews.length > 0 ? (
+            subgroupPreviews.map((subgroup) => (
+              <button
+                key={subgroup.subgroupId}
+                type="button"
+                onClick={() => navigate(ROUTES.subgroupDetail(String(subgroup.subgroupId)))}
+                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left hover:bg-accent/40"
+              >
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+                  {subgroup.profileImageUrl || subgroup.thumnailImage?.url ? (
+                    <img
+                      src={subgroup.profileImageUrl ?? subgroup.thumnailImage?.url}
+                      alt={subgroup.name}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
+                      {subgroup.name.slice(0, 2)}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold">{subgroup.name}</p>
+                  <p className="mt-0.5 inline-flex items-center gap-1 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    {subgroup.memberCount}명
+                  </p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </button>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+              아직 하위 그룹이 없습니다.
+            </div>
+          )}
+        </div>
+      </Container>
+
+      <div className="h-2 border-y border-border/60 bg-muted/40" aria-hidden />
 
       <Container className="pt-3 pb-3 border-b border-border">
         <GroupCategoryFilter
