@@ -58,7 +58,7 @@ export function ChatMessageBubble({
       )}
       {!isOwn && !showAvatar && <div className="w-8 flex-shrink-0" />}
 
-      <div className={cn('flex flex-col gap-1 max-w-[70%]', isOwn && 'items-end')}>
+      <div className={cn('flex min-w-0 flex-col gap-1 max-w-[70%]', isOwn && 'items-end')}>
         {!isOwn && showSender && message.memberNickname && (
           <span className="text-xs text-muted-foreground px-2">{message.memberNickname}</span>
         )}
@@ -66,7 +66,7 @@ export function ChatMessageBubble({
         <div className={cn('flex items-end gap-1', isOwn && 'flex-row-reverse')}>
           <div
             className={cn(
-              'rounded-2xl px-3 py-2',
+              'min-w-0 rounded-2xl px-3 py-2',
               isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm',
               message.status === 'failed' && 'bg-destructive/10 border border-destructive',
               isFileMessage &&
@@ -86,12 +86,14 @@ export function ChatMessageBubble({
               </div>
             ) : (
               message.content && (
-                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap break-all [overflow-wrap:anywhere]">
+                  {message.content}
+                </p>
               )
             )}
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+          <div className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
             {message.status === 'sending' && <span className="text-muted-foreground">전송 중</span>}
             {message.status === 'failed' && onRetry && (
               <Button

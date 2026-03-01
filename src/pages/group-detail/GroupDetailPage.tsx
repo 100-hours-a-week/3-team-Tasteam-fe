@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ChevronRight, Users } from 'lucide-react'
 import { toast } from 'sonner'
@@ -13,13 +13,16 @@ import { RestaurantCard } from '@/entities/restaurant'
 import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group'
 import type { RestaurantListItemDto } from '@/entities/restaurant'
 import { getFoodCategories } from '@/entities/restaurant'
-import { getSubgroups, type SubgroupListItemDto } from '@/entities/subgroup'
+import { getSubgroups, joinSubgroup, type SubgroupListItemDto } from '@/entities/subgroup'
 import { useMemberGroups } from '@/entities/member'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { AlertDialog } from '@/shared/ui/alert-dialog'
 import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 const CATEGORY_OPTIONS = [
   '한식',
@@ -61,6 +64,11 @@ export function GroupDetailPage() {
   const [subgroupPreviews, setSubgroupPreviews] = useState<SubgroupListItemDto[]>([])
   const [isSubgroupPreviewsLoading, setIsSubgroupPreviewsLoading] = useState(false)
   const [hasMoreSubgroups, setHasMoreSubgroups] = useState(false)
+  const [selectedSubgroup, setSelectedSubgroup] = useState<SubgroupListItemDto | null>(null)
+  const [subgroupJoinConfirmOpen, setSubgroupJoinConfirmOpen] = useState(false)
+  const [subgroupPasswordDialogOpen, setSubgroupPasswordDialogOpen] = useState(false)
+  const [subgroupPassword, setSubgroupPassword] = useState('')
+  const [isJoiningSubgroup, setIsJoiningSubgroup] = useState(false)
   const [locationPosition, setLocationPosition] = useState<GeoPosition | null>(null)
   const [isLocationLoading, setIsLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
@@ -289,6 +297,71 @@ export function GroupDetailPage() {
   const subgroupCountLabel = hasMoreSubgroups
     ? `${subgroupPreviews.length}+`
     : String(subgroupPreviews.length)
+  const joinedSubgroupIdSet = useMemo(() => {
+    const ids = new Set<number>()
+    for (const summary of summaries) {
+      for (const subgroup of summary.subGroups ?? []) {
+        ids.add(subgroup.subGroupId)
+      }
+    }
+    return ids
+  }, [summaries])
+
+  const closeSubgroupJoinModals = () => {
+    setSubgroupJoinConfirmOpen(false)
+    setSubgroupPasswordDialogOpen(false)
+    setSelectedSubgroup(null)
+    setSubgroupPassword('')
+  }
+
+  const handleSubgroupJoin = async (password?: string) => {
+    if (!selectedSubgroup || !isValidId(groupId)) return
+
+    setIsJoiningSubgroup(true)
+    try {
+      const trimmedPassword = password?.trim()
+      await joinSubgroup(
+        groupId,
+        selectedSubgroup.subgroupId,
+        trimmedPassword ? trimmedPassword : undefined,
+      )
+      toast.success('하위 그룹에 가입되었습니다')
+      await refresh()
+      closeSubgroupJoinModals()
+      navigate(ROUTES.subgroupDetail(String(selectedSubgroup.subgroupId)))
+    } catch (error: unknown) {
+      const code = getApiErrorCode(error)
+      if (code === 'PASSWORD_MISMATCH') {
+        toast.error('비밀번호가 올바르지 않습니다')
+      } else if (code === 'SUBGROUP_ALREADY_JOINED') {
+        toast.message('이미 가입된 하위 그룹입니다')
+        closeSubgroupJoinModals()
+        navigate(ROUTES.subgroupDetail(String(selectedSubgroup.subgroupId)))
+      } else if (code === 'NO_PERMISSION') {
+        toast.error('그룹 가입 후 하위 그룹에 참여할 수 있습니다')
+      } else {
+        toast.error('하위 그룹 가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsJoiningSubgroup(false)
+    }
+  }
+
+  const handleSubgroupPreviewClick = (subgroup: SubgroupListItemDto) => {
+    const isSubgroupJoined = joinedSubgroupIdSet.has(subgroup.subgroupId)
+    if (isSubgroupJoined) {
+      navigate(ROUTES.subgroupDetail(String(subgroup.subgroupId)))
+      return
+    }
+
+    setSelectedSubgroup(subgroup)
+    if (subgroup.joinType === 'PASSWORD') {
+      setSubgroupPassword('')
+      setSubgroupPasswordDialogOpen(true)
+      return
+    }
+    setSubgroupJoinConfirmOpen(true)
+  }
 
   return (
     <div className="pb-10">
@@ -358,7 +431,7 @@ export function GroupDetailPage() {
               <button
                 key={subgroup.subgroupId}
                 type="button"
-                onClick={() => navigate(ROUTES.subgroupDetail(String(subgroup.subgroupId)))}
+                onClick={() => handleSubgroupPreviewClick(subgroup)}
                 className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left hover:bg-accent/40"
               >
                 <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -464,6 +537,61 @@ export function GroupDetailPage() {
           }}
         />
       </AlertDialog>
+
+      <AlertDialog open={subgroupJoinConfirmOpen} onOpenChange={setSubgroupJoinConfirmOpen}>
+        <ConfirmAlertDialogContent
+          size="sm"
+          title="하위 그룹 가입"
+          description={`"${selectedSubgroup?.name ?? ''}"에 가입하시겠습니까?`}
+          confirmText="가입하기"
+          onConfirm={() => {
+            void handleSubgroupJoin()
+          }}
+          confirmDisabled={isJoiningSubgroup}
+        />
+      </AlertDialog>
+
+      <Dialog open={subgroupPasswordDialogOpen} onOpenChange={setSubgroupPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>하위 그룹 가입</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="mb-3 text-sm text-muted-foreground">
+              "{selectedSubgroup?.name ?? '하위 그룹'}" 가입 비밀번호를 입력해주세요.
+            </p>
+            <Input
+              type="password"
+              placeholder="비밀번호 입력"
+              value={subgroupPassword}
+              onChange={(event) => setSubgroupPassword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  void handleSubgroupJoin(subgroupPassword)
+                }
+              }}
+              disabled={isJoiningSubgroup}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSubgroupPasswordDialogOpen(false)}
+              disabled={isJoiningSubgroup}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={() => {
+                void handleSubgroupJoin(subgroupPassword)
+              }}
+              disabled={isJoiningSubgroup || !subgroupPassword.trim()}
+            >
+              가입하기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
