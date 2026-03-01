@@ -16,8 +16,8 @@ export const setMainPageCache = (
   cache = { data, latitude, longitude }
 }
 
-// 좌표가 ~1km 이내면 hit → 캐시 소비 후 반환. miss 혹은 좌표 불일치 시 null 반환 후 캐시 삭제.
-const COORD_EPSILON = 0.01
+// 좌표가 동일 격자(4자리 floor, ~11m)면 hit → 캐시 소비 후 반환. miss 혹은 좌표 불일치 시 null 반환 후 캐시 삭제.
+const COORD_EPSILON = 0.0001
 
 export const getMainPageCache = (
   latitude: number,
