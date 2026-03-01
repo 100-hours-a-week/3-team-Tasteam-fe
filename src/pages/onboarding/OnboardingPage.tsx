@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Check, MapPin, Search, ShieldCheck, Soup, Users } from 'lucide-react'
+import { ArrowRight, Bell, Check, MapPin, Search, ShieldCheck, Soup, Users } from 'lucide-react'
+import { toast } from 'sonner'
 import { ROUTES } from '@/shared/config/routes'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { OnboardingProgressDots, OnboardingStepPanel } from '@/features/groups'
 import { useAppLocation } from '@/entities/location'
 import { searchAll } from '@/entities/search'
 import type { SearchGroupItem } from '@/entities/search'
+import { syncFcmToken } from '@/entities/notification'
 import { requestLocationPermission } from '@/shared/lib/geolocation'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/badge'
@@ -21,7 +23,7 @@ type OnboardingPageProps = {
 }
 
 type OnboardingStep = {
-  key: 'location' | 'daily-menu' | 'trusted-review' | 'group-search'
+  key: 'location' | 'notification' | 'daily-menu' | 'trusted-review' | 'group-search'
   title: string
   description: string
   icon: typeof MapPin
@@ -48,6 +50,13 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
     description: '',
     icon: MapPin,
     action: '위치 동의하기',
+  },
+  {
+    key: 'notification',
+    title: '알림을 허용하면 더 편리해요.',
+    description: '그룹 활동, 그룹 초대, 맛집 추천 알림을\n실시간으로 받아볼 수 있어요.',
+    icon: Bell,
+    action: '알림 허용하기',
   },
   {
     key: 'daily-menu',
@@ -172,6 +181,13 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
       }
     }
 
+    if (currentStepData.key === 'notification') {
+      await syncFcmToken()
+      if (Notification.permission === 'denied') {
+        toast.message('브라우저 설정에서 알림을 허용하면 푸시 알림을 받을 수 있어요')
+      }
+    }
+
     if (currentStep < ONBOARDING_STEPS.length - 1) {
       setIsTransitioning(true)
       setCurrentStep((prev) => prev + 1)
@@ -249,6 +265,12 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
               {currentStepData.key === 'location' && (
                 <p className="text-muted-foreground -mt-2 text-center text-base whitespace-nowrap">
                   권한을 허용하면 현재 위치 주변의 식당 정보를 제공해드려요.
+                </p>
+              )}
+
+              {currentStepData.key === 'notification' && (
+                <p className="text-muted-foreground -mt-2 text-center text-base">
+                  알림은 언제든지 설정에서 변경할 수 있어요.
                 </p>
               )}
 

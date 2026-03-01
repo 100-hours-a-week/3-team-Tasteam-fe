@@ -8,7 +8,11 @@ import { Label } from '@/shared/ui/label'
 import { EmptyState } from '@/widgets/empty-state'
 import { Bell } from 'lucide-react'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import { getNotificationPreferences, updateNotificationPreferences } from '@/entities/notification'
+import {
+  getNotificationPreferences,
+  syncFcmToken,
+  updateNotificationPreferences,
+} from '@/entities/notification'
 
 type NotificationChannel = 'PUSH' | 'EMAIL'
 type NotificationType = 'CHAT' | 'SYSTEM' | 'NOTICE'
@@ -106,6 +110,13 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
     setSettings((prev) => ({ ...prev, [key]: nextValue }))
 
     if (key === 'pushEnabled') {
+      if (nextValue) {
+        if (Notification.permission === 'denied') {
+          toast.message('브라우저 설정에서 알림을 허용해주세요')
+        } else {
+          void syncFcmToken()
+        }
+      }
       const items = Object.values(TYPE_BY_SETTING).map((type) => ({
         channel: 'PUSH' as const,
         type,
