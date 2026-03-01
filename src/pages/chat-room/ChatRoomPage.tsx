@@ -160,6 +160,7 @@ export function ChatRoomPage() {
   const wsShuttingDownRef = useRef(false)
   const forceScrollOnNextIncomingRef = useRef(false)
   const readCursorSyncedRef = useRef<number | null>(null)
+  const memberRefreshAttemptedRef = useRef(false)
   const autoPrefetchRoundsRef = useRef(0)
   const nullCursorProbeExhaustedRef = useRef(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -260,14 +261,20 @@ export function ChatRoomPage() {
   }, [chatRoomId, isValidRoomId])
 
   useEffect(() => {
+    memberRefreshAttemptedRef.current = false
+  }, [state?.subgroupId])
+
+  useEffect(() => {
     const subgroupId = state?.subgroupId
     if (!subgroupId) return
 
     const hasMissingProfile = members.some((member) => !member.profileImageUrl)
     if (members.length > 0 && !hasMissingProfile) return
+    if (members.length > 0 && hasMissingProfile && memberRefreshAttemptedRef.current) return
 
     let cancelled = false
     const loadMembers = async () => {
+      memberRefreshAttemptedRef.current = true
       try {
         const memberList = await getSubgroupMembers(subgroupId, { size: 100 })
         if (cancelled) return
