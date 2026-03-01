@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { FileText, Loader2, MoreVertical, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
@@ -32,6 +33,7 @@ type MyReviewsPageProps = {
 }
 
 export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps) {
+  const qc = useQueryClient()
   const [reviews, setReviews] = useState<Review[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [hasNextPage, setHasNextPage] = useState(true)
@@ -128,6 +130,7 @@ export function MyReviewsPage({ onRestaurantClick, onBack }: MyReviewsPageProps)
     try {
       await deleteReview(Number(id))
       setReviews((prev) => prev.filter((r) => r.id !== id))
+      void qc.invalidateQueries({ queryKey: ['review', 'restaurant'] })
       toast.success('리뷰가 삭제되었습니다')
     } catch {
       toast.error('리뷰 삭제에 실패했습니다')

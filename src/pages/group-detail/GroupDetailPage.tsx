@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 import { Container } from '@/shared/ui/container'
 import { ROUTES } from '@/shared/config/routes'
 import {
@@ -10,14 +11,17 @@ import {
 } from '@/features/groups'
 import { RestaurantCard } from '@/entities/restaurant'
 import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group'
+import { groupKeys } from '@/entities/group/model/groupKeys'
 import type { RestaurantListItemDto } from '@/entities/restaurant'
 import { getFoodCategories } from '@/entities/restaurant'
+import { referenceKeys } from '@/entities/restaurant/model/referenceKeys'
 import { useMemberGroups } from '@/entities/member'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { AlertDialog } from '@/shared/ui/alert-dialog'
 import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
+import { STALE_CONTENT, STALE_REFERENCE } from '@/shared/lib/queryConstants'
 
 const CATEGORY_OPTIONS = [
   '한식',
@@ -46,22 +50,47 @@ export function GroupDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams()
   const location = useLocation()
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [categories, setCategories] = useState<string[]>([])
-  const [isCategoryLoading, setIsCategoryLoading] = useState(false)
-  const [group, setGroup] = useState<GroupDetailHeaderData | null>(null)
-  const [emailDomain, setEmailDomain] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(ALL_CATEGORY)
+  const { data: foodCategoryList = [], isLoading: isCategoryLoading } = useQuery({
+    queryKey: referenceKeys.foodCategories(),
+    queryFn: getFoodCategories,
+    staleTime: STALE_REFERENCE,
+  })
+  const categories = foodCategoryList.map((item) => item.name)
+  const groupId = parseNumberParam(id)
+
+  // 그룹 상세 조회
+  const {
+    data: groupData,
+    isLoading: isGroupLoading,
+    isError: isGroupError,
+  } = useQuery({
+    queryKey: groupKeys.detail(groupId ?? 0),
+    queryFn: () => getGroup(groupId!),
+    enabled: isValidId(groupId),
+    staleTime: STALE_CONTENT,
+  })
+
+  const group: GroupDetailHeaderData | null = groupData
+    ? {
+        name: groupData.name,
+        profileImage: groupData.logoImageUrl ?? groupData.logoImage?.url ?? undefined,
+        addressLine: groupData.address,
+        addressDetail: groupData.detailAddress ?? undefined,
+        memberCount: groupData.memberCount ?? 0,
+      }
+    : null
+  const emailDomain = groupData?.emailDomain ?? null
+  const groupError = isGroupError ? '그룹 정보를 불러오지 못했습니다' : null
+  const isGroupLoaded = !isGroupLoading && Boolean(groupData)
+
   const [restaurants, setRestaurants] = useState<RestaurantListItemDto[]>([])
-  const [isGroupLoading, setIsGroupLoading] = useState(false)
   const [isRestaurantsLoading, setIsRestaurantsLoading] = useState(false)
-  const [groupError, setGroupError] = useState<string | null>(null)
   const [restaurantError, setRestaurantError] = useState<string | null>(null)
   const [locationPosition, setLocationPosition] = useState<GeoPosition | null>(null)
   const [isLocationLoading, setIsLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
-  const [isGroupLoaded, setIsGroupLoaded] = useState(false)
-  const groupId = parseNumberParam(id)
   const { summaries, isLoaded, refresh } = useMemberGroups()
 
   const joinedState =
@@ -122,32 +151,6 @@ export function GroupDetailPage() {
 
   useEffect(() => {
     let cancelled = false
-    const fetchCategories = async () => {
-      setIsCategoryLoading(true)
-      try {
-        const list = await getFoodCategories()
-        if (cancelled) return
-        const names = list.map((item) => item.name)
-        setCategories(names)
-        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
-      } catch {
-        if (cancelled) return
-        setCategories(CATEGORY_OPTIONS)
-        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
-      } finally {
-        if (!cancelled) {
-          setIsCategoryLoading(false)
-        }
-      }
-    }
-    fetchCategories()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
     const fetchLocation = async () => {
       setIsLocationLoading(true)
       setLocationError(null)
@@ -172,45 +175,12 @@ export function GroupDetailPage() {
     }
   }, [])
 
+  // 그룹 조회 오류 시 404 리다이렉트
   useEffect(() => {
-    if (!isValidId(groupId)) return
-    let cancelled = false
-    const fetchGroup = async () => {
-      setIsGroupLoading(true)
-      setGroupError(null)
-      setIsGroupLoaded(false)
-      try {
-        const groupRes = await getGroup(groupId)
-        if (cancelled) return
-        setGroup({
-          name: groupRes.name,
-          profileImage: groupRes.logoImageUrl ?? groupRes.logoImage?.url ?? undefined,
-          addressLine: groupRes.address,
-          addressDetail: groupRes.detailAddress ?? undefined,
-          memberCount: groupRes.memberCount ?? 0,
-        })
-        setEmailDomain(groupRes.emailDomain ?? null)
-        setIsGroupLoaded(true)
-      } catch {
-        if (!cancelled) {
-          setGroupError('그룹 정보를 불러오지 못했습니다')
-          setGroup(null)
-          setRestaurants([])
-          setEmailDomain(null)
-          setIsGroupLoaded(false)
-          navigate('/404', { replace: true })
-        }
-      } finally {
-        if (!cancelled) {
-          setIsGroupLoading(false)
-        }
-      }
+    if (!isGroupLoading && isGroupError && isValidId(groupId)) {
+      navigate('/404', { replace: true })
     }
-    fetchGroup()
-    return () => {
-      cancelled = true
-    }
-  }, [groupId, navigate])
+  }, [isGroupLoading, isGroupError, groupId, navigate])
 
   useEffect(() => {
     if (!isValidId(groupId)) return
