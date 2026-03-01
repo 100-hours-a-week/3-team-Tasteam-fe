@@ -54,6 +54,9 @@ export const requestLocationPermission = (): Promise<boolean> => {
   })
 }
 
+// 소수점 4자리(~11m 격자)로 내림하여 GPS 지터 제거 및 API 캐시 효율 향상
+const truncateCoord = (coord: number): number => Math.floor(coord * 10000) / 10000
+
 export const getCurrentPosition = (): Promise<GeoPosition | null> => {
   return new Promise((resolve) => {
     if (!navigator.geolocation) {
@@ -64,8 +67,8 @@ export const getCurrentPosition = (): Promise<GeoPosition | null> => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         resolve({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude: truncateCoord(position.coords.latitude),
+          longitude: truncateCoord(position.coords.longitude),
         })
       },
       () => {
