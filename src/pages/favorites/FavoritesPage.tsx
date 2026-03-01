@@ -110,12 +110,7 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
       setIsLoadingFavorites(true)
       try {
         const response = await getMyFavoriteRestaurants()
-        console.log('내 찜 목록 전체 응답:', response)
-        // request 함수가 response.data를 반환하므로 response는 CursorPageResponse 형태
-        // 하지만 백엔드가 SuccessResponse로 래핑하면 response.data.items 형태일 수 있음
         const data = (response as any).data || response
-        console.log('내 찜 목록 데이터:', data)
-        console.log('내 찜 목록 items:', data.items)
         setPersonalFavorites(data.items || [])
         setPersonalCursor(data.pagination?.nextCursor || null)
         setHasMorePersonal(data.pagination?.hasNext || false)
