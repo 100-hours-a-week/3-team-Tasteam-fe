@@ -111,7 +111,7 @@ export function NotificationSettingsPage({ onBack }: NotificationSettingsPagePro
 
     if (key === 'pushEnabled') {
       if (nextValue) {
-        if (Notification.permission === 'denied') {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
           toast.message('브라우저 설정에서 알림을 허용해주세요')
         } else {
           void syncFcmToken()
