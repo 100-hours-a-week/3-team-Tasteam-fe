@@ -10,6 +10,7 @@ import {
   ThumbsDown,
   DollarSign,
 } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -22,8 +23,11 @@ import { Container } from '@/shared/ui/container'
 import { cn } from '@/shared/lib/utils'
 import { GroupCategoryFilter } from '@/features/groups'
 import { getRestaurant, getRestaurantMenus } from '@/entities/restaurant'
+import { restaurantKeys } from '@/entities/restaurant/model/restaurantKeys'
 import { getRestaurantReviews } from '@/entities/review'
+import { reviewKeys } from '@/entities/review/model/reviewKeys'
 import { getRestaurantFavoriteTargets } from '@/entities/favorite'
+import { favoriteKeys } from '@/entities/favorite/model/favoriteKeys'
 import { FavoriteSelectionSheet } from '@/features/favorites'
 import { toast } from 'sonner'
 import { ROUTES } from '@/shared/config/routes'
@@ -39,6 +43,7 @@ import { useMemberGroups } from '@/entities/member'
 import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
 import { AlertDialog } from '@/shared/ui/alert-dialog'
 import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
+import { STALE_CONTENT, STALE_USER } from '@/shared/lib/queryConstants'
 
 export function RestaurantDetailPage() {
   type BusinessHoursWeekItem = {
@@ -61,75 +66,120 @@ export function RestaurantDetailPage() {
   const locationState = (location.state as { fromPageKey?: string } | null) ?? null
   const fromPageKey = locationState?.fromPageKey ?? currentPageKey
   const parsedRestaurantId = Number(restaurantId)
+  const qc = useQueryClient()
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const [showGroupJoinModal, setShowGroupJoinModal] = React.useState(false)
   const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
-  const [favoriteStatus, setFavoriteStatus] = React.useState<{
-    personal: boolean
-    subgroups: Array<{ subgroupId: number; isFavorited: boolean }>
-  } | null>(null)
-  const [isRestaurantLoading, setIsRestaurantLoading] = React.useState(true)
-  const [restaurantData, setRestaurantData] = React.useState<
-    import('@/entities/restaurant').RestaurantDetailDto | null
-  >(null)
 
-  React.useEffect(() => {
-    if (!restaurantId) return
-    setIsRestaurantLoading(true)
-    getRestaurant(Number(restaurantId))
-      .then((res) => {
-        setRestaurantData(res.data)
-        if (Number.isFinite(parsedRestaurantId)) {
-          track({
-            eventName: 'ui.restaurant.viewed',
-            properties: {
-              restaurantId: parsedRestaurantId,
-              fromPageKey,
-            },
-          })
-        }
+  // 식당 상세 조회
+  const { data: restaurantRes, isLoading: isRestaurantLoading } = useQuery({
+    queryKey: restaurantKeys.detail(parsedRestaurantId),
+    queryFn: () => getRestaurant(parsedRestaurantId),
+    enabled: Boolean(restaurantId),
+    staleTime: STALE_CONTENT,
+  })
+
+  const restaurantData = restaurantRes?.data ?? null
+
+  // 뷰 이벤트 트래킹 (restaurant 데이터 로드 후)
+  useEffect(() => {
+    if (restaurantData && Number.isFinite(parsedRestaurantId)) {
+      track({
+        eventName: 'ui.restaurant.viewed',
+        properties: { restaurantId: parsedRestaurantId, fromPageKey },
       })
-      .catch(() => {
-        setRestaurantData(null)
-        navigate('/404', { replace: true })
-      })
-      .finally(() => setIsRestaurantLoading(false))
-  }, [restaurantId, navigate, track, fromPageKey, parsedRestaurantId])
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurantData])
+
+  // 404 리다이렉트
+  useEffect(() => {
+    if (!isRestaurantLoading && !restaurantData && restaurantId) {
+      navigate('/404', { replace: true })
+    }
+  }, [isRestaurantLoading, restaurantData, restaurantId, navigate])
 
   // 찜 상태 조회
-  React.useEffect(() => {
-    if (!restaurantId) return
+  const { data: favoriteTargetsRes } = useQuery({
+    queryKey: favoriteKeys.restaurantTargets(parsedRestaurantId),
+    queryFn: () => getRestaurantFavoriteTargets(parsedRestaurantId),
+    enabled: isAuthenticated && Boolean(restaurantId),
+    staleTime: STALE_USER,
+  })
 
-    getRestaurantFavoriteTargets(Number(restaurantId))
-      .then((response) => {
-        const data = response.data
-        // targets 배열에서 ME 타입과 SUBGROUP 타입을 찾아서 상태 설정
-        const myTarget = data.targets.find((t) => t.targetType === 'ME')
-        const subgroupTargets = data.targets.filter((t) => t.targetType === 'SUBGROUP')
+  const favoriteStatus = React.useMemo(() => {
+    if (!favoriteTargetsRes?.data) return null
+    const data = favoriteTargetsRes.data
+    const myTarget = data.targets.find((t: any) => t.targetType === 'ME')
+    const subgroupTargets = data.targets.filter((t: any) => t.targetType === 'SUBGROUP')
+    return {
+      personal: myTarget?.favoriteState === 'FAVORITED',
+      subgroups: subgroupTargets.map((st: any) => ({
+        subgroupId: st.targetId || 0,
+        isFavorited: st.favoriteState === 'FAVORITED',
+      })),
+    }
+  }, [favoriteTargetsRes])
 
-        setFavoriteStatus({
-          personal: myTarget?.favoriteState === 'FAVORITED',
-          subgroups: subgroupTargets.map((st) => ({
-            subgroupId: st.targetId || 0,
-            isFavorited: st.favoriteState === 'FAVORITED',
-          })),
-        })
-      })
-      .catch(() => {
-        // 에러 처리 (인증되지 않은 사용자 등)
-        setFavoriteStatus(null)
-      })
-  }, [restaurantId])
-
-  const [isReviewsLoading, setIsReviewsLoading] = React.useState(true)
-  const [, setReviewsError] = React.useState(false)
-  const [reviews, setReviews] = React.useState<ReviewListItemDto[]>([])
-  const [reviewsNextCursor, setReviewsNextCursor] = React.useState<string | null>(null)
+  // 리뷰 초기 조회
+  const { data: reviewsRes, isLoading: isReviewsLoading } = useQuery({
+    queryKey: reviewKeys.byRestaurant(parsedRestaurantId, { size: 10 }),
+    queryFn: () => getRestaurantReviews(parsedRestaurantId, { size: 10 }),
+    enabled: Boolean(restaurantId),
+    staleTime: STALE_CONTENT,
+  })
+  const [additionalReviews, setAdditionalReviews] = React.useState<ReviewListItemDto[]>([])
+  const [reviewsNextCursor, setReviewsNextCursor] = React.useState<string | null>(() => null)
   const [hasMoreReviews, setHasMoreReviews] = React.useState(false)
   const [isLoadingMoreReviews, setIsLoadingMoreReviews] = React.useState(false)
-  const [isMenusLoading, setIsMenusLoading] = React.useState(true)
-  const [menusError, setMenusError] = React.useState(false)
-  const [menuCategories, setMenuCategories] = React.useState<MenuCategoryDto[]>([])
+
+  // reviewsRes가 업데이트되면 cursor 상태 동기화
+  useEffect(() => {
+    if (!reviewsRes) return
+    const anyRes = reviewsRes as {
+      items?: ReviewListItemDto[]
+      pagination?: { nextCursor: string | null; hasNext: boolean }
+    }
+    setReviewsNextCursor(anyRes.pagination?.nextCursor ?? null)
+    setHasMoreReviews(Boolean(anyRes.pagination?.hasNext))
+    setAdditionalReviews([])
+  }, [reviewsRes])
+
+  const initialReviews: ReviewListItemDto[] = (() => {
+    if (!reviewsRes) return []
+    const anyRes = reviewsRes as {
+      items?: ReviewListItemDto[]
+      data?: { items?: ReviewListItemDto[] }
+    }
+    return anyRes.items ?? anyRes.data?.items ?? []
+  })()
+  const reviews = [...initialReviews, ...additionalReviews]
+
+  // 메뉴 조회
+  const {
+    data: menusRes,
+    isLoading: isMenusLoading,
+    isError: isMenusError,
+  } = useQuery({
+    queryKey: restaurantKeys.menus(parsedRestaurantId),
+    queryFn: () =>
+      getRestaurantMenus(parsedRestaurantId, {
+        includeEmptyCategories: false,
+        recommendedFirst: true,
+      }),
+    enabled: Boolean(restaurantId),
+    staleTime: STALE_CONTENT,
+  })
+  const menusError = isMenusError
+  const menuCategories: MenuCategoryDto[] = (() => {
+    if (!menusRes) return []
+    const raw = menusRes as {
+      data?: { categories?: MenuCategoryDto[] }
+      categories?: MenuCategoryDto[]
+    }
+    return raw.data?.categories ?? raw.categories ?? []
+  })()
+
   const [selectedCategoryIndex, setSelectedCategoryIndex] = React.useState<number | null>(null)
   const [activeDetailTab, setActiveDetailTab] = React.useState('info')
   const [expandedMenuCategoryIndices, setExpandedMenuCategoryIndices] = React.useState<Set<number>>(
@@ -183,31 +233,6 @@ export function RestaurantDetailPage() {
     }
   }, [activeDetailTab, menuCategories])
 
-  React.useEffect(() => {
-    if (!restaurantId) return
-    setIsReviewsLoading(true)
-    setReviewsError(false)
-    getRestaurantReviews(Number(restaurantId), { size: 10 })
-      .then((res) => {
-        const anyRes = res as {
-          items?: ReviewListItemDto[]
-          pagination?: { nextCursor: string | null; hasNext: boolean }
-          data?: { items?: ReviewListItemDto[] }
-        }
-        const items = anyRes.items ?? anyRes.data?.items ?? []
-        setReviews(items)
-        setReviewsNextCursor(anyRes.pagination?.nextCursor ?? null)
-        setHasMoreReviews(Boolean(anyRes.pagination?.hasNext))
-      })
-      .catch(() => {
-        setReviews([])
-        setReviewsNextCursor(null)
-        setHasMoreReviews(false)
-        setReviewsError(true)
-      })
-      .finally(() => setIsReviewsLoading(false))
-  }, [restaurantId])
-
   const loadMoreReviews = React.useCallback(async () => {
     if (!restaurantId || isReviewsLoading || isLoadingMoreReviews || !hasMoreReviews) return
 
@@ -223,7 +248,7 @@ export function RestaurantDetailPage() {
         data?: { items?: ReviewListItemDto[] }
       }
       const nextItems = anyRes.items ?? anyRes.data?.items ?? []
-      setReviews((prev) => [...prev, ...nextItems])
+      setAdditionalReviews((prev) => [...prev, ...nextItems])
       setReviewsNextCursor(anyRes.pagination?.nextCursor ?? null)
       setHasMoreReviews(Boolean(anyRes.pagination?.hasNext))
     } catch {
@@ -256,32 +281,6 @@ export function RestaurantDetailPage() {
       }
     }
   }, [])
-
-  React.useEffect(() => {
-    if (!restaurantId) return
-    setIsMenusLoading(true)
-    setMenusError(false)
-    getRestaurantMenus(Number(restaurantId), {
-      includeEmptyCategories: false,
-      recommendedFirst: true,
-    })
-      .then((res) => {
-        const raw = res as {
-          data?: { categories?: MenuCategoryDto[] }
-          categories?: MenuCategoryDto[]
-        }
-        const categories = raw.data?.categories ?? raw.categories ?? []
-        setMenuCategories(categories)
-        if (categories.length > 0) {
-          setSelectedCategoryIndex(0)
-        }
-      })
-      .catch(() => {
-        setMenuCategories([])
-        setMenusError(true)
-      })
-      .finally(() => setIsMenusLoading(false))
-  }, [restaurantId])
 
   const baseRestaurant = {
     id: restaurantId || '',
@@ -507,42 +506,23 @@ export function RestaurantDetailPage() {
   }
 
   const handleFavoriteComplete = () => {
-    // 찜 상태 재조회
-    if (!restaurantId) return
-
-    getRestaurantFavoriteTargets(Number(restaurantId))
-      .then((response) => {
-        const data = response.data
-        // targets 배열에서 ME 타입과 SUBGROUP 타입을 찾아서 상태 설정
-        const myTarget = data.targets.find((t) => t.targetType === 'ME')
-        const subgroupTargets = data.targets.filter((t) => t.targetType === 'SUBGROUP')
-
-        const updatedFavoriteStatus = {
-          personal: myTarget?.favoriteState === 'FAVORITED',
-          subgroups: subgroupTargets.map((st) => ({
-            subgroupId: st.targetId || 0,
-            isFavorited: st.favoriteState === 'FAVORITED',
-          })),
-        }
-        setFavoriteStatus(updatedFavoriteStatus)
-        const selectedTargetCount =
-          (updatedFavoriteStatus.personal ? 1 : 0) +
-          updatedFavoriteStatus.subgroups.filter((subgroup) => subgroup.isFavorited).length
-        if (Number.isFinite(parsedRestaurantId)) {
-          track({
-            eventName: 'ui.favorite.updated',
-            properties: {
-              restaurantId: parsedRestaurantId,
-              selectedTargetCount,
-              fromPageKey: currentPageKey,
-            },
-          })
-        }
-        toast.success('찜 목록이 업데이트되었습니다')
+    void qc.invalidateQueries({ queryKey: favoriteKeys.restaurantTargets(parsedRestaurantId) })
+    void qc.invalidateQueries({ queryKey: favoriteKeys.myList() })
+    void qc.invalidateQueries({ queryKey: favoriteKeys.targets() })
+    if (Number.isFinite(parsedRestaurantId) && favoriteStatus) {
+      const selectedTargetCount =
+        (favoriteStatus.personal ? 1 : 0) +
+        favoriteStatus.subgroups.filter((subgroup) => subgroup.isFavorited).length
+      track({
+        eventName: 'ui.favorite.updated',
+        properties: {
+          restaurantId: parsedRestaurantId,
+          selectedTargetCount,
+          fromPageKey: currentPageKey,
+        },
       })
-      .catch(() => {
-        // 에러 처리
-      })
+    }
+    toast.success('찜 목록이 업데이트되었습니다')
   }
 
   return (

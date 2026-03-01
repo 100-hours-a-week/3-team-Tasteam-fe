@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Camera } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
@@ -9,6 +10,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { getMe, updateMeProfile } from '@/entities/member'
+import { memberKeys } from '@/entities/member/model/memberKeys'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
 import type { MemberProfileDto } from '@/entities/member'
 
@@ -18,6 +20,7 @@ type EditProfilePageProps = {
 
 export function EditProfilePage({ onBack }: EditProfilePageProps) {
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [member, setMember] = useState<MemberProfileDto | null>(null)
   const [nickname, setNickname] = useState('')
   const [bio, setBio] = useState('')
@@ -89,6 +92,7 @@ export function EditProfilePage({ onBack }: EditProfilePageProps) {
       }
 
       await updateMeProfile({ nickname, introduction: bio, profileImageFileUuid })
+      void qc.invalidateQueries({ queryKey: memberKeys.me() })
       toast.success('프로필이 수정되었습니다')
       navigate('/profile', { replace: true })
     } catch {

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ChevronRight, Bell, Settings, LogOut, User, Pencil, Gift, FileText } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { ROUTES } from '@/shared/config/routes'
@@ -13,10 +14,12 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { AppVersionText } from '@/shared/ui/app-version'
 import { useAuth } from '@/entities/user'
 import { getMe } from '@/entities/member'
+import { memberKeys } from '@/entities/member/model/memberKeys'
 import type { MemberProfileDto } from '@/entities/member'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { AlertDialog } from '@/shared/ui/alert-dialog'
 import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
+import { STALE_USER } from '@/shared/lib/queryConstants'
 
 type ProfilePageProps = {
   onSettingsClick?: () => void
@@ -40,52 +43,17 @@ export function ProfilePage({
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, openLogin } = useAuth()
-  const [member, setMember] = useState<MemberProfileDto | null>(null)
-  const [profileError, setProfileError] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    if (!isAuthenticated) {
-      Promise.resolve().then(() => {
-        if (!cancelled) {
-          setMember(null)
-          setProfileError(false)
-        }
-      })
-      return () => {
-        cancelled = true
-      }
-    }
-    Promise.resolve().then(() => {
-      if (!cancelled) {
-        setMember(null)
-        setProfileError(false)
-      }
-    })
-    getMe()
-      .then((data) => {
-        if (cancelled) return
-        const nextMember = data.data?.member ?? null
-        if (nextMember) {
-          setMember(nextMember)
-          setProfileError(false)
-          return
-        }
-        setMember(null)
-        setProfileError(true)
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setProfileError(true)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, location.key])
+  const { data: meData, isLoading: isMeLoading } = useQuery({
+    queryKey: [...memberKeys.me(), location.key],
+    queryFn: () => getMe(),
+    enabled: isAuthenticated,
+    staleTime: STALE_USER,
+  })
 
-  const isLoading = isAuthenticated && member === null && !profileError
+  const member: MemberProfileDto | null = meData?.data?.member ?? null
+  const isLoading = isAuthenticated && isMeLoading
 
   type ProfileMenuItem = {
     label: string
