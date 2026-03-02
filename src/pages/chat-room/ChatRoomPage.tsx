@@ -264,6 +264,16 @@ export function ChatRoomPage() {
     memberRefreshAttemptedRef.current = false
   }, [state?.subgroupId])
 
+  const refreshMembers = useCallback(async () => {
+    const subgroupId = state?.subgroupId
+    if (!subgroupId) return
+
+    const memberList = await getSubgroupMembers(subgroupId, { size: 100 })
+    const mapped = normalizeRoomMembers(memberList)
+    setMembers(mapped)
+    setMemberCount(state?.memberCount ?? mapped.length)
+  }, [state?.memberCount, state?.subgroupId])
+
   useEffect(() => {
     const subgroupId = state?.subgroupId
     if (!subgroupId) return
@@ -272,25 +282,17 @@ export function ChatRoomPage() {
     if (members.length > 0 && !hasMissingProfile) return
     if (members.length > 0 && hasMissingProfile && memberRefreshAttemptedRef.current) return
 
-    let cancelled = false
     const loadMembers = async () => {
       memberRefreshAttemptedRef.current = true
       try {
-        const memberList = await getSubgroupMembers(subgroupId, { size: 100 })
-        if (cancelled) return
-        const mapped = normalizeRoomMembers(memberList)
-        setMembers(mapped)
-        setMemberCount(state?.memberCount ?? mapped.length)
+        await refreshMembers()
       } catch {
         // keep fallback state
       }
     }
 
     void loadMembers()
-    return () => {
-      cancelled = true
-    }
-  }, [members, state?.memberCount, state?.subgroupId])
+  }, [members, refreshMembers, state?.subgroupId])
 
   useEffect(() => {
     if (!isValidRoomId) return
@@ -350,6 +352,11 @@ export function ChatRoomPage() {
                 next.sort((a, b) => a.id - b.id)
                 return next
               })
+              if (incoming.messageType === 'system') {
+                void refreshMembers().catch(() => {
+                  // ignore member refresh error on system message
+                })
+              }
               requestAnimationFrame(() => {
                 const shouldForceScroll =
                   forceScrollOnNextIncomingRef.current || incoming.memberId === ownMemberId
@@ -408,7 +415,7 @@ export function ChatRoomPage() {
         void wsClient.deactivate()
       }
     }
-  }, [chatRoomId, isValidRoomId, ownMemberId])
+  }, [chatRoomId, isValidRoomId, ownMemberId, refreshMembers])
 
   useEffect(() => {
     if (!isValidRoomId || messages.length === 0) return
