@@ -1,4 +1,4 @@
-# Tasteam Frontend (Draft README)
+# Tasteam Frontend
 
 > 팀/조직 단위 음식 경험 데이터를 바탕으로, 점심 메뉴 의사결정을 빠르게 만드는 PWA 프론트엔드
 
