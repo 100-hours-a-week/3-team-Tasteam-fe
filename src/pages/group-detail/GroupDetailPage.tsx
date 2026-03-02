@@ -196,9 +196,10 @@ export function GroupDetailPage() {
     const fetchSubgroupPreviews = async () => {
       setIsSubgroupPreviewsLoading(true)
       try {
-        const response = await getSubgroups(groupId, { size: 3 })
+        const response = await getSubgroups(groupId, { size: 100 })
         if (cancelled) return
-        setSubgroupPreviews(response.items ?? [])
+        const sorted = [...(response.items ?? [])].sort((a, b) => b.memberCount - a.memberCount)
+        setSubgroupPreviews(sorted.slice(0, 3))
         setHasMoreSubgroups(Boolean(response.pagination?.hasNext))
       } catch {
         if (!cancelled) {
@@ -269,6 +270,12 @@ export function GroupDetailPage() {
   const subgroupCountLabel = hasMoreSubgroups
     ? `${subgroupPreviews.length}+`
     : String(subgroupPreviews.length)
+  const subgroupPreviewGridColsClass =
+    subgroupPreviews.length <= 1
+      ? 'grid-cols-1'
+      : subgroupPreviews.length === 2
+        ? 'grid-cols-2'
+        : 'grid-cols-3'
   const joinedSubgroupIdSet = useMemo(() => {
     const ids = new Set<number>()
     for (const summary of summaries) {
@@ -389,46 +396,33 @@ export function GroupDetailPage() {
           </button>
         </div>
 
-        <p className="mb-3 text-sm text-muted-foreground">사적인 모임들을 확인하고 참여해보세요</p>
-
-        <div className="space-y-3">
+        <div>
           {isSubgroupPreviewsLoading ? (
-            <>
-              <Skeleton className="h-20 w-full rounded-2xl" />
-              <Skeleton className="h-20 w-full rounded-2xl" />
-              <Skeleton className="h-20 w-full rounded-2xl" />
-            </>
+            <div className="grid grid-cols-3 gap-3">
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+            </div>
           ) : subgroupPreviews.length > 0 ? (
-            subgroupPreviews.map((subgroup) => (
-              <button
-                key={subgroup.subgroupId}
-                type="button"
-                onClick={() => handleSubgroupPreviewClick(subgroup)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left hover:bg-accent/40"
-              >
-                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-                  {subgroup.profileImageUrl || subgroup.thumnailImage?.url ? (
-                    <img
-                      src={subgroup.profileImageUrl ?? subgroup.thumnailImage?.url}
-                      alt={subgroup.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                      {subgroup.name.slice(0, 2)}
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold">{subgroup.name}</p>
-                  <p className="mt-0.5 inline-flex items-center gap-1 text-sm text-muted-foreground">
+            <div className={`grid ${subgroupPreviewGridColsClass} gap-3`}>
+              {subgroupPreviews.map((subgroup) => (
+                <button
+                  key={subgroup.subgroupId}
+                  type="button"
+                  onClick={() => handleSubgroupPreviewClick(subgroup)}
+                  className="flex h-24 flex-col justify-between rounded-2xl border border-border bg-card p-3 text-left hover:bg-accent/40"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-sm font-semibold">{subgroup.name}</p>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </div>
+                  <p className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
                     {subgroup.memberCount}명
                   </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </button>
-            ))
+                </button>
+              ))}
+            </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
               아직 하위 그룹이 없습니다.
