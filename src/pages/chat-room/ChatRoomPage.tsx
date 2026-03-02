@@ -49,6 +49,7 @@ type ChatRoomLocationState = {
 const MEMBER_PAGE_SIZE = 10
 const INITIAL_MESSAGE_PAGE_SIZE = 50
 const MESSAGE_PAGE_SIZE = 20
+const CHAT_MESSAGE_MAX_LENGTH = 500
 const MAX_AUTO_PREFETCH_ROUNDS = 2
 const EARLY_LOAD_TRIGGER_PX = 360
 const WS_HEARTBEAT_MS = 15000
@@ -545,6 +546,10 @@ export function ChatRoomPage() {
 
   const handleSendTextMessage = async (text: string) => {
     if (!isValidRoomId || !text.trim()) return
+    if (text.trim().length > CHAT_MESSAGE_MAX_LENGTH) {
+      toast.error(`메시지는 최대 ${CHAT_MESSAGE_MAX_LENGTH}자까지 입력할 수 있어요.`)
+      return
+    }
 
     const payload = {
       messageType: 'TEXT' as const,
