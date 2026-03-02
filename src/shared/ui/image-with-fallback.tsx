@@ -9,6 +9,8 @@ type ImageWithFallbackProps = ImgHTMLAttributes<HTMLImageElement> & {
   progressive?: boolean
   placeholderClassName?: string
   disableInteraction?: boolean
+  /** 이미지 로드 실패(fallback 표시) 시 호출 */
+  onError?: () => void
 }
 
 export function ImageWithFallback(props: ImageWithFallbackProps) {
@@ -22,6 +24,7 @@ export function ImageWithFallback(props: ImageWithFallbackProps) {
     progressive = false,
     placeholderClassName,
     disableInteraction = false,
+    onError: onErrorCallback,
     ...rest
   } = props
 
@@ -32,6 +35,7 @@ export function ImageWithFallback(props: ImageWithFallbackProps) {
   const handleError = () => {
     if (normalizedSrc) {
       setFailedSrc(normalizedSrc)
+      onErrorCallback?.()
     }
   }
 

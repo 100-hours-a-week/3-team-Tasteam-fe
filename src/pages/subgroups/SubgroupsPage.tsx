@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, UserCheck, MoreVertical, MessageSquare, Lock, Bell } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '@/entities/user'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { ProfileImage } from '@/shared/ui/profile-image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailReviewCard } from '@/entities/review'
 import {
   getSubgroup,
+  getSubgroupChatRoomId,
   getSubgroupMembers,
   getSubgroupReviews,
   joinSubgroup,
@@ -23,17 +24,8 @@ import { getGroup } from '@/entities/group'
 import { useMemberGroups } from '@/entities/member'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog, AlertDialogTrigger } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +41,7 @@ import type { SubgroupDetailDto, SubgroupMemberDto } from '@/entities/subgroup'
 import type { ReviewListItemDto } from '@/entities/review'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { getApiErrorCode } from '@/shared/lib/apiError'
+import { getChatMessages } from '@/entities/chat'
 
 export function SubgroupsPage() {
   const { id } = useParams<{ id: string }>()
@@ -68,6 +61,9 @@ export function SubgroupsPage() {
   const [favorites, setFavorites] = useState<FavoriteRestaurantItem[]>([])
   const [isFavoritesLoading, setIsFavoritesLoading] = useState(false)
   const [favoritesError, setFavoritesError] = useState<string | null>(null)
+  const [isChatNavigating, setIsChatNavigating] = useState(false)
+  const [chatRoomId, setChatRoomId] = useState<number | null>(null)
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
   // const [savedRestaurants, setSavedRestaurants] = useState<Record<string, boolean>>({})
 
   const subgroupId = parseNumberParam(id)
@@ -86,14 +82,97 @@ export function SubgroupsPage() {
   //   tags: string[]
   // }> = []
 
-  const handleChatClick = () => {
+  const handleChatClick = async () => {
     if (!id) return
     if (!isAuthenticated) {
       openLogin()
       return
     }
-    navigate(ROUTES.chatRoom(id))
+    const parsedSubgroupId = Number(id)
+    if (!Number.isFinite(parsedSubgroupId)) return
+
+    setIsChatNavigating(true)
+    try {
+      const resolvedChatRoomId = chatRoomId ?? (await getSubgroupChatRoomId(parsedSubgroupId))
+      setChatRoomId(resolvedChatRoomId)
+      setUnreadChatCount(0)
+      navigate(ROUTES.chatRoom(String(resolvedChatRoomId)), {
+        state: {
+          subgroupId: parsedSubgroupId,
+          subgroupName: subgroup?.name ?? null,
+          memberCount: subgroup?.memberCount ?? members.length,
+          members: members.map((member) => ({
+            memberId: member.memberId,
+            nickname: member.nickname,
+            profileImageUrl: member.profileImageUrl ?? member.profileImage?.url ?? null,
+          })),
+        },
+      })
+    } catch (error: unknown) {
+      const code = getApiErrorCode(error)
+      if (code === 'AUTHENTICATION_REQUIRED') {
+        openLogin()
+      } else if (code === 'NO_PERMISSION') {
+        toast.error('채팅방 접근 권한이 없습니다.')
+      } else if (code === 'CHAT_ROOM_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
+        toast.error('채팅방 정보를 찾을 수 없습니다.')
+      } else {
+        toast.error('채팅방으로 이동하지 못했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsChatNavigating(false)
+    }
   }
+
+  useEffect(() => {
+    if (!FEATURE_FLAGS.enableChat) return
+    if (!isAuthenticated || !isMember || !isValidId(subgroupId)) {
+      setChatRoomId(null)
+      setUnreadChatCount(0)
+      return
+    }
+
+    let cancelled = false
+
+    const loadUnreadState = async () => {
+      try {
+        const roomId = await getSubgroupChatRoomId(subgroupId)
+        if (cancelled) return
+        setChatRoomId(roomId)
+
+        const enterResponse = await getChatMessages(roomId, {
+          mode: 'ENTER',
+          size: 1,
+        })
+        if (cancelled) return
+
+        const afterCursor = enterResponse.pagination.afterCursor
+        if (!afterCursor) {
+          setUnreadChatCount(0)
+          return
+        }
+
+        const afterResponse = await getChatMessages(roomId, {
+          mode: 'AFTER',
+          cursor: afterCursor,
+          size: 99,
+        })
+        if (cancelled) return
+        const count = afterResponse.pagination.hasNext ? 100 : afterResponse.items.length
+        setUnreadChatCount(count)
+      } catch {
+        if (!cancelled) {
+          setUnreadChatCount(0)
+        }
+      }
+    }
+
+    void loadUnreadState()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isAuthenticated, isMember, subgroupId])
 
   useEffect(() => {
     if (!isValidId(subgroupId)) return
@@ -122,7 +201,7 @@ export function SubgroupsPage() {
           }
         }
         try {
-          const memberList = await getSubgroupMembers(detail.subgroupId, { size: 5 })
+          const memberList = await getSubgroupMembers(detail.subgroupId, { size: 100 })
           if (!cancelled) {
             setMembers(memberList)
           }
@@ -197,7 +276,7 @@ export function SubgroupsPage() {
       if (!subgroup?.groupId) return
       await joinSubgroup(subgroup.groupId, Number(id), password)
 
-      alert('가입되었습니다!')
+      toast.success('가입되었습니다!')
       refresh()
       setIsJoinDialogOpen(false)
       setPassword('')
@@ -205,17 +284,17 @@ export function SubgroupsPage() {
     } catch (error: unknown) {
       const code = getApiErrorCode(error)
       if (code === 'PASSWORD_MISMATCH') {
-        alert('가입에 실패했습니다. 비밀번호를 확인해주세요.')
+        toast.error('가입에 실패했습니다. 비밀번호를 확인해주세요.')
       } else if (code === 'SUBGROUP_ALREADY_JOINED') {
-        alert('이미 가입된 하위그룹입니다.')
+        toast.error('이미 가입된 하위그룹입니다.')
       } else if (code === 'AUTHENTICATION_REQUIRED') {
         openLogin()
       } else if (code === 'NO_PERMISSION') {
-        alert('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
+        toast.error('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
       } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
-        alert('하위그룹 정보를 찾을 수 없습니다.')
+        toast.error('하위그룹 정보를 찾을 수 없습니다.')
       } else {
-        alert('가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        toast.error('가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
       }
     }
   }
@@ -229,7 +308,7 @@ export function SubgroupsPage() {
     setIsLeaving(true)
     try {
       await leaveSubgroup(subgroupId)
-      alert('하위 그룹에서 나왔습니다.')
+      toast.success('하위 그룹에서 나왔습니다.')
       refresh()
       navigate(ROUTES.groups, { replace: true })
     } catch (error: unknown) {
@@ -237,11 +316,11 @@ export function SubgroupsPage() {
       if (code === 'AUTHENTICATION_REQUIRED') {
         openLogin()
       } else if (code === 'NO_PERMISSION') {
-        alert('이미 탈퇴했거나 권한이 없습니다.')
+        toast.error('이미 탈퇴했거나 권한이 없습니다.')
       } else if (code === 'SUBGROUP_NOT_FOUND') {
-        alert('하위그룹 정보를 찾을 수 없습니다.')
+        toast.error('하위그룹 정보를 찾을 수 없습니다.')
       } else {
-        alert('탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        toast.error('탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.')
       }
     } finally {
       setIsLeaving(false)
@@ -395,25 +474,14 @@ export function SubgroupsPage() {
                         하위 그룹 나가기
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
-                    <AlertDialogContent size="sm">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>하위 그룹을 나가시겠습니까?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          하위 그룹을 나가면 이 하위 그룹의 모든 정보와 활동 내역을 볼 수 없습니다.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>취소</AlertDialogCancel>
-                        <AlertDialogAction
-                          variant="default"
-                          className="bg-primary text-primary-foreground hover:bg-primary/90"
-                          onClick={handleLeaveSubGroup}
-                          disabled={isLeaving}
-                        >
-                          나가기
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
+                    <ConfirmAlertDialogContent
+                      size="sm"
+                      title="하위 그룹을 나가시겠습니까?"
+                      description="하위 그룹을 나가면 이 하위 그룹의 모든 정보와 활동 내역을 볼 수 없습니다."
+                      confirmText="나가기"
+                      onConfirm={handleLeaveSubGroup}
+                      confirmDisabled={isLeaving}
+                    />
                   </AlertDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -431,17 +499,20 @@ export function SubgroupsPage() {
                       />
                     ))
                   : members.length > 0
-                    ? members
-                        .slice(0, 5)
-                        .map((member) => (
-                          <ProfileImage
-                            key={member.memberId}
-                            image={member.profileImage}
-                            name={member.nickname}
-                            size="sm"
-                            className="h-8 w-8 border-2 border-background"
+                    ? members.slice(0, 5).map((member) => (
+                        <Avatar
+                          key={member.memberId}
+                          className="h-8 w-8 border-2 border-background"
+                        >
+                          <AvatarImage
+                            src={member.profileImage?.url ?? member.profileImageUrl ?? undefined}
+                            alt={member.nickname}
                           />
-                        ))
+                          <AvatarFallback className="text-xs">
+                            {member.nickname.slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))
                     : Array.from({
                         length: Math.min(5, memberCount),
                       }).map((_, idx) => (
@@ -502,6 +573,7 @@ export function SubgroupsPage() {
                   onRemove={() => {}}
                   onClick={() => navigate(ROUTES.restaurantDetail(String(favorite.restaurantId)))}
                   showRemoveButton={false}
+                  showGroupFavoriteCount
                 />
               ))
             ) : (
@@ -536,15 +608,28 @@ export function SubgroupsPage() {
       </Tabs>
 
       {FEATURE_FLAGS.enableChat && (
-        <Button
-          variant="default"
-          size="icon"
-          className="fixed bottom-6 right-4 h-14 w-14 rounded-full shadow-xl z-40 bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95"
-          onClick={handleChatClick}
-          aria-label="채팅하기"
-        >
-          <MessageSquare className="h-6 w-6" />
-        </Button>
+        <div className="fixed inset-x-0 bottom-6 z-40 pointer-events-none md:mx-auto md:max-w-[var(--app-max-width)]">
+          <div className="flex justify-end px-4">
+            <Button
+              variant="default"
+              size="icon"
+              className="relative h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-95 pointer-events-auto"
+              onClick={() => void handleChatClick()}
+              aria-label="채팅하기"
+              disabled={isChatNavigating}
+            >
+              <MessageSquare className="h-6 w-6" />
+              {unreadChatCount > 0 && (
+                <span
+                  className="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground"
+                  aria-hidden="true"
+                >
+                  {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Join Password Dialog */}

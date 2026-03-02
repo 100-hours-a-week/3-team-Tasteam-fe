@@ -7,22 +7,14 @@ import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
+import { AppVersionText } from '@/shared/ui/app-version'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { ROUTES } from '@/shared/config/routes'
 import { deleteMe } from '@/entities/member'
 import { useAuth } from '@/entities/user'
 import { useNavigate } from 'react-router-dom'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog, AlertDialogTrigger } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 
 type SettingsPageProps = {
   onBack?: () => void
@@ -197,7 +189,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                 <span>앱 정보</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">v1.0.0</span>
+                <AppVersionText className="text-sm text-muted-foreground" />
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
             </button>
@@ -214,27 +206,17 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                 회원 탈퇴
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>취소</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive hover:bg-destructive/90"
-                  onClick={async () => {
-                    await deleteMe()
-                    await logout()
-                    navigate('/')
-                  }}
-                >
-                  탈퇴하기
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
+            <ConfirmAlertDialogContent
+              title="정말 탈퇴하시겠습니까?"
+              description="모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+              confirmText="탈퇴하기"
+              confirmVariant="destructive"
+              onConfirm={async () => {
+                await deleteMe()
+                await logout()
+                navigate('/')
+              }}
+            />
           </AlertDialog>
         </section>
       </Container>

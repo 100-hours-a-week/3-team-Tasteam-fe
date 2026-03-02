@@ -2,18 +2,22 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Heart, X, ChevronDown, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { Button } from '@/shared/ui/button'
 import { Badge } from '@/shared/ui/badge'
 import { createReview, getReviewKeywords } from '@/entities/review'
+import { reviewKeys } from '@/entities/review/model/reviewKeys'
 import { getRestaurant } from '@/entities/restaurant'
+import { restaurantKeys } from '@/entities/restaurant/model/restaurantKeys'
 import { cn } from '@/shared/lib/utils'
 import { getMyGroupSummaries } from '@/entities/member'
 import { useImageUpload, UploadErrorModal } from '@/features/upload'
 import { GroupSubgroupLabel } from '@/shared/ui/group-subgroup-label'
 import { ImagePreviewDialog } from '@/shared/ui/image-preview-dialog'
-import type { ReviewKeywordItemDto } from '@/entities/review'
+import { useUserActivity } from '@/entities/user-activity'
+import { STALE_REFERENCE, STALE_CONTENT } from '@/shared/lib/queryConstants'
 
 /** 드롭다운용 그룹/하위그룹 옵션 (평탄화) */
 type GroupOption =
@@ -29,8 +33,18 @@ type GroupOption =
 export function WriteReviewPage() {
   const { id: restaurantId } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { track } = useUserActivity()
+  const qc = useQueryClient()
+  const parsedRestaurantId = Number(restaurantId)
 
-  const [restaurantName, setRestaurantName] = useState('로딩 중...')
+  const { data: restaurantRes } = useQuery({
+    queryKey: restaurantKeys.detail(parsedRestaurantId),
+    queryFn: () => getRestaurant(parsedRestaurantId),
+    enabled: Boolean(restaurantId),
+    staleTime: STALE_CONTENT,
+  })
+  const restaurantName = restaurantRes?.data?.name ?? '로딩 중...'
+
   const [groupOptions, setGroupOptions] = useState<GroupOption[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
   const [selectedSubgroupId, setSelectedSubgroupId] = useState<number | null>(null)
@@ -53,10 +67,15 @@ export function WriteReviewPage() {
   })
   const [reviewText, setReviewText] = useState('')
   const [isRecommended, setIsRecommended] = useState(false)
-  const [keywords, setKeywords] = useState<ReviewKeywordItemDto[]>([])
   const [selectedKeywordIds, setSelectedKeywordIds] = useState<number[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
+
+  const { data: keywords = [] } = useQuery({
+    queryKey: reviewKeys.keywords(),
+    queryFn: getReviewKeywords,
+    staleTime: STALE_REFERENCE,
+  })
 
   // Drag to scroll logic
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -86,16 +105,6 @@ export function WriteReviewPage() {
     const walk = (x - startX) * 2 // 스크롤 속도 배율
     scrollRef.current.scrollLeft = scrollLeft - walk
   }
-
-  useEffect(() => {
-    if (restaurantId) {
-      getRestaurant(Number(restaurantId))
-        .then((res) => {
-          if (res.data) setRestaurantName(res.data.name)
-        })
-        .catch(() => setRestaurantName('음식점 정보 없음'))
-    }
-  }, [restaurantId])
 
   useEffect(() => {
     getMyGroupSummaries()
@@ -166,16 +175,6 @@ export function WriteReviewPage() {
     )
   }
 
-  useEffect(() => {
-    getReviewKeywords()
-      .then((list) => {
-        setKeywords(list)
-      })
-      .catch(() => {
-        setKeywords([])
-      })
-  }, [])
-
   const handleSubmit = async () => {
     if (selectedKeywordIds.length === 0) {
       toast.error('최소 1개 이상의 키워드를 선택해주세요')
@@ -209,6 +208,17 @@ export function WriteReviewPage() {
         keywordIds: selectedKeywordIds,
         imageIds,
       })
+      if (Number.isFinite(parsedRestaurantId)) {
+        track({
+          eventName: 'ui.review.submitted',
+          properties: {
+            restaurantId: parsedRestaurantId,
+            groupId: selectedGroupId,
+            subgroupId: selectedSubgroupId ?? null,
+          },
+        })
+      }
+      void qc.invalidateQueries({ queryKey: reviewKeys.byRestaurant(parsedRestaurantId) })
       toast.success('리뷰가 등록되었습니다')
       navigate(`/restaurants/${restaurantId}`, { replace: true })
     } catch {

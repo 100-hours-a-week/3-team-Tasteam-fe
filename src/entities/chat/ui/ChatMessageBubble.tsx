@@ -33,29 +33,38 @@ export function ChatMessageBubble({
   showSender = true,
   onRetry,
 }: ChatMessageBubbleProps) {
-  if (message.messageType === 'system') {
+  const normalizedType = message.messageType.toLowerCase()
+  if (normalizedType === 'system') {
+    const systemText =
+      message.content?.trim() ||
+      (message.memberNickname
+        ? `${message.memberNickname}님이 입장했습니다.`
+        : '새 멤버가 입장했습니다.')
+
     return (
       <div className="flex justify-center py-2">
         <div className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs text-center max-w-[80%]">
-          {message.content}
+          {systemText}
         </div>
       </div>
     )
   }
 
   const time = formatTime(message.createdAt)
+  const fileUrl = message.files?.[0]?.fileUrl
+  const isFileMessage = normalizedType === 'file'
 
   return (
     <div className={cn('flex gap-2 px-4 py-1', isOwn && 'flex-row-reverse')}>
       {!isOwn && showAvatar && (
         <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarImage src={message.memberProfileImageUrl} />
+          <AvatarImage src={message.memberProfileImageUrl ?? undefined} />
           <AvatarFallback>{message.memberNickname?.[0] || '?'}</AvatarFallback>
         </Avatar>
       )}
       {!isOwn && !showAvatar && <div className="w-8 flex-shrink-0" />}
 
-      <div className={cn('flex flex-col gap-1 max-w-[70%]', isOwn && 'items-end')}>
+      <div className={cn('flex min-w-0 flex-col gap-1 max-w-[70%]', isOwn && 'items-end')}>
         {!isOwn && showSender && message.memberNickname && (
           <span className="text-xs text-muted-foreground px-2">{message.memberNickname}</span>
         )}
@@ -63,17 +72,34 @@ export function ChatMessageBubble({
         <div className={cn('flex items-end gap-1', isOwn && 'flex-row-reverse')}>
           <div
             className={cn(
-              'rounded-2xl px-3 py-2',
+              'min-w-0 rounded-2xl px-3 py-2',
               isOwn ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm',
               message.status === 'failed' && 'bg-destructive/10 border border-destructive',
+              isFileMessage &&
+                fileUrl &&
+                'overflow-hidden p-0 border ' +
+                  (isOwn ? 'border-primary-foreground/30' : 'border-border'),
             )}
           >
-            {message.content && (
-              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+            {isFileMessage && fileUrl ? (
+              <div className="w-fit max-w-full bg-black/5">
+                <img
+                  src={fileUrl}
+                  alt="채팅 이미지"
+                  className="block max-h-72 w-auto max-w-full object-contain"
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              message.content && (
+                <p className="text-sm whitespace-pre-wrap break-all [overflow-wrap:anywhere]">
+                  {message.content}
+                </p>
+              )
             )}
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+          <div className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground">
             {message.status === 'sending' && <span className="text-muted-foreground">전송 중</span>}
             {message.status === 'failed' && onRetry && (
               <Button

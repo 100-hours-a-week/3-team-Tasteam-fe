@@ -7,8 +7,9 @@ import { HomeAdCarousel } from '@/widgets/home-ad-carousel'
 import { Container } from '@/shared/ui/container'
 import { LocationHeader } from '@/widgets/location-header'
 import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
-import { HorizontalRestaurantCard, VerticalRestaurantCard } from '@/widgets/restaurant-card'
+import { RestaurantCard } from '@/entities/restaurant'
 import { Input } from '@/shared/ui/input'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { ROUTES } from '@/shared/config/routes'
 import { getMainPage } from '@/entities/main'
 import type { BannerDto } from '@/entities/banner'
@@ -16,14 +17,31 @@ import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
 import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
 import { toMainPageData } from '@/entities/main'
+import { getMainPageCache } from '@/app/bootstrap/mainPageCache'
+
+const SPLASH_POPUP_DISMISSED_DATE_KEY = 'splash-popup-dismissed-date'
+let dismissedSplashEventIdInSession: number | null = null
+
+const isSplashDismissedToday = () => {
+  const dismissedDate = localStorage.getItem(SPLASH_POPUP_DISMISSED_DATE_KEY)
+  const today = new Date().toDateString()
+  return dismissedDate === today
+}
+
+const shouldShowSplashPopup = (eventId?: number) => {
+  if (!eventId) return false
+  if (isSplashDismissedToday()) return false
+  return dismissedSplashEventIdInSession !== eventId
+}
 
 type HomePageProps = {
   onSearchClick?: () => void
-  onRestaurantClick?: (id: string) => void
+  onRestaurantClick?: (id: string, metadata?: { position: number; section: string }) => void
   onGroupClick?: (id: string) => void
+  onEventClick?: (eventId: number) => void
 }
 
-export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
+export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
@@ -35,17 +53,24 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   const longitude = location?.longitude ?? 126.978
 
   useEffect(() => {
+    const cached = getMainPageCache(latitude, longitude)
+    if (cached) {
+      queueMicrotask(() => {
+        setMainData(cached)
+        const splashPromotion = cached.data?.splashPromotion
+        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
+        setIsMainLoading(false)
+        setHasLoadedMain(true)
+      })
+      return
+    }
+
     queueMicrotask(() => setIsMainLoading(true))
     getMainPage({ latitude, longitude })
       .then((data) => {
         setMainData(data)
-        const splashEvent = data.data?.splashEvent
-        if (splashEvent) {
-          const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
-          const today = new Date().toDateString()
-          const shouldShow = !dismissedDate || dismissedDate !== today
-          setShowSplashPopup(shouldShow)
-        }
+        const splashPromotion = data.data?.splashPromotion
+        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
       })
       .catch(() => {})
       .finally(() => {
@@ -80,9 +105,33 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
+  const splashEvent = mainData?.data?.splashPromotion
+
+  const closeSplashPopup = (dontShowToday: boolean) => {
+    if (splashEvent?.id) {
+      dismissedSplashEventIdInSession = splashEvent.id
+    }
+    if (dontShowToday) {
+      localStorage.setItem(SPLASH_POPUP_DISMISSED_DATE_KEY, new Date().toDateString())
+    }
+    setShowSplashPopup(false)
+  }
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
   const hotSection = resolvedSections.find((section) => section.type === 'HOT')
+  const isInitialMainLoading = isMainLoading && !hasLoadedMain
+  const shouldRenderBannerSection = isInitialMainLoading || banners.length > 0
+
+  const renderBannerSkeleton = () => (
+    <div aria-hidden="true" className="w-full">
+      <div className="relative h-24 overflow-hidden rounded-lg sm:h-28">
+        <Skeleton className="h-full w-full rounded-lg" />
+      </div>
+    </div>
+  )
+
+  const formatDistanceLabel = (meters: number) =>
+    meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`
 
   const renderHorizontal = (section?: MainSectionDto) => {
     const items = section?.items ?? []
@@ -98,8 +147,17 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex w-max gap-3 px-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="w-[260px] shrink-0">
-                <div className="h-48 bg-background rounded-lg" />
+              <div key={i} className="w-[260px] shrink-0" aria-hidden="true">
+                <div className="overflow-hidden rounded-lg border bg-card">
+                  <Skeleton className="aspect-[4/3] w-full rounded-none" />
+                  <div className="space-y-2 px-4 pb-4 pt-3">
+                    <Skeleton className="h-5 w-2/3" />
+                    <div className="flex items-center justify-between gap-3">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -116,16 +174,20 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     return (
       <div className="overflow-x-auto scrollbar-hide">
         <div className="flex w-max gap-3 px-4">
-          {items.map((item: MainSectionItemDto) => (
+          {items.map((item: MainSectionItemDto, index) => (
             <div key={item.restaurantId} className="w-[260px] shrink-0">
-              <HorizontalRestaurantCard
-                id={item.restaurantId}
+              <RestaurantCard
                 name={item.name}
+                foodCategories={item.foodCategories}
                 category={item.category}
-                distance={item.distanceMeter}
+                distance={formatDistanceLabel(item.distanceMeter)}
                 image={item.thumbnailImageUrl}
-                tags={[]}
-                onClick={onRestaurantClick}
+                onClick={() =>
+                  onRestaurantClick?.(String(item.restaurantId), {
+                    position: index,
+                    section: section?.type ?? 'UNKNOWN',
+                  })
+                }
               />
             </div>
           ))}
@@ -150,7 +212,21 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
         <Container>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-52 bg-background rounded-lg" />
+              <div key={i} className="space-y-2" aria-hidden="true">
+                <div className="rounded-md border border-primary/10 bg-primary/5 px-2.5 py-1.5">
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
+                <div className="overflow-hidden rounded-lg border bg-card">
+                  <Skeleton className="aspect-[21/10] w-full rounded-none" />
+                  <div className="space-y-2 px-4 pb-4 pt-3">
+                    <Skeleton className="h-5 w-1/2" />
+                    <div className="flex items-center justify-between gap-3">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         </Container>
@@ -168,17 +244,21 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
     return (
       <Container>
         <div className="space-y-4">
-          {items.map((item: MainSectionItemDto) => (
-            <VerticalRestaurantCard
+          {items.map((item: MainSectionItemDto, index) => (
+            <RestaurantCard
               key={item.restaurantId}
-              id={item.restaurantId}
               name={item.name}
+              foodCategories={item.foodCategories}
               category={item.category}
-              distance={item.distanceMeter}
+              distance={formatDistanceLabel(item.distanceMeter)}
               image={item.thumbnailImageUrl}
-              tags={[]}
-              reason={item.reviewSummary}
-              onClick={onRestaurantClick}
+              reviewSummary={item.reviewSummary}
+              onClick={() =>
+                onRestaurantClick?.(String(item.restaurantId), {
+                  position: index,
+                  section: section?.type ?? 'UNKNOWN',
+                })
+              }
             />
           ))}
         </div>
@@ -187,13 +267,16 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
   }
 
   return (
-    <div className="pb-20">
-      {mainData?.data?.splashEvent && (
+    <div className="pb-20 overflow-x-hidden">
+      {splashEvent && (
         <SplashPopup
-          event={mainData.data.splashEvent}
+          event={splashEvent}
           isOpen={showSplashPopup}
-          onClose={() => setShowSplashPopup(false)}
-          onLinkClick={() => navigate(ROUTES.events)}
+          onClose={({ dontShowToday }) => closeSplashPopup(dontShowToday)}
+          onLinkClick={() => {
+            onEventClick?.(splashEvent.id)
+            navigate(ROUTES.events)
+          }}
         />
       )}
 
@@ -222,17 +305,21 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
         </div>
       </Container>
 
-      {banners.length > 0 && (
+      {shouldRenderBannerSection && (
         <section className="mb-6">
           <Container>
-            <HomeAdCarousel
-              banners={banners}
-              onBannerClick={(banner) => {
-                if (banner.deeplinkUrl) {
-                  navigate(banner.deeplinkUrl)
-                }
-              }}
-            />
+            {banners.length > 0 ? (
+              <HomeAdCarousel
+                banners={banners}
+                onBannerClick={(banner) => {
+                  if (banner.deeplinkUrl) {
+                    navigate(banner.deeplinkUrl)
+                  }
+                }}
+              />
+            ) : (
+              renderBannerSkeleton()
+            )}
           </Container>
         </section>
       )}
@@ -242,7 +329,7 @@ export function HomePage({ onSearchClick, onRestaurantClick }: HomePageProps) {
           <HeroRecommendationCard
             title="오늘 점심 뭐먹지?"
             description="AI가 추천하는 맞춤 맛집을 확인해보세요"
-            image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
+            image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=330&fit=crop&fm=webp&q=80"
             onCTAClick={() => navigate(ROUTES.todayLunch)}
           />
         </Container>

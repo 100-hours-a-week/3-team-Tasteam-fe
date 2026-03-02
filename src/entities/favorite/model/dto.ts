@@ -6,8 +6,10 @@ export type FavoriteRestaurantItemDto = {
   restaurantId: number
   name: string
   thumbnailUrl: string
-  category: string
+  foodCategories: string[]
+  category?: string
   address: string
+  groupFavoriteCount?: number
   createdAt: IsoDateTimeString
 }
 
@@ -44,7 +46,8 @@ export type SubgroupFavoriteItemDto = {
   restaurantId: number
   name: string
   thumbnailUrl: string
-  category: string
+  foodCategories: string[]
+  category?: string
   address: string
   subgroupId: number
   favoritedAt: IsoDateTimeString

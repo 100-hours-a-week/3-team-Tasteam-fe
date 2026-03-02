@@ -9,6 +9,7 @@ import type {
   SubgroupMemberListResponseDto,
   SubgroupMemberDto,
   SubgroupSearchResponseDto,
+  SubgroupChatRoomResponseDto,
 } from '../model/dto'
 import type { ReviewListResponseDto } from '@/entities/review'
 import type { SuccessResponse } from '@/shared/types/api'
@@ -111,7 +112,19 @@ export const getSubgroupMembers = async (
     method: 'GET',
     url: `/api/v1/subgroups/${subgroupId}/members${buildQuery(params ?? {})}`,
   })
-  return res.data?.items ?? []
+  return extractResponseData<SubgroupMemberListResponseDto['data']>(res)?.items ?? []
+}
+
+export const getSubgroupChatRoomId = async (subgroupId: number): Promise<number> => {
+  const res = await request<SubgroupChatRoomResponseDto>({
+    method: 'GET',
+    url: `/api/v1/subgroups/${subgroupId}/chat-room`,
+  })
+  const payload = extractResponseData<{ chatRoomId: number }>(res)
+  if (payload && typeof payload.chatRoomId === 'number') {
+    return payload.chatRoomId
+  }
+  throw new Error('채팅방 정보를 불러오지 못했습니다.')
 }
 
 export const joinSubgroup = (groupId: number, subgroupId: number, password?: string) => {

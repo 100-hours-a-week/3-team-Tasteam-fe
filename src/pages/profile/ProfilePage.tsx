@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { ChevronRight, Bell, Settings, LogOut, User, Pencil, Gift, FileText } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { ROUTES } from '@/shared/config/routes'
@@ -10,20 +11,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { AppVersionText } from '@/shared/ui/app-version'
 import { useAuth } from '@/entities/user'
 import { getMe } from '@/entities/member'
+import { memberKeys } from '@/entities/member/model/memberKeys'
 import type { MemberProfileDto } from '@/entities/member'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
+import { STALE_USER } from '@/shared/lib/queryConstants'
 
 type ProfilePageProps = {
   onSettingsClick?: () => void
@@ -47,54 +43,28 @@ export function ProfilePage({
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, openLogin } = useAuth()
-  const [member, setMember] = useState<MemberProfileDto | null>(null)
-  const [profileError, setProfileError] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    if (!isAuthenticated) {
-      Promise.resolve().then(() => {
-        if (!cancelled) {
-          setMember(null)
-          setProfileError(false)
-        }
-      })
-      return () => {
-        cancelled = true
-      }
-    }
-    Promise.resolve().then(() => {
-      if (!cancelled) {
-        setMember(null)
-        setProfileError(false)
-      }
-    })
-    getMe()
-      .then((data) => {
-        if (cancelled) return
-        const nextMember = data.data?.member ?? null
-        if (nextMember) {
-          setMember(nextMember)
-          setProfileError(false)
-          return
-        }
-        setMember(null)
-        setProfileError(true)
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setProfileError(true)
-        }
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, location.key])
+  const { data: meData, isLoading: isMeLoading } = useQuery({
+    queryKey: [...memberKeys.me(), location.key],
+    queryFn: () => getMe(),
+    enabled: isAuthenticated,
+    staleTime: STALE_USER,
+  })
 
-  const isLoading = isAuthenticated && member === null && !profileError
+  const member: MemberProfileDto | null = meData?.data?.member ?? null
+  const isLoading = isAuthenticated && isMeLoading
 
-  const menuItems = [
+  type ProfileMenuItem = {
+    label: string
+    icon: typeof Bell
+    onClick?: () => void
+    requiresAuth?: boolean
+    tone?: 'default' | 'destructive'
+    showChevron?: boolean
+  }
+
+  const menuItems: ProfileMenuItem[] = [
     { label: '공지사항', icon: Bell, onClick: onNotices },
     { label: '이벤트', icon: Gift, onClick: onEvents },
     { label: '내 리뷰', icon: FileText, onClick: onMyReviews, requiresAuth: true },
@@ -102,25 +72,22 @@ export function ProfilePage({
       ? [{ label: '알림', icon: Bell, onClick: onNotifications, requiresAuth: true }]
       : []),
     { label: '설정', icon: Settings, onClick: onSettingsClick },
+    ...(isAuthenticated
+      ? [
+          {
+            label: '로그아웃',
+            icon: LogOut,
+            onClick: () => setLogoutDialogOpen(true),
+            tone: 'destructive' as const,
+            showChevron: false,
+          },
+        ]
+      : []),
   ]
 
   return (
     <div className="pb-20 min-h-screen bg-background">
-      <TopAppBar
-        title="프로필"
-        actions={
-          isAuthenticated ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLogoutDialogOpen(true)}
-              aria-label="로그아웃"
-            >
-              <LogOut className="h-5 w-5" />
-            </Button>
-          ) : undefined
-        }
-      />
+      <TopAppBar title="프로필" />
 
       <Container className="pt-6 pb-6">
         <div className="p-6 h-[200px] flex items-center justify-center relative">
@@ -199,7 +166,8 @@ export function ProfilePage({
         <Card className="divide-y">
           {menuItems.map((item, idx) => {
             const Icon = item.icon
-            const isDestructive = (item as { tone?: string }).tone === 'destructive'
+            const isDestructive = item.tone === 'destructive'
+            const showChevron = item.showChevron ?? true
             const handleClick = () => {
               if (item.requiresAuth && !isAuthenticated) {
                 openLogin()
@@ -221,7 +189,7 @@ export function ProfilePage({
                     {item.label}
                   </span>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                {showChevron ? <ChevronRight className="h-5 w-5 text-muted-foreground" /> : null}
               </button>
             )
           })}
@@ -230,28 +198,38 @@ export function ProfilePage({
 
       {isAuthenticated && (
         <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-          <AlertDialogContent size="sm">
-            <AlertDialogHeader>
-              <AlertDialogTitle>로그아웃</AlertDialogTitle>
-              <AlertDialogDescription>정말 로그아웃 하시겠어요?</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>취소</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" onClick={onLogout}>
-                로그아웃
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
+          <ConfirmAlertDialogContent
+            size="sm"
+            title="로그아웃"
+            description="정말 로그아웃 하시겠어요?"
+            confirmText="로그아웃"
+            confirmVariant="destructive"
+            onConfirm={onLogout}
+          />
         </AlertDialog>
       )}
 
-      <Container className="pt-8">
+      <Container className="mt-[50px]">
         <div className="text-center text-sm text-muted-foreground space-y-1">
-          <p>Tasteam v1.0.0</p>
+          <p>
+            Tasteam <AppVersionText />
+          </p>
           <div className="flex items-center justify-center gap-4">
-            <button className="hover:text-foreground">이용약관</button>
+            <button
+              type="button"
+              className="hover:text-foreground"
+              onClick={() => navigate(ROUTES.terms)}
+            >
+              이용약관
+            </button>
             <Separator orientation="vertical" className="h-3" />
-            <button className="hover:text-foreground">개인정보처리방침</button>
+            <button
+              type="button"
+              className="hover:text-foreground"
+              onClick={() => navigate(ROUTES.privacyPolicy)}
+            >
+              개인정보처리방침
+            </button>
           </div>
         </div>
       </Container>

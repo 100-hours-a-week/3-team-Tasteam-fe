@@ -1,5 +1,5 @@
 import { ThumbsUp, ThumbsDown, Image as ImageIcon } from 'lucide-react'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { cn } from '@/shared/lib/utils'
@@ -71,7 +71,7 @@ export function SimpleReviewCard(props: SimpleReviewCardProps) {
           </span>
         </div>
         <p
-          className="text-sm leading-relaxed line-clamp-2 text-muted-foreground whitespace-pre-wrap"
+          className="text-sm leading-relaxed line-clamp-3 text-muted-foreground whitespace-pre-wrap break-words"
           title={content}
         >
           {content}
@@ -88,6 +88,7 @@ export function SimpleReviewCard(props: SimpleReviewCardProps) {
     <Card className={cn('p-4 gap-0', className)}>
       <div className="flex items-start gap-3 mb-3">
         <Avatar className="h-10 w-10">
+          <AvatarImage src={review.author.profileImageUrl ?? undefined} />
           <AvatarFallback>{review.author.nickname.slice(0, 2)}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
@@ -113,7 +114,7 @@ export function SimpleReviewCard(props: SimpleReviewCardProps) {
         </div>
       </div>
       <p
-        className="text-sm leading-relaxed line-clamp-2 text-muted-foreground mb-2 whitespace-pre-wrap"
+        className="text-sm leading-relaxed line-clamp-2 text-muted-foreground mb-2 whitespace-pre-wrap break-words"
         title={content}
       >
         {content}

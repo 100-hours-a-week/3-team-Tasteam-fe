@@ -1,13 +1,13 @@
 import type { IsoDateTimeString } from '@/shared/types/common'
 
-export type ChatMessageType = 'TEXT' | 'IMAGE' | (string & {})
+export type ChatMessageType = 'TEXT' | 'IMAGE' | 'FILE' | (string & {})
 
 export type ChatMessage = {
   id: number
   memberId: number
   memberNickname: string
   memberProfileImageUrl: string
-  content: string
+  content: string | null
   messageType: ChatMessageType
   createdAt: IsoDateTimeString
 }

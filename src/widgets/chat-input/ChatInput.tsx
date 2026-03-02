@@ -17,6 +17,8 @@ type ChatInputProps = {
   placeholder?: string
 }
 
+const CHAT_MESSAGE_MAX_LENGTH = 500
+
 export function ChatInput({
   onSendMessage,
   disabled = false,
@@ -30,6 +32,7 @@ export function ChatInput({
 
   const handleSend = () => {
     if ((!text.trim() && attachments.length === 0) || disabled) return
+    if (text.length > CHAT_MESSAGE_MAX_LENGTH) return
 
     onSendMessage(text.trim(), attachments.length > 0 ? attachments : undefined)
     setText('')
@@ -38,6 +41,7 @@ export function ChatInput({
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -46,15 +50,25 @@ export function ChatInput({
 
   const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    setAttachments((prev) => [...prev, ...files])
+    const selected = files[0]
+    if (!selected) return
+    setAttachments([selected])
     setIsSheetOpen(false)
+    e.target.value = ''
   }
 
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const canSend = (text.trim() || attachments.length > 0) && !disabled
+  const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const nextText = e.target.value
+    if (nextText.length > CHAT_MESSAGE_MAX_LENGTH) return
+    setText(nextText)
+  }
+
+  const isTextTooLong = text.length > CHAT_MESSAGE_MAX_LENGTH
+  const canSend = (text.trim() || attachments.length > 0) && !disabled && !isTextTooLong
 
   return (
     <div className="border-t bg-background p-3 space-y-2">
@@ -116,7 +130,6 @@ export function ChatInput({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                multiple
                 className="hidden"
                 onChange={handleImageSelect}
               />
@@ -127,17 +140,30 @@ export function ChatInput({
         <Textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           className="min-h-[40px] max-h-[120px] resize-none"
+          aria-invalid={isTextTooLong}
+          maxLength={CHAT_MESSAGE_MAX_LENGTH}
           rows={1}
         />
 
         <Button size="icon" className="flex-shrink-0" onClick={handleSend} disabled={!canSend}>
           <Send className="h-5 w-5" />
         </Button>
+      </div>
+
+      <div className="flex items-center justify-between px-1">
+        <p className={`text-xs ${isTextTooLong ? 'text-destructive' : 'text-muted-foreground'}`}>
+          {isTextTooLong
+            ? `메시지는 최대 ${CHAT_MESSAGE_MAX_LENGTH}자까지 입력할 수 있어요.`
+            : '\u00A0'}
+        </p>
+        <p className={`text-xs ${isTextTooLong ? 'text-destructive' : 'text-muted-foreground'}`}>
+          {text.length}/{CHAT_MESSAGE_MAX_LENGTH}
+        </p>
       </div>
     </div>
   )

@@ -2,7 +2,6 @@ export { GroupListCard, type GroupListItem, type SubgroupListItem } from './Grou
 export { SubgroupList } from './SubgroupList'
 export { GroupDetailHeader, type GroupDetailHeaderData } from './GroupDetailHeader'
 export { GroupCategoryFilter } from './GroupCategoryFilter'
-export { GroupReviewCard, type GroupReviewCardItem } from './GroupReviewCard'
 export { GroupEmailJoinGroupInfo } from './GroupEmailJoinGroupInfo'
 export { GroupEmailVerificationForm } from './GroupEmailVerificationForm'
 export { GroupPasswordJoinForm } from './GroupPasswordJoinForm'

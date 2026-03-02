@@ -13,6 +13,8 @@ import {
 } from '@/shared/lib/authToken'
 import { logout as logoutApi, refreshAccessToken } from '@/entities/auth'
 import { logger } from '@/shared/lib/logger'
+import { Sentry } from '@/shared/lib/sentry'
+import { queryClient } from '@/app/providers/queryClient'
 
 const extractAccessToken = (data: { data: { accessToken?: string } }) =>
   data.data.accessToken ?? null
@@ -86,6 +88,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(userValue)
         resetLoginRequired()
         setShowLogin(false)
+        if (userValue) {
+          Sentry.setUser({ id: userValue.id, username: userValue.name })
+        }
       },
       logout: async () => {
         try {
@@ -99,6 +104,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null)
         resetLoginRequired()
         setShowLogin(false)
+        Sentry.setUser(null)
+        queryClient.clear()
         return true
       },
     }),

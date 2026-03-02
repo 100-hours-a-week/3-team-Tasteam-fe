@@ -1,21 +1,13 @@
-import { useState, useEffect } from 'react'
 import { Heart } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { RestaurantCard } from '@/entities/restaurant'
-import { getMyFavoriteRestaurants } from '@/entities/favorite'
-
-type FavoriteRestaurant = {
-  id: string
-  name: string
-  category: string
-  rating: number
-  reviewCount: number
-  address: string
-  imageUrl?: string
-}
+import { getMyFavoriteRestaurants, deleteMyFavoriteRestaurant } from '@/entities/favorite'
+import { favoriteKeys } from '@/entities/favorite/model/favoriteKeys'
+import { STALE_USER } from '@/shared/lib/queryConstants'
 
 type MyFavoritesPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -23,30 +15,40 @@ type MyFavoritesPageProps = {
 }
 
 export function MyFavoritesPage({ onRestaurantClick, onBack }: MyFavoritesPageProps) {
-  const [favorites, setFavorites] = useState<FavoriteRestaurant[]>([])
+  const qc = useQueryClient()
 
-  useEffect(() => {
-    getMyFavoriteRestaurants()
-      .then((response) => {
-        const apiData =
-          response.items?.map((item) => ({
-            id: String(item.restaurantId),
-            name: item.name,
-            category: '맛집',
-            rating: 4.5,
-            reviewCount: 0,
-            address: '',
-            imageUrl: item.thumbnailUrl,
-          })) ?? []
-        setFavorites(apiData)
-      })
-      .catch(() => setFavorites([]))
-  }, [])
+  const { data: favData } = useQuery({
+    queryKey: favoriteKeys.myList(),
+    queryFn: () => getMyFavoriteRestaurants(),
+    staleTime: STALE_USER,
+  })
 
-  const handleRemove = (id: string) => {
-    setFavorites((prev) => prev.filter((f) => f.id !== id))
-    toast.success('찜 목록에서 삭제되었습니다')
-  }
+  const favorites = (() => {
+    if (!favData) return []
+    const items = (favData as any).data?.items ?? (favData as any).items ?? []
+    return items.map((item: any) => ({
+      id: String(item.restaurantId),
+      name: item.name,
+      foodCategories: Array.isArray(item.foodCategories)
+        ? item.foodCategories
+            .map((category: any) => (typeof category === 'string' ? category.trim() : ''))
+            .filter((category: string) => category.length > 0)
+        : [],
+      category: item.category,
+      rating: 4.5,
+      reviewCount: 0,
+      address: '',
+      imageUrl: item.thumbnailUrl,
+    }))
+  })()
+
+  const deleteMutation = useMutation({
+    mutationFn: (restaurantId: number) => deleteMyFavoriteRestaurant(restaurantId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: favoriteKeys.myList() })
+      toast.success('찜 목록에서 삭제되었습니다')
+    },
+  })
 
   return (
     <div className="flex flex-col h-full bg-background min-h-screen">
@@ -55,17 +57,18 @@ export function MyFavoritesPage({ onRestaurantClick, onBack }: MyFavoritesPagePr
       <Container className="flex-1 py-4 overflow-auto">
         {favorites.length > 0 ? (
           <div className="space-y-3">
-            {favorites.map((restaurant) => (
+            {favorites.map((restaurant: any) => (
               <RestaurantCard
                 key={restaurant.id}
                 name={restaurant.name}
+                foodCategories={restaurant.foodCategories}
                 category={restaurant.category}
                 rating={restaurant.rating}
                 reviewCount={restaurant.reviewCount}
                 address={restaurant.address}
                 imageUrl={restaurant.imageUrl}
                 isSaved={true}
-                onSave={() => handleRemove(restaurant.id)}
+                onSave={() => deleteMutation.mutate(Number(restaurant.id))}
                 onClick={() => onRestaurantClick?.(restaurant.id)}
               />
             ))}

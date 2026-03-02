@@ -1,5 +1,6 @@
 import { request } from '@/shared/api/request'
 import { buildQuery } from '@/shared/api/query'
+import { extractResponseData } from '@/shared/lib/apiResponse'
 import type {
   GroupCreateRequestDto,
   GroupCreateResponseDto,
@@ -98,11 +99,16 @@ export const getGroupReviewRestaurants = async (
     reviewSummary?: string
   }
 
-  const res = await request<CursorPageResponse<BackendRestaurantListItem>>({
+  const res = await request<
+    | CursorPageResponse<BackendRestaurantListItem>
+    | { data?: CursorPageResponse<BackendRestaurantListItem> }
+  >({
     method: 'GET',
     url: `/api/v1/groups/${groupId}/reviews/restaurants${buildQuery(params ?? {})}`,
   })
-  const items = (res.items ?? []).map<RestaurantListItemDto>((item) => {
+  const payload = extractResponseData<CursorPageResponse<BackendRestaurantListItem>>(res)
+  const rawItems = payload?.items ?? []
+  const items = rawItems.map<RestaurantListItemDto>((item) => {
     const firstImage = item.thumbnailImages?.[0]
     return {
       id: item.id,
@@ -118,6 +124,6 @@ export const getGroupReviewRestaurants = async (
   })
   return {
     items,
-    pagination: res.pagination ?? { nextCursor: null, size: 0, hasNext: false },
+    pagination: payload?.pagination ?? { nextCursor: null, size: 0, hasNext: false },
   }
 }

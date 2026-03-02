@@ -36,8 +36,14 @@ const GoogleIcon = () => (
   </svg>
 )
 
-export const SocialLoginButtons = () => {
-  const redirectUri = `${window.location.origin}/oauth/callback`
+type SocialLoginButtonsProps = {
+  returnTo?: string
+}
+
+export const SocialLoginButtons = ({ returnTo }: SocialLoginButtonsProps) => {
+  const resolvedReturnTo = returnTo || sessionStorage.getItem('auth:return_to') || '/'
+  const redirectUri = new URL('/oauth/callback', window.location.origin)
+  redirectUri.searchParams.set('returnTo', resolvedReturnTo)
 
   return (
     <div className={styles.container}>
@@ -47,10 +53,13 @@ export const SocialLoginButtons = () => {
           className={`${styles.button} ${styles[provider.key]}`}
           type="button"
           onClick={() => {
-            if (!sessionStorage.getItem('auth:return_to')) {
+            if (returnTo) {
+              storeReturnPath(returnTo)
+            } else if (!sessionStorage.getItem('auth:return_to')) {
               storeReturnPath(window.location.pathname)
             }
-            window.location.href = getOAuthStartUrl(provider.key, redirectUri)
+            sessionStorage.setItem('auth:post_login_redirect', resolvedReturnTo)
+            window.location.replace(getOAuthStartUrl(provider.key, redirectUri.toString()))
           }}
         >
           <span className={styles.buttonContent}>
