@@ -82,6 +82,13 @@ export function RestaurantDetailPage() {
   const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
   const [showReportModal, setShowReportModal] = React.useState(false)
 
+  const closeRestaurantModals = React.useCallback(() => {
+    setShowLoginModal(false)
+    setShowGroupJoinModal(false)
+    setShowFavoriteSheet(false)
+    setShowReportModal(false)
+  }, [])
+
   // 식당 상세 조회
   const { data: restaurantRes, isLoading: isRestaurantLoading } = useQuery({
     queryKey: restaurantKeys.detail(parsedRestaurantId),
@@ -448,6 +455,7 @@ export function RestaurantDetailPage() {
   }
 
   const handleOpenReportModal = () => {
+    closeRestaurantModals()
     if (!isAuthenticated) {
       openLogin()
       return
@@ -546,6 +554,8 @@ export function RestaurantDetailPage() {
   }
 
   const handleWriteReview = () => {
+    closeRestaurantModals()
+
     if (!isAuthenticated) {
       setShowLoginModal(true)
       return
@@ -569,12 +579,15 @@ export function RestaurantDetailPage() {
   }
 
   const handleLoginRequiredReview = () => {
+    closeRestaurantModals()
     const returnTo = restaurantId ? `/restaurants/${restaurantId}/review` : '/login'
     sessionStorage.setItem('auth:return_to', returnTo)
     navigate('/login', { state: { returnTo } })
   }
 
   const handleFavoriteSheetOpen = () => {
+    closeRestaurantModals()
+
     if (Number.isFinite(parsedRestaurantId)) {
       track({
         eventName: 'ui.favorite.sheet_opened',
@@ -1315,7 +1328,12 @@ export function RestaurantDetailPage() {
 
       <ReportModal
         open={showReportModal}
-        onOpenChange={setShowReportModal}
+        onOpenChange={(open) => {
+          if (open) {
+            closeRestaurantModals()
+          }
+          setShowReportModal(open)
+        }}
         onSubmit={async ({ category, content }) => {
           try {
             await handleRestaurantReportSubmit({
