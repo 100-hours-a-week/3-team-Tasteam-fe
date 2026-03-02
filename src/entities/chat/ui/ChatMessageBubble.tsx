@@ -35,10 +35,16 @@ export function ChatMessageBubble({
 }: ChatMessageBubbleProps) {
   const normalizedType = message.messageType.toLowerCase()
   if (normalizedType === 'system') {
+    const systemText =
+      message.content?.trim() ||
+      (message.memberNickname
+        ? `${message.memberNickname}님이 입장했습니다.`
+        : '새 멤버가 입장했습니다.')
+
     return (
       <div className="flex justify-center py-2">
         <div className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs text-center max-w-[80%]">
-          {message.content}
+          {systemText}
         </div>
       </div>
     )
