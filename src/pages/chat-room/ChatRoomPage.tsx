@@ -815,7 +815,7 @@ export function ChatRoomPage() {
       </div>
 
       {showScrollButton && (
-        <div className="absolute bottom-20 right-4 z-10">
+        <div className="absolute right-4 z-10 bottom-[calc(6rem+env(safe-area-inset-bottom))]">
           <Button
             size="icon"
             variant="secondary"
