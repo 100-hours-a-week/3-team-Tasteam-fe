@@ -18,6 +18,7 @@ import { getFoodCategories } from '@/entities/restaurant'
 import { referenceKeys } from '@/entities/restaurant/model/referenceKeys'
 import { getSubgroups, joinSubgroup, type SubgroupListItemDto } from '@/entities/subgroup'
 import { useMemberGroups } from '@/entities/member'
+import { useAuth } from '@/entities/user'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -51,6 +52,7 @@ const EMPTY_GROUP: GroupDetailHeaderData = {
 
 export function GroupDetailPage() {
   const navigate = useNavigate()
+  const { isAuthenticated, openLogin } = useAuth()
   const { id } = useParams()
   const location = useLocation()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(ALL_CATEGORY)
@@ -99,6 +101,7 @@ export function GroupDetailPage() {
   const [subgroupPasswordDialogOpen, setSubgroupPasswordDialogOpen] = useState(false)
   const [subgroupPassword, setSubgroupPassword] = useState('')
   const [isJoiningSubgroup, setIsJoiningSubgroup] = useState(false)
+  const [subgroupAccessGuideOpen, setSubgroupAccessGuideOpen] = useState(false)
   const [locationPosition, setLocationPosition] = useState<GeoPosition | null>(null)
   const [isLocationLoading, setIsLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
@@ -291,6 +294,15 @@ export function GroupDetailPage() {
   }
 
   const handleSubgroupPreviewClick = (subgroup: SubgroupListItemDto) => {
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+    if (!isGroupJoined) {
+      setSubgroupAccessGuideOpen(true)
+      return
+    }
+
     const isSubgroupJoined = joinedSubgroupIdSet.has(subgroup.subgroupId)
     if (isSubgroupJoined) {
       navigate(ROUTES.subgroupDetail(String(subgroup.subgroupId)))
@@ -486,6 +498,23 @@ export function GroupDetailPage() {
             void handleSubgroupJoin()
           }}
           confirmDisabled={isJoiningSubgroup}
+        />
+      </AlertDialog>
+
+      <AlertDialog open={subgroupAccessGuideOpen} onOpenChange={setSubgroupAccessGuideOpen}>
+        <ConfirmAlertDialogContent
+          size="sm"
+          title="그룹 가입 필요"
+          description="하위 그룹에 참여하려면 먼저 그룹에 가입해주세요."
+          confirmText="그룹 가입하기"
+          onConfirm={() => {
+            if (!isValidId(groupId)) return
+            const targetRoute =
+              emailDomain === null
+                ? ROUTES.groupPasswordJoin(String(groupId))
+                : ROUTES.groupEmailJoin(String(groupId))
+            navigate(targetRoute)
+          }}
         />
       </AlertDialog>
 

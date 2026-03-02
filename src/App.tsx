@@ -51,9 +51,14 @@ function App() {
           closeLogin()
         }}
         onLogin={() => {
+          const returnTo = `${location.pathname}${location.search}${location.hash}`
+          if (location.pathname !== '/login' && location.pathname !== '/oauth/callback') {
+            sessionStorage.setItem('auth:return_to', returnTo || '/')
+            sessionStorage.setItem('auth:post_login_redirect', returnTo || '/')
+          }
           resetLoginRequired()
           closeLogin()
-          navigate('/login')
+          navigate('/login', { state: { returnTo } })
         }}
       />
       <LocationPermissionModal
