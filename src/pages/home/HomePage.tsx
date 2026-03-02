@@ -19,6 +19,21 @@ import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/
 import { toMainPageData } from '@/entities/main'
 import { getMainPageCache } from '@/app/bootstrap/mainPageCache'
 
+const SPLASH_POPUP_DISMISSED_DATE_KEY = 'splash-popup-dismissed-date'
+let dismissedSplashEventIdInSession: number | null = null
+
+const isSplashDismissedToday = () => {
+  const dismissedDate = localStorage.getItem(SPLASH_POPUP_DISMISSED_DATE_KEY)
+  const today = new Date().toDateString()
+  return dismissedDate === today
+}
+
+const shouldShowSplashPopup = (eventId?: number) => {
+  if (!eventId) return false
+  if (isSplashDismissedToday()) return false
+  return dismissedSplashEventIdInSession !== eventId
+}
+
 type HomePageProps = {
   onSearchClick?: () => void
   onRestaurantClick?: (id: string, metadata?: { position: number; section: string }) => void
@@ -43,11 +58,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       queueMicrotask(() => {
         setMainData(cached)
         const splashPromotion = cached.data?.splashPromotion
-        if (splashPromotion) {
-          const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
-          const today = new Date().toDateString()
-          setShowSplashPopup(!dismissedDate || dismissedDate !== today)
-        }
+        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
         setIsMainLoading(false)
         setHasLoadedMain(true)
       })
@@ -59,12 +70,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       .then((data) => {
         setMainData(data)
         const splashPromotion = data.data?.splashPromotion
-        if (splashPromotion) {
-          const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
-          const today = new Date().toDateString()
-          const shouldShow = !dismissedDate || dismissedDate !== today
-          setShowSplashPopup(shouldShow)
-        }
+        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
       })
       .catch(() => {})
       .finally(() => {
@@ -100,6 +106,16 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
   const sections = mainPageData.sections
   const resolvedSections = sections
   const splashEvent = mainData?.data?.splashPromotion
+
+  const closeSplashPopup = (dontShowToday: boolean) => {
+    if (splashEvent?.id) {
+      dismissedSplashEventIdInSession = splashEvent.id
+    }
+    if (dontShowToday) {
+      localStorage.setItem(SPLASH_POPUP_DISMISSED_DATE_KEY, new Date().toDateString())
+    }
+    setShowSplashPopup(false)
+  }
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
   const hotSection = resolvedSections.find((section) => section.type === 'HOT')
@@ -256,7 +272,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
         <SplashPopup
           event={splashEvent}
           isOpen={showSplashPopup}
-          onClose={() => setShowSplashPopup(false)}
+          onClose={({ dontShowToday }) => closeSplashPopup(dontShowToday)}
           onLinkClick={() => {
             onEventClick?.(splashEvent.id)
             navigate(ROUTES.events)
