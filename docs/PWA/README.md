@@ -24,3 +24,21 @@ API 응답은 캐시하지 않고 네트워크에서만 가져옵니다.
 
 - 설정 위치: `vite.config.ts`
 - 플러그인: `vite-plugin-pwa`
+
+## 업데이트 UX 정책
+
+- 적용 환경: `staging`, `production`
+- 정책: 새 버전 감지 시 토스트로 사용자 승인 후 갱신
+- 목적: 작성 중인 입력/작업 유실을 줄이고, 사용자가 안전한 시점에 업데이트 적용
+
+## 업데이트 플로우
+
+1. 새 Service Worker가 `waiting` 상태로 감지됨
+2. 토스트 노출: `새 버전이 있습니다. 지금 업데이트할까요?`
+3. 사용자가 `업데이트` 클릭 시 `updateServiceWorker(true)` 실행
+4. `controllerchange` 이벤트 수신 후 `window.location.reload()`로 최신 리소스 반영
+
+## 구현 위치
+
+- 훅: `src/app/pwa/usePwaUpdatePrompt.ts`
+- 연결: `src/App.tsx`

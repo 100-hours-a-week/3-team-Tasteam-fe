@@ -20,15 +20,12 @@ const TRACES_SAMPLE_RATE: Record<string, number> = {
 
 let sentryModule: SentryModule | null = null
 let initialized = false
-const importModule = new Function('modulePath', 'return import(modulePath)') as (
-  modulePath: string,
-) => Promise<unknown>
 
 export function initSentry() {
   if (!SENTRY_DSN || !SENTRY_ENABLED || initialized) return
   initialized = true
 
-  void importModule('@sentry/react')
+  void import('@sentry/react')
     .then((mod) => {
       const sentry = mod as unknown as SentryModule
       sentry.init({

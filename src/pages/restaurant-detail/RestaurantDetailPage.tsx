@@ -546,6 +546,9 @@ export function RestaurantDetailPage() {
                         src={image}
                         alt={`${restaurant.name} ${idx + 1}`}
                         className="w-full h-full object-cover"
+                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        fetchPriority={idx === 0 ? 'high' : 'auto'}
+                        decoding="async"
                       />
                     </div>
                   </CarouselItem>
@@ -558,6 +561,9 @@ export function RestaurantDetailPage() {
                 src={restaurant.images[0]}
                 alt={`${restaurant.name} 1`}
                 className="w-full h-full object-cover"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
               />
             </div>
           )
@@ -876,6 +882,8 @@ export function RestaurantDetailPage() {
                                       src={menu.imageUrl}
                                       alt={menu.name}
                                       className="h-full w-full object-cover"
+                                      loading="lazy"
+                                      decoding="async"
                                     />
                                   </div>
                                 ) : null}

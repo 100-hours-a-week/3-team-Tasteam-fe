@@ -10,8 +10,10 @@ import { getLocationPermission, requestLocationPermission } from '@/shared/lib/g
 import { resetLoginRequired } from '@/shared/lib/authToken'
 import { useAppLocation } from '@/entities/location'
 import { AppRouter } from '@/app/router/AppRouter'
+import { usePwaUpdatePrompt } from '@/app/pwa/usePwaUpdatePrompt'
 
 function App() {
+  usePwaUpdatePrompt()
   const isReady = useBootstrap()
   const { showLogin, closeLogin } = useAuth()
   const { requestCurrentLocation } = useAppLocation()

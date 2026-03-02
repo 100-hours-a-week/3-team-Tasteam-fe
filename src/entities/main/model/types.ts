@@ -49,7 +49,7 @@ export type SplashEventDto = {
 export type MainPageResponseDto = SuccessResponse<{
   banners: MainBannerGroupDto
   sections: MainSectionDto[]
-  splashEvent?: SplashEventDto
+  splashPromotion?: SplashEventDto
 }>
 
 export type MainPageData = {

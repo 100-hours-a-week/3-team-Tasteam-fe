@@ -6,7 +6,7 @@ export function RestaurantDetailPageSkeleton() {
       {/* TopAppBar */}
       <Skeleton className="h-14 w-full rounded-none" />
       {/* 이미지 캐러셀 */}
-      <Skeleton className="h-60 w-full rounded-none" />
+      <Skeleton className="aspect-[4/3] w-full rounded-none" />
       <div className="flex flex-col gap-4 p-4">
         {/* 식당 이름 */}
         <Skeleton className="h-7 w-48" />
