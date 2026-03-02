@@ -17,7 +17,7 @@ type ChatInputProps = {
   placeholder?: string
 }
 
-const CHAT_MESSAGE_MAX_LENGTH = 1000
+const CHAT_MESSAGE_MAX_LENGTH = 500
 
 export function ChatInput({
   onSendMessage,
@@ -59,6 +59,12 @@ export function ChatInput({
 
   const removeAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const nextText = e.target.value
+    if (nextText.length > CHAT_MESSAGE_MAX_LENGTH) return
+    setText(nextText)
   }
 
   const isTextTooLong = text.length > CHAT_MESSAGE_MAX_LENGTH
@@ -134,12 +140,13 @@ export function ChatInput({
         <Textarea
           ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           className="min-h-[40px] max-h-[120px] resize-none"
           aria-invalid={isTextTooLong}
+          maxLength={CHAT_MESSAGE_MAX_LENGTH}
           rows={1}
         />
 

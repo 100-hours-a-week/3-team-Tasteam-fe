@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { UserPlus, UserCheck, MoreVertical, MessageSquare, Lock, Bell } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '@/entities/user'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
@@ -112,11 +113,11 @@ export function SubgroupsPage() {
       if (code === 'AUTHENTICATION_REQUIRED') {
         openLogin()
       } else if (code === 'NO_PERMISSION') {
-        alert('채팅방 접근 권한이 없습니다.')
+        toast.error('채팅방 접근 권한이 없습니다.')
       } else if (code === 'CHAT_ROOM_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
-        alert('채팅방 정보를 찾을 수 없습니다.')
+        toast.error('채팅방 정보를 찾을 수 없습니다.')
       } else {
-        alert('채팅방으로 이동하지 못했습니다. 잠시 후 다시 시도해주세요.')
+        toast.error('채팅방으로 이동하지 못했습니다. 잠시 후 다시 시도해주세요.')
       }
     } finally {
       setIsChatNavigating(false)
@@ -275,7 +276,7 @@ export function SubgroupsPage() {
       if (!subgroup?.groupId) return
       await joinSubgroup(subgroup.groupId, Number(id), password)
 
-      alert('가입되었습니다!')
+      toast.success('가입되었습니다!')
       refresh()
       setIsJoinDialogOpen(false)
       setPassword('')
@@ -283,17 +284,17 @@ export function SubgroupsPage() {
     } catch (error: unknown) {
       const code = getApiErrorCode(error)
       if (code === 'PASSWORD_MISMATCH') {
-        alert('가입에 실패했습니다. 비밀번호를 확인해주세요.')
+        toast.error('가입에 실패했습니다. 비밀번호를 확인해주세요.')
       } else if (code === 'SUBGROUP_ALREADY_JOINED') {
-        alert('이미 가입된 하위그룹입니다.')
+        toast.error('이미 가입된 하위그룹입니다.')
       } else if (code === 'AUTHENTICATION_REQUIRED') {
         openLogin()
       } else if (code === 'NO_PERMISSION') {
-        alert('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
+        toast.error('그룹 멤버만 하위그룹에 가입할 수 있습니다.')
       } else if (code === 'GROUP_NOT_FOUND' || code === 'SUBGROUP_NOT_FOUND') {
-        alert('하위그룹 정보를 찾을 수 없습니다.')
+        toast.error('하위그룹 정보를 찾을 수 없습니다.')
       } else {
-        alert('가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        toast.error('가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
       }
     }
   }
@@ -307,7 +308,7 @@ export function SubgroupsPage() {
     setIsLeaving(true)
     try {
       await leaveSubgroup(subgroupId)
-      alert('하위 그룹에서 나왔습니다.')
+      toast.success('하위 그룹에서 나왔습니다.')
       refresh()
       navigate(ROUTES.groups, { replace: true })
     } catch (error: unknown) {
@@ -315,11 +316,11 @@ export function SubgroupsPage() {
       if (code === 'AUTHENTICATION_REQUIRED') {
         openLogin()
       } else if (code === 'NO_PERMISSION') {
-        alert('이미 탈퇴했거나 권한이 없습니다.')
+        toast.error('이미 탈퇴했거나 권한이 없습니다.')
       } else if (code === 'SUBGROUP_NOT_FOUND') {
-        alert('하위그룹 정보를 찾을 수 없습니다.')
+        toast.error('하위그룹 정보를 찾을 수 없습니다.')
       } else {
-        alert('탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.')
+        toast.error('탈퇴에 실패했습니다. 잠시 후 다시 시도해주세요.')
       }
     } finally {
       setIsLeaving(false)
