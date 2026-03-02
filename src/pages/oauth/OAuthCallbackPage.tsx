@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/entities/user'
 import { request } from '@/shared/api/request'
 import { API_ENDPOINTS } from '@/shared/config/routes'
@@ -15,11 +15,27 @@ type RefreshResponse = {
 export const OAuthCallbackPage = () => {
   const { loginWithToken } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const requestRef = useRef<Promise<RefreshResponse> | null>(null)
   const handledRef = useRef(false)
 
   useEffect(() => {
-    const returnTo = sessionStorage.getItem('auth:return_to') ?? '/'
+    const queryReturnTo = new URLSearchParams(location.search).get('returnTo')
+    const safeQueryReturnTo =
+      queryReturnTo && queryReturnTo.startsWith('/') ? queryReturnTo : undefined
+    const storedPostLoginRedirect = sessionStorage.getItem('auth:post_login_redirect')
+    const safePostLoginRedirect =
+      storedPostLoginRedirect && storedPostLoginRedirect.startsWith('/')
+        ? storedPostLoginRedirect
+        : undefined
+    const storedReturnTo = sessionStorage.getItem('auth:return_to')
+    const safeStoredReturnTo =
+      storedReturnTo && storedReturnTo.startsWith('/') ? storedReturnTo : undefined
+    const resolvedReturnTo = safePostLoginRedirect ?? safeStoredReturnTo ?? safeQueryReturnTo ?? '/'
+    const returnTo =
+      resolvedReturnTo === '/login' || resolvedReturnTo === '/oauth/callback'
+        ? '/'
+        : resolvedReturnTo
 
     if (!requestRef.current) {
       requestRef.current = request<RefreshResponse>({
@@ -40,6 +56,7 @@ export const OAuthCallbackPage = () => {
         if (token) {
           loginWithToken(token)
           sessionStorage.removeItem('auth:return_to')
+          sessionStorage.removeItem('auth:post_login_redirect')
           sessionStorage.setItem('auth:back_guard', '1')
           navigate(returnTo, { replace: true })
           return
@@ -55,7 +72,7 @@ export const OAuthCallbackPage = () => {
       })
 
     return () => {}
-  }, [loginWithToken, navigate])
+  }, [location.search, loginWithToken, navigate])
 
   return <div className={styles.hidden} aria-hidden="true" />
 }

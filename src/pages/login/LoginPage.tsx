@@ -23,10 +23,12 @@ export function LoginPage() {
   const [isDevLoading, setIsDevLoading] = useState(false)
   const isDev = APP_ENV === 'development'
   const loginState = (location.state as { returnTo?: string } | null) ?? null
+  const returnTo = loginState?.returnTo ?? sessionStorage.getItem('auth:return_to') ?? '/'
 
   useEffect(() => {
     if (!loginState?.returnTo) return
     sessionStorage.setItem('auth:return_to', loginState.returnTo)
+    sessionStorage.setItem('auth:post_login_redirect', loginState.returnTo)
   }, [loginState?.returnTo])
 
   const handleDevLogin = async () => {
@@ -41,6 +43,7 @@ export function LoginPage() {
       setRefreshEnabled(true)
       const returnTo = sessionStorage.getItem('auth:return_to') ?? '/'
       sessionStorage.removeItem('auth:return_to')
+      sessionStorage.removeItem('auth:post_login_redirect')
       navigate(returnTo, { replace: true })
     } catch {
       setIsDevLoading(false)
@@ -68,7 +71,7 @@ export function LoginPage() {
             <p className="text-muted-foreground">팀의 점심을 더 빠르게 결정해요</p>
           </div>
           <div className="pt-3 pb-9">
-            <SocialLoginButtons />
+            <SocialLoginButtons returnTo={returnTo} />
             {isDev && (
               <Button
                 variant="outline"
