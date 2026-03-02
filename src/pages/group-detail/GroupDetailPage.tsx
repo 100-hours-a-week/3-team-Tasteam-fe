@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ChevronRight, Users } from 'lucide-react'
 import { toast } from 'sonner'
@@ -43,9 +43,6 @@ const CATEGORY_OPTIONS = [
   '고깃집',
 ]
 const ALL_CATEGORY = '전체'
-const JOIN_GUIDE_AUTO_CLOSE_MS = 2200
-const JOIN_GUIDE_FADE_OUT_MS = 250
-
 const EMPTY_GROUP: GroupDetailHeaderData = {
   name: '',
   addressLine: '',
@@ -96,6 +93,7 @@ export function GroupDetailPage() {
   const [subgroupPreviews, setSubgroupPreviews] = useState<SubgroupListItemDto[]>([])
   const [isSubgroupPreviewsLoading, setIsSubgroupPreviewsLoading] = useState(false)
   const [hasMoreSubgroups, setHasMoreSubgroups] = useState(false)
+  const [subgroupTotalCount, setSubgroupTotalCount] = useState(0)
   const [selectedSubgroup, setSelectedSubgroup] = useState<SubgroupListItemDto | null>(null)
   const [subgroupJoinConfirmOpen, setSubgroupJoinConfirmOpen] = useState(false)
   const [subgroupPasswordDialogOpen, setSubgroupPasswordDialogOpen] = useState(false)
@@ -117,44 +115,6 @@ export function GroupDetailPage() {
       : false
 
   const shouldMarkJoined = Boolean(joinedState?.joined)
-  const shouldShowOnboardingMemberGuide =
-    new URLSearchParams(location.search).get('onboardingMemberGuide') === 'true'
-  const [showJoinGuide, setShowJoinGuide] = useState(shouldShowOnboardingMemberGuide)
-  const [isJoinGuideVisible, setIsJoinGuideVisible] = useState(shouldShowOnboardingMemberGuide)
-
-  const dismissJoinGuide = useCallback(() => {
-    setIsJoinGuideVisible(false)
-    window.setTimeout(() => {
-      setShowJoinGuide(false)
-      if (shouldShowOnboardingMemberGuide) {
-        navigate(location.pathname, { replace: true, state: location.state })
-      }
-    }, JOIN_GUIDE_FADE_OUT_MS)
-  }, [location.pathname, location.state, navigate, shouldShowOnboardingMemberGuide])
-
-  useEffect(() => {
-    if (shouldShowOnboardingMemberGuide) {
-      setShowJoinGuide(true)
-      window.setTimeout(() => {
-        setIsJoinGuideVisible(true)
-      }, 0)
-      return
-    }
-    setIsJoinGuideVisible(false)
-    setShowJoinGuide(false)
-  }, [shouldShowOnboardingMemberGuide])
-
-  useEffect(() => {
-    if (!showJoinGuide || !isJoinGuideVisible) return
-
-    const timerId = window.setTimeout(() => {
-      dismissJoinGuide()
-    }, JOIN_GUIDE_AUTO_CLOSE_MS)
-
-    return () => {
-      window.clearTimeout(timerId)
-    }
-  }, [dismissJoinGuide, isJoinGuideVisible, showJoinGuide])
 
   useEffect(() => {
     if (!shouldMarkJoined) return
@@ -198,12 +158,15 @@ export function GroupDetailPage() {
       try {
         const response = await getSubgroups(groupId, { size: 100 })
         if (cancelled) return
-        const sorted = [...(response.items ?? [])].sort((a, b) => b.memberCount - a.memberCount)
+        const allItems = response.items ?? []
+        const sorted = [...allItems].sort((a, b) => b.memberCount - a.memberCount)
         setSubgroupPreviews(sorted.slice(0, 3))
+        setSubgroupTotalCount(allItems.length)
         setHasMoreSubgroups(Boolean(response.pagination?.hasNext))
       } catch {
         if (!cancelled) {
           setSubgroupPreviews([])
+          setSubgroupTotalCount(0)
           setHasMoreSubgroups(false)
         }
       } finally {
@@ -267,9 +230,10 @@ export function GroupDetailPage() {
 
   const isJoined =
     isLoaded && isValidId(groupId) ? summaries.some((item) => item.groupId === groupId) : false
+  const isGroupJoined = isJoined || shouldMarkJoined
   const subgroupCountLabel = hasMoreSubgroups
-    ? `${subgroupPreviews.length}+`
-    : String(subgroupPreviews.length)
+    ? `${subgroupTotalCount}+`
+    : String(subgroupTotalCount)
   const subgroupPreviewGridColsClass =
     subgroupPreviews.length <= 1
       ? 'grid-cols-1'
@@ -346,7 +310,7 @@ export function GroupDetailPage() {
     <div className="pb-10">
       <GroupDetailHeader
         group={group ?? EMPTY_GROUP}
-        isJoined={isJoined || shouldMarkJoined}
+        isJoined={isGroupJoined}
         isLoading={isGroupLoading}
         onBack={() => {
           if (isFromOnboardingFlow) {
@@ -355,25 +319,33 @@ export function GroupDetailPage() {
           }
           navigate(-1)
         }}
-        onJoin={() => {
-          if (!isValidId(groupId)) return
-          const targetRoute =
-            emailDomain === null
-              ? ROUTES.groupPasswordJoin(String(groupId))
-              : ROUTES.groupEmailJoin(String(groupId))
-          navigate(targetRoute)
-        }}
-        onMoreAction={() => {
-          if (!isValidId(groupId)) return
-          navigate(`${ROUTES.subgroupList}?groupId=${groupId}`)
-        }}
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
         onLeaveGroup={() => setLeaveDialogOpen(true)}
-        showJoinGuide={showJoinGuide}
-        isJoinGuideVisible={isJoinGuideVisible}
       />
 
-      <div className="h-2 border-y border-border/60 bg-muted/40" aria-hidden />
+      {!isGroupLoading && !isGroupJoined ? (
+        <div className="border-y border-border/60 bg-muted/40">
+          <Container className="py-3">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => {
+                if (!isValidId(groupId)) return
+                const targetRoute =
+                  emailDomain === null
+                    ? ROUTES.groupPasswordJoin(String(groupId))
+                    : ROUTES.groupEmailJoin(String(groupId))
+                navigate(targetRoute)
+              }}
+              className="h-11 w-full rounded-xl bg-primary text-white hover:bg-primary/90"
+            >
+              그룹 가입하기
+            </Button>
+          </Container>
+        </div>
+      ) : (
+        <div className="h-2 border-y border-border/60 bg-muted/40" aria-hidden />
+      )}
 
       <Container className="pt-4 pb-4 border-b border-border">
         <div className="mb-3 flex items-center justify-between">
