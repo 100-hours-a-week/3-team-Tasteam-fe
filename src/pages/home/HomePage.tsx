@@ -42,8 +42,8 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     if (cached) {
       queueMicrotask(() => {
         setMainData(cached)
-        const splashEvent = cached.data?.splashEvent
-        if (splashEvent) {
+        const splashPromotion = cached.data?.splashPromotion
+        if (splashPromotion) {
           const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
           const today = new Date().toDateString()
           setShowSplashPopup(!dismissedDate || dismissedDate !== today)
@@ -58,8 +58,8 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     getMainPage({ latitude, longitude })
       .then((data) => {
         setMainData(data)
-        const splashEvent = data.data?.splashEvent
-        if (splashEvent) {
+        const splashPromotion = data.data?.splashPromotion
+        if (splashPromotion) {
           const dismissedDate = localStorage.getItem('splash-popup-dismissed-date')
           const today = new Date().toDateString()
           const shouldShow = !dismissedDate || dismissedDate !== today
@@ -99,7 +99,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
-  const splashEvent = mainData?.data?.splashEvent
+  const splashEvent = mainData?.data?.splashPromotion
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
   const hotSection = resolvedSections.find((section) => section.type === 'HOT')
