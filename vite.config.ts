@@ -26,10 +26,14 @@ export default defineConfig(({ command }) => {
         minify: !isLocal,
         registerType: 'autoUpdate',
         injectRegister: 'script-defer',
+        showMaximumFileSizeToCacheInBytesWarning: true,
         workbox: {
           navigateFallbackDenylist: [/^\/api\//, /^\/admin/],
           skipWaiting: true,
           clientsClaim: true,
+          // Keep app-shell offline behavior, but skip very large chunks in precache
+          // to reduce install-time burst traffic.
+          maximumFileSizeToCacheInBytes: 250 * 1024,
           ...(isLocal && { mode: 'development' as const }),
           runtimeCaching: [
             {
@@ -94,9 +98,7 @@ export default defineConfig(({ command }) => {
               '@radix-ui/react-toggle-group',
               '@radix-ui/react-tooltip',
             ],
-            'vendor-charts': ['recharts'],
             'vendor-firebase': ['firebase/app', 'firebase/messaging'],
-            'vendor-form': ['react-hook-form', '@hookform/resolvers'],
             'vendor-utils': ['lucide-react', 'embla-carousel-react', 'react-day-picker'],
           },
         },
