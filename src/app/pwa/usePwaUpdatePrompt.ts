@@ -10,7 +10,10 @@ const SHOULD_ENABLE_UPDATE_PROMPT = APP_ENV === 'staging' || APP_ENV === 'produc
 export function usePwaUpdatePrompt(): void {
   const isSupported = typeof window !== 'undefined' && 'serviceWorker' in navigator
   const shownRef = useRef(false)
-  const { needRefresh, updateServiceWorker } = useRegisterSW()
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW()
 
   useEffect(() => {
     if (!needRefresh) {
