@@ -251,7 +251,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
   }
 
   return (
-    <div className="pb-20">
+    <div className="pb-20 overflow-x-hidden">
       {splashEvent && (
         <SplashPopup
           event={splashEvent}
