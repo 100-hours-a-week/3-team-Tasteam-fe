@@ -1,34 +1,42 @@
 import { X } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import type { SplashEventDto } from '@/entities/main'
+
+type SplashPopupCloseOptions = {
+  dontShowToday: boolean
+}
 
 type SplashPopupProps = {
   event: SplashEventDto
   isOpen: boolean
-  onClose: () => void
+  onClose: (options: SplashPopupCloseOptions) => void
   onLinkClick?: () => void
 }
 
 export function SplashPopup({ event, isOpen, onClose, onLinkClick }: SplashPopupProps) {
+  const [dontShowToday, setDontShowToday] = useState(false)
+
   if (!isOpen) return null
 
-  const handleLinkClick = () => {
-    onLinkClick?.()
-    onClose()
+  const handleClose = () => {
+    onClose({ dontShowToday })
   }
 
-  const handleDontShowToday = (checked: boolean) => {
-    if (checked) {
-      const today = new Date().toDateString()
-      localStorage.setItem('splash-popup-dismissed-date', today)
-    }
+  const handleLinkClick = () => {
+    onClose({ dontShowToday })
+    onLinkClick?.()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-sm bg-background rounded-2xl overflow-hidden shadow-xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-sm bg-background rounded-2xl overflow-hidden shadow-xl"
+      >
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-colors"
         >
           <X className="w-5 h-5 text-white" />
@@ -54,7 +62,7 @@ export function SplashPopup({ event, isOpen, onClose, onLinkClick }: SplashPopup
             <Button onClick={handleLinkClick} className="w-full" size="lg">
               이벤트 보러가기
             </Button>
-            <Button onClick={onClose} variant="outline" className="w-full" size="lg">
+            <Button onClick={handleClose} variant="outline" className="w-full" size="lg">
               닫기
             </Button>
           </div>
@@ -63,7 +71,8 @@ export function SplashPopup({ event, isOpen, onClose, onLinkClick }: SplashPopup
             <input
               type="checkbox"
               className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-              onChange={(e) => handleDontShowToday(e.target.checked)}
+              checked={dontShowToday}
+              onChange={(e) => setDontShowToday(e.target.checked)}
             />
             <span className="text-sm text-muted-foreground">오늘 하루 보지 않기</span>
           </label>
