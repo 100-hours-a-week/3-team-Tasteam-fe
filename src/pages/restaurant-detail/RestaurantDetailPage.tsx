@@ -9,6 +9,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   DollarSign,
+  Share2,
+  Flag,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
@@ -29,7 +31,6 @@ import { reviewKeys } from '@/entities/review/model/reviewKeys'
 import { getRestaurantFavoriteTargets } from '@/entities/favorite'
 import { favoriteKeys } from '@/entities/favorite/model/favoriteKeys'
 import { FavoriteSelectionSheet } from '@/features/favorites'
-import { toast } from 'sonner'
 import { ROUTES } from '@/shared/config/routes'
 import type { ReviewListItemDto } from '@/entities/review'
 import type {
@@ -44,6 +45,15 @@ import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
 import { AlertDialog } from '@/shared/ui/alert-dialog'
 import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 import { STALE_CONTENT, STALE_USER } from '@/shared/lib/queryConstants'
+import { getApiErrorCode } from '@/shared/lib/apiError'
+import { ReportModal } from '@/features/report/ReportModal'
+import {
+  shareRestaurantInfo,
+  createRestaurantShareUrl,
+  type ShareActionResult,
+} from '@/shared/lib/shareRestaurant'
+import { createReport, type ReportCategory } from '@/entities/report'
+import { toast } from 'sonner'
 
 export function RestaurantDetailPage() {
   type BusinessHoursWeekItem = {
@@ -60,7 +70,7 @@ export function RestaurantDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { track } = useUserActivity()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, openLogin } = useAuth()
   const { summaries } = useMemberGroups()
   const currentPageKey = resolvePageContext(location.pathname).pageKey
   const locationState = (location.state as { fromPageKey?: string } | null) ?? null
@@ -70,6 +80,14 @@ export function RestaurantDetailPage() {
   const [showLoginModal, setShowLoginModal] = React.useState(false)
   const [showGroupJoinModal, setShowGroupJoinModal] = React.useState(false)
   const [showFavoriteSheet, setShowFavoriteSheet] = React.useState(false)
+  const [showReportModal, setShowReportModal] = React.useState(false)
+
+  const closeRestaurantModals = React.useCallback(() => {
+    setShowLoginModal(false)
+    setShowGroupJoinModal(false)
+    setShowFavoriteSheet(false)
+    setShowReportModal(false)
+  }, [])
 
   // 식당 상세 조회
   const { data: restaurantRes, isLoading: isRestaurantLoading } = useQuery({
@@ -423,6 +441,78 @@ export function RestaurantDetailPage() {
     favoriteStatus?.personal ||
     (favoriteStatus?.subgroups && favoriteStatus.subgroups.some((sg) => sg.isFavorited))
 
+  const handleRestaurantReportSubmit = async ({
+    content,
+    category,
+  }: {
+    category: ReportCategory
+    content: string
+  }) => {
+    await createReport({
+      category,
+      content,
+    })
+  }
+
+  const handleOpenReportModal = () => {
+    closeRestaurantModals()
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+    setShowReportModal(true)
+  }
+
+  const buildRestaurantReportContent = (content: string) => {
+    const trimmed = content.trim()
+    if (!trimmed) {
+      return `식당명: ${restaurant.name || '이름 미확인'}\n식당ID: ${restaurant.id || '미확인'}\n`
+    }
+
+    const hasRestaurantContext =
+      trimmed.includes(`식당명: ${restaurant.name || '이름 미확인'}`) &&
+      trimmed.includes(`식당ID: ${restaurant.id || '미확인'}`)
+
+    if (hasRestaurantContext) return trimmed
+
+    return [
+      `식당명: ${restaurant.name || '이름 미확인'}`,
+      `식당ID: ${restaurant.id || '미확인'}`,
+      '내용:',
+      trimmed,
+    ].join('\n')
+  }
+
+  const handleShareRestaurant = async () => {
+    try {
+      if (!restaurantId) {
+        toast.error('식당 정보를 확인할 수 없습니다')
+        return
+      }
+
+      const link = createRestaurantShareUrl(restaurantId)
+      const outcome: ShareActionResult = await shareRestaurantInfo(link)
+
+      if (outcome === 'aborted') {
+        return
+      }
+
+      if (outcome === 'shared') {
+        toast.success('공유하기를 완료했습니다')
+        return
+      }
+
+      toast.success('식당 링크가 클립보드에 복사되었어요')
+    } catch (error) {
+      const code = getApiErrorCode(error)
+      if (code === 'BAD_REQUEST') {
+        toast.error('유효하지 않은 식당 정보입니다')
+        return
+      }
+      toast.error('공유에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
   const dayOfWeekLabel: Record<string, string> = {
     MON: '월',
     TUE: '화',
@@ -464,6 +554,8 @@ export function RestaurantDetailPage() {
   }
 
   const handleWriteReview = () => {
+    closeRestaurantModals()
+
     if (!isAuthenticated) {
       setShowLoginModal(true)
       return
@@ -487,12 +579,15 @@ export function RestaurantDetailPage() {
   }
 
   const handleLoginRequiredReview = () => {
+    closeRestaurantModals()
     const returnTo = restaurantId ? `/restaurants/${restaurantId}/review` : '/login'
     sessionStorage.setItem('auth:return_to', returnTo)
     navigate('/login', { state: { returnTo } })
   }
 
   const handleFavoriteSheetOpen = () => {
+    closeRestaurantModals()
+
     if (Number.isFinite(parsedRestaurantId)) {
       track({
         eventName: 'ui.favorite.sheet_opened',
@@ -527,7 +622,30 @@ export function RestaurantDetailPage() {
 
   return (
     <div className="pb-6">
-      <TopAppBar showBackButton onBack={() => navigate(-1)} />
+      <TopAppBar
+        showBackButton
+        onBack={() => navigate(-1)}
+        actions={
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleShareRestaurant}
+              aria-label="식당 공유"
+              className="inline-flex items-center justify-center rounded-full h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent transition"
+            >
+              <Share2 className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenReportModal}
+              aria-label="식당 신고"
+              className="inline-flex items-center justify-center rounded-full h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent transition"
+            >
+              <Flag className="h-5 w-5" />
+            </button>
+          </div>
+        }
+      />
 
       {/* Image Carousel */}
       <div className="relative mb-4">
@@ -1207,6 +1325,39 @@ export function RestaurantDetailPage() {
           onComplete={handleFavoriteComplete}
         />
       )}
+
+      <ReportModal
+        open={showReportModal}
+        onOpenChange={(open) => {
+          if (open) {
+            closeRestaurantModals()
+          }
+          setShowReportModal(open)
+        }}
+        onSubmit={async ({ category, content }) => {
+          try {
+            await handleRestaurantReportSubmit({
+              category,
+              content: buildRestaurantReportContent(content),
+            })
+            toast.success('신고가 접수되었습니다')
+            setShowReportModal(false)
+          } catch (error) {
+            const code = getApiErrorCode(error)
+            if (code === 'REPORT_DRAFT_EXPIRED') {
+              toast.error('신고 접수가 만료되었습니다. 잠시 후 다시 시도해주세요.')
+              return
+            }
+            toast.error('신고 접수에 실패했습니다. 잠시 후 다시 시도해주세요.')
+          }
+        }}
+        initialCategory="RESTAURANT_INFO"
+        title="음식점 신고하기"
+        restaurantContext={{
+          id: restaurant.id,
+          name: restaurant.name,
+        }}
+      />
     </div>
   )
 }

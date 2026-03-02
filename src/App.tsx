@@ -62,7 +62,7 @@ function App() {
         }}
       />
       <LocationPermissionModal
-        open={showLocationModal}
+        open={showLocationModal && !showLogin}
         onAllow={async () => {
           const granted = await requestLocationPermission()
           if (granted) {

@@ -1,5 +1,15 @@
 import { useState } from 'react'
-import { ChevronRight, Bell, Settings, LogOut, User, Pencil, Gift, FileText } from 'lucide-react'
+import {
+  ChevronRight,
+  Bell,
+  Settings,
+  LogOut,
+  User,
+  Pencil,
+  Gift,
+  FileText,
+  Flag,
+} from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
@@ -16,10 +26,14 @@ import { useAuth } from '@/entities/user'
 import { getMe } from '@/entities/member'
 import { memberKeys } from '@/entities/member/model/memberKeys'
 import type { MemberProfileDto } from '@/entities/member'
+import { createReport, type ReportCategory } from '@/entities/report'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
 import { AlertDialog } from '@/shared/ui/alert-dialog'
 import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 import { STALE_USER } from '@/shared/lib/queryConstants'
+import { getApiErrorCode } from '@/shared/lib/apiError'
+import { toast } from 'sonner'
+import { ReportModal } from '@/features/report/ReportModal'
 
 type ProfilePageProps = {
   onSettingsClick?: () => void
@@ -44,6 +58,7 @@ export function ProfilePage({
   const location = useLocation()
   const { isAuthenticated, openLogin } = useAuth()
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
 
   const { data: meData, isLoading: isMeLoading } = useQuery({
     queryKey: [...memberKeys.me(), location.key],
@@ -68,6 +83,12 @@ export function ProfilePage({
     { label: '공지사항', icon: Bell, onClick: onNotices },
     { label: '이벤트', icon: Gift, onClick: onEvents },
     { label: '내 리뷰', icon: FileText, onClick: onMyReviews, requiresAuth: true },
+    {
+      label: '신고하기',
+      icon: Flag,
+      onClick: () => setShowReportModal(true),
+      requiresAuth: true,
+    },
     ...(FEATURE_FLAGS.enableNotifications
       ? [{ label: '알림', icon: Bell, onClick: onNotifications, requiresAuth: true }]
       : []),
@@ -84,6 +105,27 @@ export function ProfilePage({
         ]
       : []),
   ]
+
+  const handleReportSubmit = async ({
+    category,
+    content,
+  }: {
+    category: ReportCategory
+    content: string
+  }) => {
+    try {
+      await createReport({ category, content })
+      toast.success('신고가 접수되었습니다')
+      setShowReportModal(false)
+    } catch (error) {
+      const code = getApiErrorCode(error)
+      if (code === 'REPORT_DRAFT_EXPIRED') {
+        toast.error('신고 접수가 만료되었습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      toast.error('신고 접수에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
 
   return (
     <div className="pb-20 min-h-screen bg-background">
@@ -242,6 +284,14 @@ export function ProfilePage({
           else if (tab === 'favorites') navigate(ROUTES.favorites)
           else if (tab === 'groups') navigate(ROUTES.groups)
         }}
+      />
+
+      <ReportModal
+        open={showReportModal}
+        onOpenChange={setShowReportModal}
+        onSubmit={handleReportSubmit}
+        title="신고하기"
+        initialCategory="OTHER"
       />
     </div>
   )
