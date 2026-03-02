@@ -13,11 +13,8 @@ import { AppVersionText } from '@/shared/ui/app-version'
 
 type DevMemberResponse = {
   memberId: number
-  email: string
-  nickname: string
-  profileImageUrl: string
-  groups: unknown[]
   accessToken: string
+  isNew: boolean
 }
 
 export function LoginPage() {
@@ -35,7 +32,10 @@ export function LoginPage() {
   const handleDevLogin = async () => {
     setIsDevLoading(true)
     try {
-      const response = await http.get<{ data: DevMemberResponse }>('/api/v1/test/dev/member')
+      const response = await http.post<{ data: DevMemberResponse }>('/api/v1/auth/token/test', {
+        identifier: 'dev-local-user',
+        nickname: '로컬 테스트 유저',
+      })
       const { accessToken } = response.data.data
       setAccessToken(accessToken)
       setRefreshEnabled(true)
