@@ -183,7 +183,7 @@ export function OnboardingPage({ onComplete }: OnboardingPageProps) {
 
     if (currentStepData.key === 'notification') {
       await syncFcmToken()
-      if (Notification.permission === 'denied') {
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
         toast.message('브라우저 설정에서 알림을 허용하면 푸시 알림을 받을 수 있어요')
       }
     }
