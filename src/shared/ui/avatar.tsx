@@ -23,11 +23,47 @@ function Avatar({
   )
 }
 
-function AvatarImage({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+function AvatarImage({
+  className,
+  src,
+  onError,
+  ...props
+}: React.ComponentProps<typeof AvatarPrimitive.Image>) {
+  const [currentSrc, setCurrentSrc] = React.useState(src)
+  const hasRetriedRef = React.useRef(false)
+
+  React.useEffect(() => {
+    setCurrentSrc(src)
+    hasRetriedRef.current = false
+  }, [src])
+
+  const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const rawSrc = typeof currentSrc === 'string' ? currentSrc.trim() : ''
+    if (!hasRetriedRef.current && rawSrc) {
+      hasRetriedRef.current = true
+      try {
+        const url = new URL(rawSrc, window.location.origin)
+        url.searchParams.set('_retry', Date.now().toString())
+        setCurrentSrc(url.toString())
+        return
+      } catch {
+        // Keep original src when URL parsing fails and fall back immediately.
+      }
+    }
+
+    setCurrentSrc(undefined)
+    onError?.(event)
+  }
+
+  if (!currentSrc) return null
+
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
       className={cn('aspect-square size-full', className)}
+      src={currentSrc}
+      referrerPolicy="no-referrer"
+      onError={handleError}
       {...props}
     />
   )

@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, ChevronRight } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { Card } from '@/shared/ui/card'
 import { EmptyState } from '@/widgets/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { getNotices } from '@/entities/notice'
+import { noticeKeys } from '@/entities/notice/model/noticeKeys'
 import type { NoticeDto } from '@/entities/notice'
 import { formatIsoTimestamp } from '@/shared/lib/time'
+import { STALE_REFERENCE } from '@/shared/lib/queryConstants'
 
 type NoticesPageProps = {
   onBack?: () => void
@@ -17,46 +19,14 @@ type NoticesPageProps = {
 
 export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
   const navigate = useNavigate()
-  const [notices, setNotices] = useState<NoticeDto[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [hasError, setHasError] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    getNotices()
-      .then((response) => {
-        if (cancelled) return
-        setNotices(response.data?.notices ?? [])
-      })
-      .catch(() => {
-        if (cancelled) return
-        setHasError(true)
-        setNotices([])
-      })
-      .finally(() => {
-        if (cancelled) return
-        setIsLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: noticeKeys.list(),
+    queryFn: () => getNotices(),
+    staleTime: STALE_REFERENCE,
+  })
 
-  const handleRetry = () => {
-    setIsLoading(true)
-    setHasError(false)
-    getNotices()
-      .then((response) => {
-        setNotices(response.data?.notices ?? [])
-      })
-      .catch(() => {
-        setHasError(true)
-        setNotices([])
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
-  }
+  const notices: NoticeDto[] = data?.data?.notices ?? []
 
   const handleBack = () => {
     if (onBack) {
@@ -67,9 +37,7 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
   }
 
   const handleNoticeClick = (id: number) => {
-    if (onNoticeClick) {
-      onNoticeClick(id)
-    }
+    onNoticeClick?.(id)
   }
 
   return (
@@ -77,19 +45,19 @@ export function NoticesPage({ onBack, onNoticeClick }: NoticesPageProps) {
       <TopAppBar title="공지사항" showBackButton onBack={handleBack} />
 
       <Container className="flex-1 py-4 overflow-auto">
-        {hasError ? (
+        {isError ? (
           <EmptyState
             icon={Bell}
             title="공지사항을 불러올 수 없습니다"
             description="네트워크 연결을 확인하고 다시 시도해주세요"
             actionLabel="다시 시도"
-            onAction={handleRetry}
+            onAction={() => void refetch()}
           />
         ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="p-4">
-                <Skeleton className="h-5 w-3/4 mb-2" />
+                <Skeleton className="mb-2 h-5 w-3/4" />
                 <Skeleton className="h-4 w-1/4" />
               </Card>
             ))}

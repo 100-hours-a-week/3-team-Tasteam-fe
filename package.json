@@ -1,7 +1,7 @@
 {
   "name": "tasteam",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -53,6 +53,9 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@sentry/react": "^10.39.0",
+    "@stomp/stompjs": "^7.3.0",
+    "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.2",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
@@ -76,6 +79,7 @@
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
+    "web-vitals": "^5.1.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

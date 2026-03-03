@@ -40,7 +40,14 @@ export function HeroRecommendationCard({
           </Button>
         </div>
         <div className="w-36 relative overflow-hidden shrink-0">
-          <ImageWithFallback src={image} alt={title} className="object-cover w-full h-full" />
+          <ImageWithFallback
+            src={image}
+            alt={title}
+            className="object-cover w-full h-full"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
         </div>
       </div>
     </Card>

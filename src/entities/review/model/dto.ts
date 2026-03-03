@@ -10,6 +10,7 @@ export type ReviewListItemDto = {
   author: {
     id: number
     nickname: string
+    profileImageUrl?: string | null
   }
   contentPreview: string
   isRecommended: boolean
@@ -49,6 +50,7 @@ export type ReviewDetailDto = {
   author: {
     id: number
     nickname: string
+    profileImageUrl?: string | null
   }
   content: string
   isRecommended: boolean

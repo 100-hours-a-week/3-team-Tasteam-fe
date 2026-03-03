@@ -13,22 +13,74 @@ export type RestaurantBusinessHourDto = {
   close: TimeString
 }
 
+/** AI 근거 리뷰 1건 (API 응답) */
+export type AiEvidenceDto = {
+  reviewId: number
+  snippet: string
+  authorId?: number | null
+  authorName?: string | null
+  createdAt?: string | null
+}
+
+/** 카테고리별 리뷰 요약 상세 (맛/가격/서비스) */
+export type AiCategorySummaryDto = {
+  summary: string
+  bullets?: string[]
+  evidences: AiEvidenceDto[]
+}
+
+/** AI 리뷰 요약 전체 (overallSummary + categoryDetails) */
+export type RestaurantAiSummaryDto = {
+  overallSummary: string
+  categoryDetails?: Record<string, AiCategorySummaryDto>
+}
+
+/** 카테고리별 비교 분석 상세 (맛/가격/서비스) */
+export type AiCategoryComparisonDto = {
+  summary: string
+  bullets?: string[]
+  evidences: AiEvidenceDto[]
+  liftScore?: number | null
+}
+
+/** AI 비교 분석 전체 */
+export type RestaurantAiComparisonDto = {
+  overallComparison: string
+  categoryDetails?: Record<string, AiCategoryComparisonDto>
+}
+
+/** AI 감정 분석 결과 */
+export type RestaurantAiSentimentDto = {
+  positivePercent: number
+}
+
+/** 음식점 상세용 AI 분석 결과 통합 */
+export type RestaurantAiDetailsDto = {
+  sentiment?: RestaurantAiSentimentDto | null
+  summary?: RestaurantAiSummaryDto | null
+  comparison?: RestaurantAiComparisonDto | null
+}
+
 export type RestaurantDetailDto = {
   id: number
   name: string
   address: string
   phoneNumber?: string | null
-  location: Coordinates
-  distanceMeter: number
+  location?: Coordinates
+  distanceMeter?: number
   foodCategories: string[]
-  businessHours: RestaurantBusinessHourDto[]
-  images: ImageResource[]
+  businessHours?: RestaurantBusinessHourDto[]
+  businessHoursWeek?: unknown
+  images?: ImageResource[]
+  image?: { id: number | string; url: string } | null
   isFavorite?: boolean
   recommendStat?: {
     recommendedCount: number
     notRecommendedCount: number
     positiveRatio: number
   }
+  recommendedCount?: number
+  aiDetails?: RestaurantAiDetailsDto | null
   aiSummary?: string
   aiFeatures?: string
   createdAt: IsoDateTimeString

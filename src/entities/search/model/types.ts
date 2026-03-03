@@ -14,6 +14,8 @@ export type SearchRestaurantItem = {
   name: string
   address: string
   imageUrl: string
+  foodCategories: string[]
+  category?: string
 }
 
 export type SearchResponse = SuccessResponse<{

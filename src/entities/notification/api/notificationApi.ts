@@ -8,24 +8,25 @@ import type {
   PushNotificationTargetRequestDto,
 } from '../model/dto'
 
-export const getNotifications = () =>
+export const getNotifications = (params?: { page?: number; size?: number }) =>
   request<NotificationListResponseDto>({
     method: 'GET',
     url: '/api/v1/members/me/notifications',
+    params,
   })
 
-export const markNotificationRead = (id: number, payload: NotificationReadRequestDto) =>
+export const markNotificationRead = (id: number, payload?: NotificationReadRequestDto) =>
   request<void>({
     method: 'PATCH',
     url: `/api/v1/members/me/notifications/${id}`,
-    data: payload,
+    ...(payload ? { data: payload } : {}),
   })
 
-export const markAllNotificationsRead = (payload: NotificationReadRequestDto) =>
+export const markAllNotificationsRead = (payload?: NotificationReadRequestDto) =>
   request<void>({
     method: 'PATCH',
     url: '/api/v1/members/me/notifications',
-    data: payload,
+    ...(payload ? { data: payload } : {}),
   })
 
 export const getUnreadNotificationCount = () =>

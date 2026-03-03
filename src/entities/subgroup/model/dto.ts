@@ -58,8 +58,14 @@ export type SubgroupCreateResponseDto = SuccessResponse<{
 export type SubgroupMemberDto = {
   memberId: number
   nickname: string
-  profileImage: ImageResource | null
+  profileImage?: ImageResource | null
+  profileImageUrl?: string | null
   createdAt?: IsoDateTimeString
+  cursorId?: number
 }
 
 export type SubgroupMemberListResponseDto = SuccessResponse<CursorPageResponse<SubgroupMemberDto>>
+
+export type SubgroupChatRoomResponseDto = SuccessResponse<{
+  chatRoomId: number
+}>

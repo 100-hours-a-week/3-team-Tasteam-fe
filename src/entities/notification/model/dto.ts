@@ -13,12 +13,10 @@ export type NotificationDto = {
 
 export type NotificationListResponseDto = SuccessResponse<{
   items: NotificationDto[]
-  pagination: {
-    page: number
-    size: number
-    totalPages: number
-    totalElements: number
-  }
+  page: number
+  size: number
+  totalPages: number
+  totalElements: number
 }>
 
 export type NotificationReadRequestDto = {
@@ -41,9 +39,7 @@ export type NotificationPreferencesUpdateRequestDto = {
   }>
 }
 
-export type UnreadNotificationCountResponseDto = {
-  count: number
-}
+export type UnreadNotificationCountResponseDto = SuccessResponse<{ count: number }>
 
 export type PushNotificationTargetRequestDto = {
   deviceId: string

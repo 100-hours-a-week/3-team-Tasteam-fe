@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@700&family=Montserrat:wght@700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,7 +5,7 @@
 :root {
   --font-size: 16px;
   --app-max-width: 430px;
-  --app-side-bg-image: url('../assets/side-background.jpg');
+  --app-side-bg-image: url('../assets/side-background.webp');
 
   /* Tasteam Color System - Light Theme */
   --background: 0 0% 100%;

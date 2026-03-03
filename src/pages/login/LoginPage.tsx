@@ -1,36 +1,50 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { SocialLoginButtons } from '@/features/auth/social-login/SocialLoginButtons'
 import { Container } from '@/shared/ui/container'
 import { Separator } from '@/shared/ui/separator'
 import { Button } from '@/shared/ui/button'
 import { APP_ENV } from '@/shared/config/env'
+import { ROUTES } from '@/shared/config/routes'
 import { http } from '@/shared/api/http'
 import { setAccessToken, setRefreshEnabled } from '@/shared/lib/authToken'
+import { AppVersionText } from '@/shared/ui/app-version'
 
 type DevMemberResponse = {
   memberId: number
-  email: string
-  nickname: string
-  profileImageUrl: string
-  groups: unknown[]
   accessToken: string
+  isNew: boolean
 }
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [isDevLoading, setIsDevLoading] = useState(false)
   const isDev = APP_ENV === 'development'
+  const loginState = (location.state as { returnTo?: string } | null) ?? null
+  const returnTo = loginState?.returnTo ?? sessionStorage.getItem('auth:return_to') ?? '/'
+
+  useEffect(() => {
+    if (!loginState?.returnTo) return
+    sessionStorage.setItem('auth:return_to', loginState.returnTo)
+    sessionStorage.setItem('auth:post_login_redirect', loginState.returnTo)
+  }, [loginState?.returnTo])
 
   const handleDevLogin = async () => {
     setIsDevLoading(true)
     try {
-      const response = await http.get<{ data: DevMemberResponse }>('/api/v1/test/dev/member')
+      const response = await http.post<{ data: DevMemberResponse }>('/api/v1/auth/token/test', {
+        identifier: 'dev-local-user',
+        nickname: '로컬 테스트 유저',
+      })
       const { accessToken } = response.data.data
       setAccessToken(accessToken)
       setRefreshEnabled(true)
-      navigate('/')
+      const returnTo = sessionStorage.getItem('auth:return_to') ?? '/'
+      sessionStorage.removeItem('auth:return_to')
+      sessionStorage.removeItem('auth:post_login_redirect')
+      navigate(returnTo, { replace: true })
     } catch {
       setIsDevLoading(false)
     }
@@ -57,7 +71,7 @@ export function LoginPage() {
             <p className="text-muted-foreground">팀의 점심을 더 빠르게 결정해요</p>
           </div>
           <div className="pt-3 pb-9">
-            <SocialLoginButtons />
+            <SocialLoginButtons returnTo={returnTo} />
             {isDev && (
               <Button
                 variant="outline"
@@ -74,6 +88,10 @@ export function LoginPage() {
 
       <Container className="pb-6">
         <div className="max-w-sm mx-auto space-y-4">
+          <p className="text-xs text-center text-muted-foreground">
+            Tasteam <AppVersionText />
+          </p>
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <Separator />
@@ -83,9 +101,22 @@ export function LoginPage() {
 
           <p className="text-xs text-center text-muted-foreground">
             로그인하면 Tasteam의{' '}
-            <button className="underline hover:text-foreground">이용약관</button>과{' '}
-            <button className="underline hover:text-foreground">개인정보처리방침</button>에 동의하는
-            것으로 간주됩니다.
+            <button
+              type="button"
+              className="underline hover:text-foreground"
+              onClick={() => navigate(ROUTES.terms)}
+            >
+              이용약관
+            </button>
+            과{' '}
+            <button
+              type="button"
+              className="underline hover:text-foreground"
+              onClick={() => navigate(ROUTES.privacyPolicy)}
+            >
+              개인정보처리방침
+            </button>
+            에 동의하는 것으로 간주됩니다.
           </p>
         </div>
       </Container>

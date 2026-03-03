@@ -1,30 +1,23 @@
 import { useEffect, useState } from 'react'
 import { bootstrapApp } from './bootstrap'
+import { getAccessToken } from '@/shared/lib/authToken'
 
-const getInitialReady = () => {
-  const hasSeenSplash = sessionStorage.getItem('app:seen_splash') === 'true'
-  return hasSeenSplash
-}
+const getInitialReady = () => !!getAccessToken()
 
 export const useBootstrap = () => {
   const [isReady, setIsReady] = useState(getInitialReady)
 
   useEffect(() => {
+    if (isReady) return // 토큰 있음 → bootstrap 불필요
+
     let alive = true
-
-    // Ensure bootstrapApp is always called unconditionally on mount.
-    // The `isReady` state will now only reflect the completion of bootstrapping.
     bootstrapApp().then(() => {
-      if (alive) {
-        sessionStorage.setItem('app:seen_splash', 'true')
-        setIsReady(true)
-      }
+      if (alive) setIsReady(true)
     })
-
     return () => {
       alive = false
     }
-  }, []) // Run only once on mount
+  }, [isReady])
 
   return isReady
 }

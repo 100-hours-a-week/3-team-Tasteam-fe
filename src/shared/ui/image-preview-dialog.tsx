@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { Dialog, DialogContent } from '@/shared/ui/dialog'
+import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
 
 type ImagePreviewDialogProps = {
@@ -14,24 +15,24 @@ export function ImagePreviewDialog({ open, onClose, imageUrl, alt }: ImagePrevie
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
         className={cn(
-          'max-w-[95vw] max-h-[95vh] w-auto h-auto p-0 bg-transparent border-none shadow-none',
-          'flex items-center justify-center',
+          'max-w-[95vw] max-h-[95vh] w-auto h-auto p-3 bg-transparent border-none shadow-none',
+          'flex flex-col items-center justify-center',
         )}
         showCloseButton={false}
       >
-        <div className="relative w-full h-full flex items-center justify-center">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-50 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
-            aria-label="닫기"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <img
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 z-50 p-1.5 rounded-full bg-muted/90 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="닫기"
+        >
+          <X className="w-4 h-4" />
+        </button>
+        <div className="flex items-center justify-center w-full min-h-0 flex-1">
+          <ImageWithFallback
             src={imageUrl}
             alt={alt || '이미지 미리보기'}
-            className="max-w-full max-h-[90vh] object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            disableInteraction
           />
         </div>
       </DialogContent>

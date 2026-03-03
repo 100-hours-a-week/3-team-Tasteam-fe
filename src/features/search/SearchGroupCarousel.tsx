@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib/utils'
 
 type SearchGroupCarouselProps = {
   groups: SearchGroupItem[]
-  onGroupClick?: (groupId: string) => void
+  onGroupClick?: (groupId: string, metadata?: { position: number }) => void
 }
 
 const CARDS_PER_PAGE = 8
@@ -47,13 +47,17 @@ export function SearchGroupCarousel({ groups, onGroupClick }: SearchGroupCarouse
           {pages.map((page, pageIdx) => (
             <CarouselItem key={pageIdx} className="pl-0">
               <div className="grid grid-cols-4 gap-3 px-4">
-                {page.map((group) => (
+                {page.map((group, indexInPage) => (
                   <SearchGroupCard
                     key={group.groupId}
                     groupId={group.groupId}
                     name={group.name}
                     logoImageUrl={group.logoImageUrl}
-                    onClick={() => onGroupClick?.(String(group.groupId))}
+                    onClick={() =>
+                      onGroupClick?.(String(group.groupId), {
+                        position: pageIdx * CARDS_PER_PAGE + indexInPage,
+                      })
+                    }
                   />
                 ))}
               </div>

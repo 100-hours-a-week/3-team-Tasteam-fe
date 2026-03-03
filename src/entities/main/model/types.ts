@@ -24,7 +24,8 @@ export type MainSectionItemDto = {
   restaurantId: number
   name: string
   distanceMeter: number
-  category: string
+  foodCategories: string[]
+  category?: string
   thumbnailImageUrl: string
   isFavorite: boolean
   reviewSummary: string
@@ -48,7 +49,7 @@ export type SplashEventDto = {
 export type MainPageResponseDto = SuccessResponse<{
   banners: MainBannerGroupDto
   sections: MainSectionDto[]
-  splashEvent?: SplashEventDto
+  splashPromotion?: SplashEventDto
 }>
 
 export type MainPageData = {

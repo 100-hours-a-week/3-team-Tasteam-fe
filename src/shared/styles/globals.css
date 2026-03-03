@@ -192,3 +192,16 @@
   margin: 0 auto;
   padding: 0 24px;
 }
+
+@keyframes rainbow-hue {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.animate-rainbow-hue {
+  animation: rainbow-hue 4s linear infinite;
+}

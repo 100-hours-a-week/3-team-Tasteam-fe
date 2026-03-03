@@ -18,10 +18,11 @@ type RestaurantDtoProps = {
 type RestaurantSimpleProps = {
   id?: string
   name: string
-  category: string
+  category?: string
+  foodCategories?: string[]
   rating?: number
   reviewCount?: number
-  distance?: string
+  distance?: number | string
   address?: string
   image?: string
   imageUrl?: string
@@ -45,6 +46,28 @@ function formatDistance(meters: number): string {
   return `${(meters / 1000).toFixed(1)}km`
 }
 
+function normalizeDistanceLabel(distance?: number | string): string {
+  if (distance == null) return ''
+
+  if (typeof distance === 'number') {
+    if (!Number.isFinite(distance)) return ''
+    return formatDistance(Math.max(0, distance))
+  }
+
+  const raw = distance.trim()
+  if (!raw) return ''
+
+  const match = raw.match(/^([0-9]+(?:\.[0-9]+)?)\s*(km|m)?$/i)
+  if (!match) return raw
+
+  const value = Number(match[1])
+  if (!Number.isFinite(value)) return raw
+
+  const unit = (match[2] ?? 'm').toLowerCase()
+  const meters = unit === 'km' ? value * 1000 : value
+  return formatDistance(Math.max(0, meters))
+}
+
 function getCardImages(props: RestaurantCardProps): string[] {
   if (isSimpleProps(props)) {
     if (props.images && props.images.length > 0) return props.images
@@ -57,7 +80,27 @@ function getCardImages(props: RestaurantCardProps): string[] {
   if ('thumbnailImage' in restaurant) {
     return [restaurant.thumbnailImage.url]
   }
-  return restaurant.images.map((img) => img.url)
+  return (restaurant.images ?? []).map((img) => img.url)
+}
+
+function normalizeReviewSummary(value?: string): string {
+  const trimmed = value?.trim()
+  if (!trimmed) return ''
+  return trimmed.replace(/^["'`“”‘’]\s*(.*?)\s*["'`“”‘’]$/, '$1')
+}
+
+function normalizeFoodCategories(categories?: string[]): string[] {
+  if (!Array.isArray(categories)) return []
+  return categories
+    .map((category) => (typeof category === 'string' ? category.trim() : ''))
+    .filter((category) => category.length > 0)
+}
+
+function resolveCategoryText(categories?: string[], fallbackCategory?: string): string {
+  const normalized = normalizeFoodCategories(categories)
+  if (normalized.length > 0) return normalized.join(' · ')
+  const fallback = fallbackCategory?.trim()
+  return fallback && fallback.length > 0 ? fallback : '기타'
 }
 
 export function RestaurantCard(props: RestaurantCardProps) {
@@ -101,6 +144,7 @@ export function RestaurantCard(props: RestaurantCardProps) {
     const {
       name,
       category,
+      foodCategories,
       distance,
       address,
       tags,
@@ -110,8 +154,10 @@ export function RestaurantCard(props: RestaurantCardProps) {
       onClick,
       className,
     } = props
-    const locationText = distance || address || ''
-    const summary = reviewSummary?.trim()
+    const distanceText = normalizeDistanceLabel(distance)
+    const addressText = address?.trim() ?? ''
+    const summary = normalizeReviewSummary(reviewSummary)
+    const categoryText = resolveCategoryText(foodCategories, category)
 
     return (
       <Card
@@ -141,19 +187,27 @@ export function RestaurantCard(props: RestaurantCardProps) {
             </Button>
           )}
         </div>
-        <div className="px-4 pb-4 pt-1 space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="flex-1 min-w-0 truncate">{name}</h3>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>{category}</span>
-            {locationText && (
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                <span>{locationText}</span>
+        <div className="px-4 pb-4 pt-4 space-y-2">
+          <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+            <span className="min-w-0 truncate" title={categoryText}>
+              {categoryText}
+            </span>
+            {distanceText && (
+              <div className="flex items-start gap-1 min-w-0 max-w-[55%]">
+                <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                <span className="break-words text-right leading-tight">{distanceText}</span>
               </div>
             )}
           </div>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="flex-1 min-w-0 truncate text-[17px]">{name}</h3>
+          </div>
+          {!distanceText && addressText && (
+            <div className="flex items-start gap-1 text-sm text-muted-foreground">
+              <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+              <span className="line-clamp-1 break-words">{addressText}</span>
+            </div>
+          )}
           {!images.length && onSave && (
             <Button
               variant="ghost"
@@ -178,13 +232,13 @@ export function RestaurantCard(props: RestaurantCardProps) {
             </div>
           )}
           {summary && (
-            <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
+            <div className="!mt-6 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
               <div className="flex items-center gap-1.5 text-xs font-bold text-primary/80 uppercase tracking-wider">
                 <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
                 <span>AI 리뷰 요약</span>
               </div>
-              <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
-                "{summary}"
+              <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic break-words">
+                {summary}
               </p>
             </div>
           )}
@@ -201,7 +255,8 @@ export function RestaurantCard(props: RestaurantCardProps) {
     onClick,
     className,
   } = props
-  const summary = reviewSummary?.trim()
+  const summary = normalizeReviewSummary(reviewSummary)
+  const categoryText = resolveCategoryText(restaurant.foodCategories)
 
   return (
     <Card
@@ -231,34 +286,27 @@ export function RestaurantCard(props: RestaurantCardProps) {
           </Button>
         )}
       </div>
-      <div className="px-4 pb-4 pt-1 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="flex-1 min-w-0 truncate">{restaurant.name}</h3>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span>{restaurant.foodCategories[0]}</span>
-          <div className="flex items-center gap-1">
+      <div className="px-4 pb-4 pt-4 space-y-2">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="flex-1 min-w-0 truncate" title={categoryText}>
+            {categoryText}
+          </span>
+          <div className="ml-auto flex items-center gap-1 shrink-0">
             <MapPin className="h-3 w-3" />
-            <span>{formatDistance(restaurant.distanceMeter)}</span>
+            <span>{formatDistance(restaurant.distanceMeter ?? 0)}</span>
           </div>
         </div>
-        {restaurant.foodCategories.length > 1 && (
-          <div className="flex flex-wrap gap-1">
-            {restaurant.foodCategories.slice(1, 4).map((cat) => (
-              <Badge key={cat} variant="secondary" className="text-xs">
-                {cat}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="flex-1 min-w-0 truncate text-[17px]">{restaurant.name}</h3>
+        </div>
         {summary && (
-          <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
+          <div className="!mt-6 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-primary/80 uppercase tracking-wider">
               <Sparkles className="h-3.5 w-3.5 fill-primary/20" />
               <span>AI 리뷰 요약</span>
             </div>
-            <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic">
-              "{summary}"
+            <p className="text-sm text-foreground/80 line-clamp-2 leading-relaxed italic break-words">
+              {summary}
             </p>
           </div>
         )}

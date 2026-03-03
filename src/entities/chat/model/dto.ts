@@ -1,31 +1,46 @@
 import type { SuccessResponse } from '@/shared/types/api'
 import type { IsoDateTimeString } from '@/shared/types/common'
-import type { CursorPageResponse } from '@/shared/types/pagination'
 
 export type ChatMessageDto = {
   id: number
   memberId: number
   memberNickname: string
-  memberProfileImageUrl: string
-  content: string
-  messageType: string
+  memberProfileImageUrl?: string | null
+  content: string | null
+  messageType: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM' | string
+  files?: ChatMessageFileItemDto[]
   createdAt: IsoDateTimeString
 }
 
-export type ChatMessageListResponseDto = CursorPageResponse<ChatMessageDto>
+export type ChatMessageFileItemDto = {
+  fileType: 'IMAGE' | string
+  fileUrl: string
+}
+
+export type ChatMessageListResponseDto = {
+  items: ChatMessageDto[]
+  pagination: {
+    nextCursor: string | null
+    afterCursor?: string | null
+    size: number
+    hasNext: boolean
+  }
+  meta?: {
+    lastReadMessageId?: number | null
+  }
+}
 
 export type ChatMessageSendRequestDto = {
-  messageType?: string
-  content?: string
+  messageType?: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM'
+  content: string | null
+  files?: ChatMessageFileRequestDto[]
 }
 
-export type ChatMessageSendResponseDto = SuccessResponse<{
-  id: number
-  messageType: string
-  content: string
-  image: string | null
-  createdAt: IsoDateTimeString
-}>
+export type ChatMessageFileRequestDto = {
+  fileUuid: string
+}
+
+export type ChatMessageSendResponseDto = SuccessResponse<ChatMessageDto>
 
 export type ChatReadCursorRequestDto = {
   lastReadMessageId: number

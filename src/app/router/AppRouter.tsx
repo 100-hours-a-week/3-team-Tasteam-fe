@@ -2,7 +2,13 @@ import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { RequireAuth } from '@/features/auth/require-auth'
 import { useAuth } from '@/entities/user'
+import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
 import { FEATURE_FLAGS } from '@/shared/config/featureFlags'
+import { GenericPageSkeleton } from '@/shared/ui/generic-page-skeleton'
+import { HomePageSkeleton } from '@/pages/home/ui/HomePageSkeleton'
+import { SearchPageSkeleton } from '@/pages/search/ui/SearchPageSkeleton'
+import { GroupsPageSkeleton } from '@/pages/group/ui/GroupsPageSkeleton'
+import { RestaurantDetailPageSkeleton } from '@/pages/restaurant-detail/ui/RestaurantDetailPageSkeleton'
 
 const HomePage = lazy(() => import('@/pages/home').then((m) => ({ default: m.HomePage })))
 const LoginPage = lazy(() => import('@/pages/login').then((m) => ({ default: m.LoginPage })))
@@ -58,11 +64,12 @@ const NotificationSettingsPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('@/pages/settings').then((m) => ({ default: m.SettingsPage })),
 )
+const TermsPage = lazy(() => import('@/pages/terms').then((m) => ({ default: m.TermsPage })))
+const PrivacyPolicyPage = lazy(() =>
+  import('@/pages/privacy-policy').then((m) => ({ default: m.PrivacyPolicyPage })),
+)
 const RestaurantDetailPage = lazy(() =>
   import('@/pages/restaurant-detail').then((m) => ({ default: m.RestaurantDetailPage })),
-)
-const RestaurantReviewsPage = lazy(() =>
-  import('@/pages/restaurant-reviews').then((m) => ({ default: m.RestaurantReviewsPage })),
 )
 const WriteReviewPage = lazy(() =>
   import('@/pages/write-review').then((m) => ({ default: m.WriteReviewPage })),
@@ -86,6 +93,19 @@ const EventDetailPage = lazy(() =>
   import('@/pages/events').then((m) => ({ default: m.EventDetailPage })),
 )
 
+function OAuthBackGuard() {
+  useEffect(() => {
+    const handle = () => {
+      if (sessionStorage.getItem('auth:back_guard') !== '1') return
+      sessionStorage.removeItem('auth:back_guard')
+      window.history.go(1)
+    }
+    window.addEventListener('popstate', handle)
+    return () => window.removeEventListener('popstate', handle)
+  }, [])
+  return null
+}
+
 function ScrollToTop() {
   const location = useLocation()
 
@@ -102,12 +122,54 @@ type AppRouterProps = {
 
 export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, logout } = useAuth()
+  const { track } = useUserActivity()
+  const fromPageKey = resolvePageContext(location.pathname).pageKey
+
+  const trackRestaurantClick = (restaurantId: string, position = -1) => {
+    const parsedRestaurantId = Number(restaurantId)
+    if (!Number.isFinite(parsedRestaurantId)) return
+    track({
+      eventName: 'ui.restaurant.clicked',
+      properties: {
+        restaurantId: parsedRestaurantId,
+        fromPageKey,
+        position,
+      },
+    })
+  }
+
+  const trackGroupClick = (groupId: string, position = -1) => {
+    const parsedGroupId = Number(groupId)
+    if (!Number.isFinite(parsedGroupId)) return
+    track({
+      eventName: 'ui.group.clicked',
+      properties: {
+        groupId: parsedGroupId,
+        fromPageKey,
+        position,
+      },
+    })
+  }
+
+  const trackEventClick = (eventId: number, position = -1) => {
+    if (!Number.isFinite(eventId)) return
+    track({
+      eventName: 'ui.event.clicked',
+      properties: {
+        eventId,
+        fromPageKey,
+        position,
+      },
+    })
+  }
 
   return (
     <>
+      <OAuthBackGuard />
       <ScrollToTop />
-      <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <Suspense fallback={<GenericPageSkeleton />}>
         <Routes>
           <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
           <Route
@@ -147,19 +209,30 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
           <Route
             path="/search"
             element={
-              <SearchPage
-                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
-                onGroupClick={(id) => navigate(`/groups/${id}`)}
-              />
+              <Suspense fallback={<SearchPageSkeleton />}>
+                <SearchPage
+                  onRestaurantClick={(id, metadata) => {
+                    trackRestaurantClick(id, metadata?.position ?? -1)
+                    navigate(`/restaurants/${id}`, { state: { fromPageKey } })
+                  }}
+                  onGroupClick={(id, metadata) => {
+                    trackGroupClick(id, metadata?.position ?? -1)
+                    navigate(`/groups/${id}`)
+                  }}
+                />
+              </Suspense>
             }
           />
 
           <Route
             path="/favorites"
             element={
-              <RequireAuth>
-                <FavoritesPage onRestaurantClick={(id) => navigate(`/restaurants/${id}`)} />
-              </RequireAuth>
+              <FavoritesPage
+                onRestaurantClick={(id) => {
+                  trackRestaurantClick(id, -1)
+                  navigate(`/restaurants/${id}`, { state: { fromPageKey } })
+                }}
+              />
             }
           />
 
@@ -177,14 +250,26 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             element={
               <TodayLunchPage
                 onBack={() => navigate(-1)}
-                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
+                onRestaurantClick={(id) => {
+                  trackRestaurantClick(id, -1)
+                  navigate(`/restaurants/${id}`, { state: { fromPageKey } })
+                }}
               />
             }
           />
 
           <Route
             path="/groups"
-            element={<GroupsPage onGroupClick={(id) => navigate(`/groups/${id}`)} />}
+            element={
+              <Suspense fallback={<GroupsPageSkeleton />}>
+                <GroupsPage
+                  onGroupClick={(id) => {
+                    trackGroupClick(id, -1)
+                    navigate(`/groups/${id}`)
+                  }}
+                />
+              </Suspense>
+            }
           />
           <Route
             path="/groups/create"
@@ -281,7 +366,10 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
               <RequireAuth>
                 <MyFavoritesPage
                   onBack={() => navigate(-1)}
-                  onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
+                  onRestaurantClick={(id) => {
+                    trackRestaurantClick(id, -1)
+                    navigate(`/restaurants/${id}`, { state: { fromPageKey } })
+                  }}
                 />
               </RequireAuth>
             }
@@ -304,11 +392,34 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             element={<NotificationSettingsPage onBack={() => navigate(-1)} />}
           />
           <Route path="/settings" element={<SettingsPage onBack={() => navigate(-1)} />} />
+          <Route path="/terms" element={<TermsPage onBack={() => navigate(-1)} />} />
+          <Route
+            path="/privacy-policy"
+            element={<PrivacyPolicyPage onBack={() => navigate(-1)} />}
+          />
           <Route path="/notices" element={<NoticesPage onBack={() => navigate(-1)} />} />
-          <Route path="/events" element={<EventsPage onBack={() => navigate(-1)} />} />
+          <Route
+            path="/events"
+            element={
+              <EventsPage
+                onBack={() => navigate(-1)}
+                onEventClick={(eventId, metadata) => {
+                  trackEventClick(eventId, metadata?.position ?? -1)
+                  navigate(`/events/${eventId}`)
+                }}
+              />
+            }
+          />
           <Route path="/events/:id" element={<EventDetailPage onBack={() => navigate(-1)} />} />
 
-          <Route path="/restaurants/:id" element={<RestaurantDetailPage />} />
+          <Route
+            path="/restaurants/:id"
+            element={
+              <Suspense fallback={<RestaurantDetailPageSkeleton />}>
+                <RestaurantDetailPage />
+              </Suspense>
+            }
+          />
           <Route
             path="/restaurants/:id/review"
             element={
@@ -317,8 +428,6 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
               </RequireAuth>
             }
           />
-          <Route path="/restaurants/:id/reviews" element={<RestaurantReviewsPage />} />
-
           <Route
             path="/chat/:roomId"
             element={
@@ -342,11 +451,22 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
           <Route
             path="/"
             element={
-              <HomePage
-                onSearchClick={() => navigate('/search')}
-                onRestaurantClick={(id) => navigate(`/restaurants/${id}`)}
-                onGroupClick={(id) => navigate(`/groups/${id}`)}
-              />
+              <Suspense fallback={<HomePageSkeleton />}>
+                <HomePage
+                  onSearchClick={() => navigate('/search')}
+                  onRestaurantClick={(id, metadata) => {
+                    trackRestaurantClick(id, metadata?.position ?? -1)
+                    navigate(`/restaurants/${id}`, { state: { fromPageKey } })
+                  }}
+                  onGroupClick={(id) => {
+                    trackGroupClick(id, -1)
+                    navigate(`/groups/${id}`)
+                  }}
+                  onEventClick={(eventId) => {
+                    trackEventClick(eventId, 0)
+                  }}
+                />
+              </Suspense>
             }
           />
           <Route

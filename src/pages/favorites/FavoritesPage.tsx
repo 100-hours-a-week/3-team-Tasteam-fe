@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Heart } from 'lucide-react'
+import { Heart, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { TopAppBar } from '@/widgets/top-app-bar'
 import { Container } from '@/shared/ui/container'
 import { EmptyState } from '@/widgets/empty-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { ROUTES } from '@/shared/config/routes'
+import { useAuth } from '@/entities/user'
 import { FavoriteCategoryFilter } from './components/FavoriteCategoryFilter'
 import { FavoriteRestaurantCard } from './components/FavoriteRestaurantCard'
 import { SubgroupSelectorSheet } from './components/SubgroupSelectorSheet'
@@ -18,7 +20,9 @@ import {
   deleteMyFavoriteRestaurant,
   deleteSubgroupFavoriteRestaurant,
 } from '@/entities/favorite'
+import { favoriteKeys } from '@/entities/favorite/model/favoriteKeys'
 import type { FavoriteTarget, FavoriteTab, FavoriteRestaurantItem } from '@/entities/favorite'
+import { STALE_USER } from '@/shared/lib/queryConstants'
 
 type FavoritesPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -26,163 +30,119 @@ type FavoritesPageProps = {
 
 export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+  const qc = useQueryClient()
   const [selectedTab, setSelectedTab] = useState<FavoriteTab>('personal')
   const [selectedSubgroupId, setSelectedSubgroupId] = useState<number | null>(null)
   const [showSubgroupSelector, setShowSubgroupSelector] = useState(false)
 
-  // 데이터 상태
-  const [favoriteTargets, setFavoriteTargets] = useState<FavoriteTarget[]>([])
-  const [personalFavorites, setPersonalFavorites] = useState<FavoriteRestaurantItem[]>([])
-  const [subgroupFavorites, setSubgroupFavorites] = useState<FavoriteRestaurantItem[]>([])
+  // 찜 타겟 목록
+  const {
+    data: targetsData,
+    isLoading: isTargetsLoading,
+    isError: isTargetsError,
+  } = useQuery({
+    queryKey: favoriteKeys.targets(),
+    queryFn: () => getFavoriteTargets(),
+    enabled: isAuthenticated,
+    staleTime: STALE_USER,
+  })
 
-  // UI 상태
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // 찜 타겟 목록 파싱
+  const favoriteTargets: FavoriteTarget[] = (() => {
+    if (!targetsData?.data) return []
+    const data = targetsData.data
+    return [
+      {
+        id: 'my',
+        type: 'personal' as const,
+        name: '내 찜',
+        favoriteCount: data.myFavorite.favoriteCount,
+      },
+      ...data.subgroupFavorites.map((subgroup) => ({
+        id: `subgroup-${subgroup.subgroupId}`,
+        type: 'group' as const,
+        name: subgroup.name,
+        subgroupId: subgroup.subgroupId,
+        favoriteCount: subgroup.favoriteCount,
+      })),
+    ]
+  })()
 
-  // 페이지네이션 (향후 무한 스크롤 구현 시 사용)
-  const [, setPersonalCursor] = useState<string | null>(null)
-  const [, setSubgroupCursor] = useState<string | null>(null)
-  const [, setHasMorePersonal] = useState(false)
-  const [, setHasMoreSubgroup] = useState(false)
+  // 첫 번째 하위그룹 자동 선택
+  const resolvedSubgroupId =
+    selectedSubgroupId ?? targetsData?.data?.subgroupFavorites?.[0]?.subgroupId ?? null
 
-  // 찜 타겟 목록 조회
-  useEffect(() => {
-    const loadTargets = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const response = await getFavoriteTargets()
-        const data = response.data
+  // 내 찜 목록
+  const { data: personalData, isLoading: isPersonalLoading } = useQuery({
+    queryKey: favoriteKeys.myList(),
+    queryFn: () => getMyFavoriteRestaurants(),
+    enabled: isAuthenticated && selectedTab === 'personal',
+    staleTime: STALE_USER,
+  })
 
-        const targets: FavoriteTarget[] = [
-          {
-            id: 'my',
-            type: 'personal',
-            name: '내 찜',
-            favoriteCount: data.myFavorite.favoriteCount,
-          },
-          ...data.subgroupFavorites.map((subgroup) => ({
-            id: `subgroup-${subgroup.subgroupId}`,
-            type: 'group' as const,
-            name: subgroup.name, // 백엔드에서 name으로 반환 (subgroupName)
-            subgroupId: subgroup.subgroupId,
-            favoriteCount: subgroup.favoriteCount,
-          })),
-        ]
+  const personalFavorites: FavoriteRestaurantItem[] = (() => {
+    if (!personalData) return []
+    const data = (personalData as any).data || personalData
+    return data.items || []
+  })()
 
-        setFavoriteTargets(targets)
+  // 하위그룹 찜 목록
+  const { data: subgroupData, isLoading: isSubgroupLoading } = useQuery({
+    queryKey: favoriteKeys.subgroup(resolvedSubgroupId ?? 0),
+    queryFn: () => getSubgroupFavoriteRestaurants(resolvedSubgroupId!, {}),
+    enabled: isAuthenticated && selectedTab === 'group' && resolvedSubgroupId != null,
+    staleTime: STALE_USER,
+  })
 
-        // 첫 번째 하위그룹이 있으면 선택
-        if (data.subgroupFavorites.length > 0 && !selectedSubgroupId) {
-          setSelectedSubgroupId(data.subgroupFavorites[0].subgroupId)
-        }
-      } catch (err) {
-        console.error('찜 타겟 목록 조회 실패:', err)
-        setError('찜 목록을 불러오는데 실패했습니다')
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  const subgroupFavorites: FavoriteRestaurantItem[] = (() => {
+    if (!subgroupData) return []
+    const data = (subgroupData as any).data || subgroupData
+    return data.items || []
+  })()
 
-    loadTargets()
-  }, [])
-
-  // 내 찜 목록 조회
-  useEffect(() => {
-    if (selectedTab !== 'personal') return
-
-    const loadPersonalFavorites = async () => {
-      setIsLoadingFavorites(true)
-      try {
-        const response = await getMyFavoriteRestaurants()
-        console.log('내 찜 목록 전체 응답:', response)
-        // request 함수가 response.data를 반환하므로 response는 CursorPageResponse 형태
-        // 하지만 백엔드가 SuccessResponse로 래핑하면 response.data.items 형태일 수 있음
-        const data = (response as any).data || response
-        console.log('내 찜 목록 데이터:', data)
-        console.log('내 찜 목록 items:', data.items)
-        setPersonalFavorites(data.items || [])
-        setPersonalCursor(data.pagination?.nextCursor || null)
-        setHasMorePersonal(data.pagination?.hasNext || false)
-      } catch (err) {
-        console.error('내 찜 목록 조회 실패:', err)
-        setPersonalFavorites([])
-      } finally {
-        setIsLoadingFavorites(false)
-      }
-    }
-
-    loadPersonalFavorites()
-  }, [selectedTab])
-
-  // 하위그룹 찜 목록 조회
-  useEffect(() => {
-    if (selectedTab !== 'group' || !selectedSubgroupId) return
-
-    const loadSubgroupFavorites = async () => {
-      setIsLoadingFavorites(true)
-      try {
-        const response = await getSubgroupFavoriteRestaurants(selectedSubgroupId, {
-          cursor: undefined,
-        })
-        console.log('하위그룹 찜 목록 전체 응답:', response)
-        // request 함수가 response.data를 반환하므로 response는 CursorPageResponse 형태
-        // 하지만 백엔드가 SuccessResponse로 래핑하면 response.data.items 형태일 수 있음
-        const data = (response as any).data || response
-        console.log('하위그룹 찜 목록 데이터:', data)
-        console.log('하위그룹 찜 목록 items:', data.items)
-        setSubgroupFavorites(data.items || [])
-        setSubgroupCursor(data.pagination?.nextCursor || null)
-        setHasMoreSubgroup(data.pagination?.hasNext || false)
-      } catch (err) {
-        console.error('하위그룹 찜 목록 조회 실패:', err)
-        setSubgroupFavorites([])
-      } finally {
-        setIsLoadingFavorites(false)
-      }
-    }
-
-    loadSubgroupFavorites()
-  }, [selectedTab, selectedSubgroupId])
-
-  // 찜 해제 핸들러
-  const handleRemoveFavorite = async (restaurantId: number, e: React.MouseEvent) => {
-    e.stopPropagation()
-
-    try {
-      if (selectedTab === 'personal') {
-        await deleteMyFavoriteRestaurant(restaurantId)
-        setPersonalFavorites((prev) => prev.filter((item) => item.restaurantId !== restaurantId))
-        // 타겟 목록의 개수 업데이트
-        setFavoriteTargets((prev) =>
-          prev.map((target) =>
-            target.id === 'my'
-              ? { ...target, favoriteCount: Math.max(0, (target.favoriteCount || 0) - 1) }
-              : target,
-          ),
-        )
-      } else if (selectedSubgroupId) {
-        await deleteSubgroupFavoriteRestaurant(selectedSubgroupId, restaurantId)
-        setSubgroupFavorites((prev) => prev.filter((item) => item.restaurantId !== restaurantId))
-        // 타겟 목록의 개수 업데이트
-        setFavoriteTargets((prev) =>
-          prev.map((target) =>
-            target.subgroupId === selectedSubgroupId
-              ? { ...target, favoriteCount: Math.max(0, (target.favoriteCount || 0) - 1) }
-              : target,
-          ),
-        )
-      }
+  // 내 찜 삭제 mutation
+  const deletePersonalMutation = useMutation({
+    mutationFn: (restaurantId: number) => deleteMyFavoriteRestaurant(restaurantId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: favoriteKeys.myList() })
+      void qc.invalidateQueries({ queryKey: favoriteKeys.targets() })
       toast.success('찜 목록에서 삭제되었습니다')
-    } catch (err) {
-      console.error('찜 삭제 실패:', err)
+    },
+    onError: () => {
       toast.error('찜 삭제에 실패했습니다')
+    },
+  })
+
+  // 하위그룹 찜 삭제 mutation
+  const deleteSubgroupMutation = useMutation({
+    mutationFn: ({ subgroupId, restaurantId }: { subgroupId: number; restaurantId: number }) =>
+      deleteSubgroupFavoriteRestaurant(subgroupId, restaurantId),
+    onSuccess: (_data, { subgroupId }) => {
+      void qc.invalidateQueries({ queryKey: favoriteKeys.subgroup(subgroupId) })
+      void qc.invalidateQueries({ queryKey: favoriteKeys.targets() })
+      toast.success('찜 목록에서 삭제되었습니다')
+    },
+    onError: () => {
+      toast.error('찜 삭제에 실패했습니다')
+    },
+  })
+
+  const handleRemoveFavorite = (restaurantId: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (selectedTab === 'personal') {
+      deletePersonalMutation.mutate(restaurantId)
+    } else if (resolvedSubgroupId != null) {
+      deleteSubgroupMutation.mutate({ subgroupId: resolvedSubgroupId, restaurantId })
     }
   }
 
+  const isLoading = isTargetsLoading
+  const isLoadingFavorites = isPersonalLoading || isSubgroupLoading
+  const error = isTargetsError ? '찜 목록을 불러오는데 실패했습니다' : null
+
   const selectedSubgroup = favoriteTargets.find(
-    (target) => target.subgroupId === selectedSubgroupId,
+    (target) => target.subgroupId === (resolvedSubgroupId ?? undefined),
   )
 
   const currentRestaurants = selectedTab === 'personal' ? personalFavorites : subgroupFavorites
@@ -192,7 +152,7 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
       <TopAppBar title="찜" />
 
       {/* Category Filter */}
-      {!isLoading && (
+      {isAuthenticated && !isLoading && (
         <FavoriteCategoryFilter
           selectedTab={selectedTab}
           selectedSubgroup={selectedSubgroup || null}
@@ -203,7 +163,21 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
 
       {/* Content */}
       <Container className="flex-1 py-4 overflow-auto">
-        {isLoading || isLoadingFavorites ? (
+        {!isAuthenticated ? (
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <EmptyState
+              icon={LogIn}
+              title="로그인이 필요해요"
+              description="찜 목록을 보려면 로그인해주세요"
+              actionLabel="로그인하기"
+              onAction={() => {
+                const returnTo = ROUTES.favorites
+                sessionStorage.setItem('auth:return_to', returnTo)
+                navigate(ROUTES.login, { state: { returnTo } })
+              }}
+            />
+          </div>
+        ) : isLoading || isLoadingFavorites ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-24 w-full" />
@@ -236,7 +210,7 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
         open={showSubgroupSelector}
         onClose={() => setShowSubgroupSelector(false)}
         subgroups={favoriteTargets.filter((t) => t.type === 'group')}
-        selectedSubgroupId={selectedSubgroupId}
+        selectedSubgroupId={resolvedSubgroupId}
         onSelect={(subgroupId) => {
           setSelectedSubgroupId(subgroupId)
           setSelectedTab('group')

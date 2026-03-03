@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { ChevronRight, Users } from 'lucide-react'
 import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 import { Container } from '@/shared/ui/container'
 import { ROUTES } from '@/shared/config/routes'
 import {
@@ -10,22 +12,23 @@ import {
 } from '@/features/groups'
 import { RestaurantCard } from '@/entities/restaurant'
 import { getGroup, getGroupReviewRestaurants, leaveGroup } from '@/entities/group'
+import { groupKeys } from '@/entities/group/model/groupKeys'
 import type { RestaurantListItemDto } from '@/entities/restaurant'
 import { getFoodCategories } from '@/entities/restaurant'
+import { referenceKeys } from '@/entities/restaurant/model/referenceKeys'
+import { getSubgroups, joinSubgroup, type SubgroupListItemDto } from '@/entities/subgroup'
 import { useMemberGroups } from '@/entities/member'
+import { useAuth } from '@/entities/user'
 import { getCurrentPosition, type GeoPosition } from '@/shared/lib/geolocation'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { Skeleton } from '@/shared/ui/skeleton'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/ui/alert-dialog'
+import { Button } from '@/shared/ui/button'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
+import { STALE_CONTENT, STALE_REFERENCE } from '@/shared/lib/queryConstants'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { Input } from '@/shared/ui/input'
+import { getApiErrorCode } from '@/shared/lib/apiError'
 
 const CATEGORY_OPTIONS = [
   '한식',
@@ -41,9 +44,6 @@ const CATEGORY_OPTIONS = [
   '고깃집',
 ]
 const ALL_CATEGORY = '전체'
-const JOIN_GUIDE_AUTO_CLOSE_MS = 2200
-const JOIN_GUIDE_FADE_OUT_MS = 250
-
 const EMPTY_GROUP: GroupDetailHeaderData = {
   name: '',
   addressLine: '',
@@ -52,24 +52,60 @@ const EMPTY_GROUP: GroupDetailHeaderData = {
 
 export function GroupDetailPage() {
   const navigate = useNavigate()
+  const { isAuthenticated, openLogin } = useAuth()
   const { id } = useParams()
   const location = useLocation()
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [categories, setCategories] = useState<string[]>([])
-  const [isCategoryLoading, setIsCategoryLoading] = useState(false)
-  const [group, setGroup] = useState<GroupDetailHeaderData | null>(null)
-  const [emailDomain, setEmailDomain] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(ALL_CATEGORY)
+  const { data: foodCategoryList = [], isLoading: isCategoryLoading } = useQuery({
+    queryKey: referenceKeys.foodCategories(),
+    queryFn: getFoodCategories,
+    staleTime: STALE_REFERENCE,
+  })
+  const categories = foodCategoryList.map((item) => item.name)
+  const groupId = parseNumberParam(id)
+
+  // 그룹 상세 조회
+  const {
+    data: groupData,
+    isLoading: isGroupLoading,
+    isError: isGroupError,
+  } = useQuery({
+    queryKey: groupKeys.detail(groupId ?? 0),
+    queryFn: () => getGroup(groupId!),
+    enabled: isValidId(groupId),
+    staleTime: STALE_CONTENT,
+  })
+
+  const group: GroupDetailHeaderData | null = groupData
+    ? {
+        name: groupData.name,
+        profileImage: groupData.logoImageUrl ?? groupData.logoImage?.url ?? undefined,
+        addressLine: groupData.address,
+        addressDetail: groupData.detailAddress ?? undefined,
+        memberCount: groupData.memberCount ?? 0,
+      }
+    : null
+  const emailDomain = groupData?.emailDomain ?? null
+  const groupError = isGroupError ? '그룹 정보를 불러오지 못했습니다' : null
+  const isGroupLoaded = !isGroupLoading && Boolean(groupData)
+
   const [restaurants, setRestaurants] = useState<RestaurantListItemDto[]>([])
-  const [isGroupLoading, setIsGroupLoading] = useState(false)
   const [isRestaurantsLoading, setIsRestaurantsLoading] = useState(false)
-  const [groupError, setGroupError] = useState<string | null>(null)
   const [restaurantError, setRestaurantError] = useState<string | null>(null)
+  const [subgroupPreviews, setSubgroupPreviews] = useState<SubgroupListItemDto[]>([])
+  const [isSubgroupPreviewsLoading, setIsSubgroupPreviewsLoading] = useState(false)
+  const [hasMoreSubgroups, setHasMoreSubgroups] = useState(false)
+  const [subgroupTotalCount, setSubgroupTotalCount] = useState(0)
+  const [selectedSubgroup, setSelectedSubgroup] = useState<SubgroupListItemDto | null>(null)
+  const [subgroupJoinConfirmOpen, setSubgroupJoinConfirmOpen] = useState(false)
+  const [subgroupPasswordDialogOpen, setSubgroupPasswordDialogOpen] = useState(false)
+  const [subgroupPassword, setSubgroupPassword] = useState('')
+  const [isJoiningSubgroup, setIsJoiningSubgroup] = useState(false)
+  const [subgroupAccessGuideOpen, setSubgroupAccessGuideOpen] = useState(false)
   const [locationPosition, setLocationPosition] = useState<GeoPosition | null>(null)
   const [isLocationLoading, setIsLocationLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
-  const [isGroupLoaded, setIsGroupLoaded] = useState(false)
-  const groupId = parseNumberParam(id)
   const { summaries, isLoaded, refresh } = useMemberGroups()
 
   const joinedState =
@@ -82,44 +118,6 @@ export function GroupDetailPage() {
       : false
 
   const shouldMarkJoined = Boolean(joinedState?.joined)
-  const shouldShowOnboardingMemberGuide =
-    new URLSearchParams(location.search).get('onboardingMemberGuide') === 'true'
-  const [showJoinGuide, setShowJoinGuide] = useState(shouldShowOnboardingMemberGuide)
-  const [isJoinGuideVisible, setIsJoinGuideVisible] = useState(shouldShowOnboardingMemberGuide)
-
-  const dismissJoinGuide = useCallback(() => {
-    setIsJoinGuideVisible(false)
-    window.setTimeout(() => {
-      setShowJoinGuide(false)
-      if (shouldShowOnboardingMemberGuide) {
-        navigate(location.pathname, { replace: true, state: location.state })
-      }
-    }, JOIN_GUIDE_FADE_OUT_MS)
-  }, [location.pathname, location.state, navigate, shouldShowOnboardingMemberGuide])
-
-  useEffect(() => {
-    if (shouldShowOnboardingMemberGuide) {
-      setShowJoinGuide(true)
-      window.setTimeout(() => {
-        setIsJoinGuideVisible(true)
-      }, 0)
-      return
-    }
-    setIsJoinGuideVisible(false)
-    setShowJoinGuide(false)
-  }, [shouldShowOnboardingMemberGuide])
-
-  useEffect(() => {
-    if (!showJoinGuide || !isJoinGuideVisible) return
-
-    const timerId = window.setTimeout(() => {
-      dismissJoinGuide()
-    }, JOIN_GUIDE_AUTO_CLOSE_MS)
-
-    return () => {
-      window.clearTimeout(timerId)
-    }
-  }, [dismissJoinGuide, isJoinGuideVisible, showJoinGuide])
 
   useEffect(() => {
     if (!shouldMarkJoined) return
@@ -127,32 +125,6 @@ export function GroupDetailPage() {
     toast.success('그룹 가입이 완료되었습니다')
     navigate(location.pathname, { replace: true })
   }, [navigate, location.pathname, shouldMarkJoined])
-
-  useEffect(() => {
-    let cancelled = false
-    const fetchCategories = async () => {
-      setIsCategoryLoading(true)
-      try {
-        const list = await getFoodCategories()
-        if (cancelled) return
-        const names = list.map((item) => item.name)
-        setCategories(names)
-        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
-      } catch {
-        if (cancelled) return
-        setCategories(CATEGORY_OPTIONS)
-        setSelectedCategory((prev) => prev ?? ALL_CATEGORY)
-      } finally {
-        if (!cancelled) {
-          setIsCategoryLoading(false)
-        }
-      }
-    }
-    fetchCategories()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -180,45 +152,44 @@ export function GroupDetailPage() {
     }
   }, [])
 
+  // 하위 그룹 미리보기 조회
   useEffect(() => {
     if (!isValidId(groupId)) return
     let cancelled = false
-    const fetchGroup = async () => {
-      setIsGroupLoading(true)
-      setGroupError(null)
-      setIsGroupLoaded(false)
+    const fetchSubgroupPreviews = async () => {
+      setIsSubgroupPreviewsLoading(true)
       try {
-        const groupRes = await getGroup(groupId)
+        const response = await getSubgroups(groupId, { size: 100 })
         if (cancelled) return
-        setGroup({
-          name: groupRes.name,
-          profileImage: groupRes.logoImageUrl ?? groupRes.logoImage?.url ?? undefined,
-          addressLine: groupRes.address,
-          addressDetail: groupRes.detailAddress ?? undefined,
-          memberCount: groupRes.memberCount ?? 0,
-        })
-        setEmailDomain(groupRes.emailDomain ?? null)
-        setIsGroupLoaded(true)
+        const allItems = response.items ?? []
+        const sorted = [...allItems].sort((a, b) => b.memberCount - a.memberCount)
+        setSubgroupPreviews(sorted.slice(0, 3))
+        setSubgroupTotalCount(allItems.length)
+        setHasMoreSubgroups(Boolean(response.pagination?.hasNext))
       } catch {
         if (!cancelled) {
-          setGroupError('그룹 정보를 불러오지 못했습니다')
-          setGroup(null)
-          setRestaurants([])
-          setEmailDomain(null)
-          setIsGroupLoaded(false)
-          navigate('/404', { replace: true })
+          setSubgroupPreviews([])
+          setSubgroupTotalCount(0)
+          setHasMoreSubgroups(false)
         }
       } finally {
         if (!cancelled) {
-          setIsGroupLoading(false)
+          setIsSubgroupPreviewsLoading(false)
         }
       }
     }
-    fetchGroup()
+    void fetchSubgroupPreviews()
     return () => {
       cancelled = true
     }
-  }, [groupId, navigate])
+  }, [groupId])
+
+  // 그룹 조회 오류 시 404 리다이렉트
+  useEffect(() => {
+    if (!isGroupLoading && isGroupError && isValidId(groupId)) {
+      navigate('/404', { replace: true })
+    }
+  }, [isGroupLoading, isGroupError, groupId, navigate])
 
   useEffect(() => {
     if (!isValidId(groupId)) return
@@ -262,12 +233,96 @@ export function GroupDetailPage() {
 
   const isJoined =
     isLoaded && isValidId(groupId) ? summaries.some((item) => item.groupId === groupId) : false
+  const isGroupJoined = isJoined || shouldMarkJoined
+  const subgroupCountLabel = hasMoreSubgroups
+    ? `${subgroupTotalCount}+`
+    : String(subgroupTotalCount)
+  const subgroupPreviewGridColsClass =
+    subgroupPreviews.length <= 1
+      ? 'grid-cols-1'
+      : subgroupPreviews.length === 2
+        ? 'grid-cols-2'
+        : 'grid-cols-3'
+  const joinedSubgroupIdSet = useMemo(() => {
+    const ids = new Set<number>()
+    for (const summary of summaries) {
+      for (const subgroup of summary.subGroups ?? []) {
+        ids.add(subgroup.subGroupId)
+      }
+    }
+    return ids
+  }, [summaries])
+
+  const closeSubgroupJoinModals = () => {
+    setSubgroupJoinConfirmOpen(false)
+    setSubgroupPasswordDialogOpen(false)
+    setSelectedSubgroup(null)
+    setSubgroupPassword('')
+  }
+
+  const handleSubgroupJoin = async (password?: string) => {
+    if (!selectedSubgroup || !isValidId(groupId)) return
+
+    setIsJoiningSubgroup(true)
+    try {
+      const trimmedPassword = password?.trim()
+      await joinSubgroup(
+        groupId,
+        selectedSubgroup.subgroupId,
+        trimmedPassword ? trimmedPassword : undefined,
+      )
+      toast.success('하위 그룹에 가입되었습니다')
+      await refresh()
+      closeSubgroupJoinModals()
+      navigate(ROUTES.subgroupDetail(String(selectedSubgroup.subgroupId)))
+    } catch (error: unknown) {
+      const code = getApiErrorCode(error)
+      if (code === 'PASSWORD_MISMATCH') {
+        toast.error('비밀번호가 올바르지 않습니다')
+      } else if (code === 'SUBGROUP_ALREADY_JOINED') {
+        toast.message('이미 가입된 하위 그룹입니다')
+        closeSubgroupJoinModals()
+        navigate(ROUTES.subgroupDetail(String(selectedSubgroup.subgroupId)))
+      } else if (code === 'NO_PERMISSION') {
+        toast.error('그룹 가입 후 하위 그룹에 참여할 수 있습니다')
+      } else {
+        toast.error('하위 그룹 가입에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setIsJoiningSubgroup(false)
+    }
+  }
+
+  const handleSubgroupPreviewClick = (subgroup: SubgroupListItemDto) => {
+    if (!isAuthenticated) {
+      openLogin()
+      return
+    }
+    if (!isGroupJoined) {
+      setSubgroupAccessGuideOpen(true)
+      return
+    }
+
+    const isSubgroupJoined = joinedSubgroupIdSet.has(subgroup.subgroupId)
+    if (isSubgroupJoined) {
+      navigate(ROUTES.subgroupDetail(String(subgroup.subgroupId)))
+      return
+    }
+
+    setSelectedSubgroup(subgroup)
+    if (subgroup.joinType === 'PASSWORD') {
+      setSubgroupPassword('')
+      setSubgroupPasswordDialogOpen(true)
+      return
+    }
+    setSubgroupJoinConfirmOpen(true)
+  }
 
   return (
     <div className="pb-10">
       <GroupDetailHeader
         group={group ?? EMPTY_GROUP}
-        isJoined={isJoined || shouldMarkJoined}
+        isJoined={isGroupJoined}
         isLoading={isGroupLoading}
         onBack={() => {
           if (isFromOnboardingFlow) {
@@ -276,23 +331,91 @@ export function GroupDetailPage() {
           }
           navigate(-1)
         }}
-        onJoin={() => {
-          if (!isValidId(groupId)) return
-          const targetRoute =
-            emailDomain === null
-              ? ROUTES.groupPasswordJoin(String(groupId))
-              : ROUTES.groupEmailJoin(String(groupId))
-          navigate(targetRoute)
-        }}
-        onMoreAction={() => {
-          if (!isValidId(groupId)) return
-          navigate(`${ROUTES.subgroupList}?groupId=${groupId}`)
-        }}
         onNotificationSettings={() => navigate(ROUTES.notificationSettings)}
         onLeaveGroup={() => setLeaveDialogOpen(true)}
-        showJoinGuide={showJoinGuide}
-        isJoinGuideVisible={isJoinGuideVisible}
       />
+
+      {!isGroupLoading && !isGroupJoined ? (
+        <div className="border-y border-border/60 bg-muted/40">
+          <Container className="py-3">
+            <Button
+              variant="default"
+              size="lg"
+              onClick={() => {
+                if (!isValidId(groupId)) return
+                const targetRoute =
+                  emailDomain === null
+                    ? ROUTES.groupPasswordJoin(String(groupId))
+                    : ROUTES.groupEmailJoin(String(groupId))
+                navigate(targetRoute)
+              }}
+              className="h-11 w-full rounded-xl bg-primary text-white hover:bg-primary/90"
+            >
+              그룹 가입하기
+            </Button>
+          </Container>
+        </div>
+      ) : (
+        <div className="h-2 border-y border-border/60 bg-muted/40" aria-hidden />
+      )}
+
+      <Container className="pt-4 pb-4 border-b border-border">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">하위 그룹</h2>
+            <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-primary px-2 text-sm font-semibold text-white">
+              {subgroupCountLabel}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!isValidId(groupId)) return
+              navigate(`${ROUTES.subgroupList}?groupId=${groupId}`)
+            }}
+            className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            전체보기
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div>
+          {isSubgroupPreviewsLoading ? (
+            <div className="grid grid-cols-3 gap-3">
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+            </div>
+          ) : subgroupPreviews.length > 0 ? (
+            <div className={`grid ${subgroupPreviewGridColsClass} gap-3`}>
+              {subgroupPreviews.map((subgroup) => (
+                <button
+                  key={subgroup.subgroupId}
+                  type="button"
+                  onClick={() => handleSubgroupPreviewClick(subgroup)}
+                  className="flex h-24 flex-col justify-between rounded-2xl border border-border bg-card p-3 text-left hover:bg-accent/40"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-sm font-semibold">{subgroup.name}</p>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </div>
+                  <p className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    {subgroup.memberCount}명
+                  </p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+              아직 하위 그룹이 없습니다.
+            </div>
+          )}
+        </div>
+      </Container>
+
+      <div className="h-2 border-y border-border/60 bg-muted/40" aria-hidden />
 
       <Container className="pt-3 pb-3 border-b border-border">
         <GroupCategoryFilter
@@ -325,7 +448,7 @@ export function GroupDetailPage() {
             <RestaurantCard
               key={restaurant.id}
               restaurant={restaurant}
-              reviewSummary={restaurant.reviewSummary ?? '리뷰 요약을 준비 중입니다.'}
+              reviewSummary={restaurant.reviewSummary}
               onClick={() => navigate(ROUTES.restaurantDetail(String(restaurant.id)))}
             />
           ))
@@ -343,39 +466,99 @@ export function GroupDetailPage() {
       </Container>
 
       <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>그룹 탈퇴</AlertDialogTitle>
-            <AlertDialogDescription>
-              그룹 및 해당 그룹의 하위그룹에서 모두 나가게 됩니다. 다시 참가하려면 인증이
-              필요합니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction
-              variant="default"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => {
-                if (!isValidId(groupId)) return
-                leaveGroup(groupId)
-                  .then(() => {
-                    toast.success('그룹에서 탈퇴했습니다')
-                    refresh()
-                  })
-                  .catch(() => {
-                    toast.error('그룹 탈퇴에 실패했습니다')
-                  })
-                  .finally(() => {
-                    setLeaveDialogOpen(false)
-                  })
-              }}
-            >
-              나가기
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <ConfirmAlertDialogContent
+          size="sm"
+          title="그룹 탈퇴"
+          description="그룹 및 해당 그룹의 하위그룹에서 모두 나가게 됩니다. 다시 참가하려면 인증이 필요합니다."
+          confirmText="나가기"
+          onConfirm={() => {
+            if (!isValidId(groupId)) return
+            leaveGroup(groupId)
+              .then(() => {
+                toast.success('그룹에서 탈퇴했습니다')
+                refresh()
+              })
+              .catch(() => {
+                toast.error('그룹 탈퇴에 실패했습니다')
+              })
+              .finally(() => {
+                setLeaveDialogOpen(false)
+              })
+          }}
+        />
       </AlertDialog>
+
+      <AlertDialog open={subgroupJoinConfirmOpen} onOpenChange={setSubgroupJoinConfirmOpen}>
+        <ConfirmAlertDialogContent
+          size="sm"
+          title="하위 그룹 가입"
+          description={`"${selectedSubgroup?.name ?? ''}"에 가입하시겠습니까?`}
+          confirmText="가입하기"
+          onConfirm={() => {
+            void handleSubgroupJoin()
+          }}
+          confirmDisabled={isJoiningSubgroup}
+        />
+      </AlertDialog>
+
+      <AlertDialog open={subgroupAccessGuideOpen} onOpenChange={setSubgroupAccessGuideOpen}>
+        <ConfirmAlertDialogContent
+          size="sm"
+          title="그룹 가입 필요"
+          description="하위 그룹에 참여하려면 먼저 그룹에 가입해주세요."
+          confirmText="그룹 가입하기"
+          onConfirm={() => {
+            if (!isValidId(groupId)) return
+            const targetRoute =
+              emailDomain === null
+                ? ROUTES.groupPasswordJoin(String(groupId))
+                : ROUTES.groupEmailJoin(String(groupId))
+            navigate(targetRoute)
+          }}
+        />
+      </AlertDialog>
+
+      <Dialog open={subgroupPasswordDialogOpen} onOpenChange={setSubgroupPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>하위 그룹 가입</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="mb-3 text-sm text-muted-foreground">
+              "{selectedSubgroup?.name ?? '하위 그룹'}" 가입 비밀번호를 입력해주세요.
+            </p>
+            <Input
+              type="password"
+              placeholder="비밀번호 입력"
+              value={subgroupPassword}
+              onChange={(event) => setSubgroupPassword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  void handleSubgroupJoin(subgroupPassword)
+                }
+              }}
+              disabled={isJoiningSubgroup}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSubgroupPasswordDialogOpen(false)}
+              disabled={isJoiningSubgroup}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={() => {
+                void handleSubgroupJoin(subgroupPassword)
+              }}
+              disabled={isJoiningSubgroup || !subgroupPassword.trim()}
+            >
+              가입하기
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

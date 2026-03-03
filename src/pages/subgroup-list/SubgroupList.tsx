@@ -8,6 +8,8 @@ import { EmptyState } from '@/widgets/empty-state'
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
+import { AlertDialog } from '@/shared/ui/alert-dialog'
+import { ConfirmAlertDialogContent } from '@/shared/ui/confirm-alert-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import {
   Dialog,
@@ -24,6 +26,7 @@ import { useAuth } from '@/entities/user'
 import { logger } from '@/shared/lib/logger'
 import { isValidId, parseNumberParam } from '@/shared/lib/number'
 import { getApiErrorCode } from '@/shared/lib/apiError'
+import { ROUTES } from '@/shared/config/routes'
 
 type Group = {
   id: string
@@ -34,6 +37,12 @@ type Group = {
   isJoined: boolean
   isPrivate: boolean
 }
+
+const sortByMemberCountDesc = (items: Group[]) =>
+  [...items].sort((a, b) => {
+    if (b.memberCount !== a.memberCount) return b.memberCount - a.memberCount
+    return a.name.localeCompare(b.name, 'ko')
+  })
 
 type SubgroupListPageProps = {
   onGroupClick?: (groupId: string) => void
@@ -50,7 +59,7 @@ export function SubgroupListPage({
 }: SubgroupListPageProps) {
   const navigate = useNavigate()
   const { isAuthenticated, openLogin } = useAuth()
-  const { refresh, isSubgroupMember, isLoaded } = useMemberGroups()
+  const { summaries, refresh, isSubgroupMember, isLoaded } = useMemberGroups()
   const [searchParams] = useSearchParams()
   const groupId = parseNumberParam(searchParams.get('groupId'))
   const [searchQuery, setSearchQuery] = useState('')
@@ -62,6 +71,22 @@ export function SubgroupListPage({
   const [passwordError, setPasswordError] = useState('')
   const [pendingJoinGroup, setPendingJoinGroup] = useState<Group | null>(null)
   const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null)
+  const [joinGuardModalOpen, setJoinGuardModalOpen] = useState(false)
+
+  const isGroupJoined =
+    isLoaded && isValidId(groupId) ? summaries.some((item) => item.groupId === groupId) : false
+
+  const ensureJoinPreconditions = () => {
+    if (!isAuthenticated) {
+      openLogin()
+      return false
+    }
+    if (!isGroupJoined) {
+      setJoinGuardModalOpen(true)
+      return false
+    }
+    return true
+  }
 
   useEffect(() => {
     if (!isValidId(groupId)) {
@@ -101,7 +126,7 @@ export function SubgroupListPage({
             isPrivate: record.joinType === 'PASSWORD',
           }
         })
-        setGroups(mapped)
+        setGroups(sortByMemberCountDesc(mapped))
       } catch {
         if (!cancelled) {
           setLoadError('하위그룹 목록을 불러오지 못했습니다.')
@@ -128,14 +153,16 @@ export function SubgroupListPage({
 
   const markJoined = (subgroupId: string, incrementCount = true) => {
     setGroups((prev) =>
-      prev.map((g) => {
-        if (g.id !== subgroupId) return g
-        return {
-          ...g,
-          isJoined: true,
-          memberCount: incrementCount ? g.memberCount + 1 : g.memberCount,
-        }
-      }),
+      sortByMemberCountDesc(
+        prev.map((g) => {
+          if (g.id !== subgroupId) return g
+          return {
+            ...g,
+            isJoined: true,
+            memberCount: incrementCount ? g.memberCount + 1 : g.memberCount,
+          }
+        }),
+      ),
     )
   }
 
@@ -151,8 +178,7 @@ export function SubgroupListPage({
   const handleJoin = async (subgroupId: string) => {
     const target = groups.find((group) => group.id === subgroupId)
     if (!target || target.isJoined) return
-    if (!isAuthenticated) {
-      openLogin()
+    if (!ensureJoinPreconditions()) {
       return
     }
     if (!isValidId(groupId)) {
@@ -199,9 +225,8 @@ export function SubgroupListPage({
       setPasswordError('비밀번호를 입력해주세요')
       return
     }
-    if (!isAuthenticated) {
+    if (!ensureJoinPreconditions()) {
       resetPasswordJoinState(true)
-      openLogin()
       return
     }
     if (!isValidId(groupId)) {
@@ -343,6 +368,7 @@ export function SubgroupListPage({
                               disabled={group.isJoined || joiningGroupId === group.id}
                               onClick={(e) => {
                                 e.stopPropagation()
+                                if (!ensureJoinPreconditions()) return
                                 if (!group.isJoined && group.isPrivate) {
                                   openPasswordModal(group)
                                   return
@@ -421,6 +447,21 @@ export function SubgroupListPage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={joinGuardModalOpen} onOpenChange={setJoinGuardModalOpen}>
+        <ConfirmAlertDialogContent
+          size="sm"
+          title="그룹 가입 필요"
+          description="하위그룹에 가입하려면 먼저 그룹에 가입해주세요."
+          confirmText="그룹 가입하러 가기"
+          onConfirm={() => {
+            if (!isValidId(groupId)) {
+              toast.error('그룹 정보를 찾을 수 없습니다.')
+              return
+            }
+            navigate(ROUTES.groupDetail(String(groupId)))
+          }}
+        />
+      </AlertDialog>
     </>
   )
 }

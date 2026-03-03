@@ -20,11 +20,12 @@ import {
 import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { VerticalRestaurantCard } from '@/widgets/restaurant-card'
+import { RestaurantCard } from '@/entities/restaurant'
 import { searchAll } from '@/entities/search'
 import { useRecentSearches } from '@/entities/search'
 import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
 import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search'
+import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
 
 const SEARCH_DEBOUNCE_MS = 700
 const SCROLL_DEBOUNCE_MS = 300
@@ -41,12 +42,13 @@ const STORAGE_KEYS = {
 } as const
 
 type SearchPageProps = {
-  onRestaurantClick?: (id: string) => void
-  onGroupClick?: (id: string) => void
+  onRestaurantClick?: (id: string, metadata?: { position: number }) => void
+  onGroupClick?: (id: string, metadata?: { position: number }) => void
 }
 
 export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps) {
   const navigate = useNavigate()
+  const { track } = useUserActivity()
   const [searchQuery, setSearchQuery] = useState(() => {
     return sessionStorage.getItem(STORAGE_KEYS.QUERY) || ''
   })
@@ -167,8 +169,20 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
       })
         .then((response) => {
           if (searchRequestId.current !== requestId) return
-          setRestaurantResults(response.data.restaurants.items)
-          setGroupResults(response.data.groups)
+          const nextRestaurants = response.data.restaurants.items
+          const nextGroups = response.data.groups
+          setRestaurantResults(nextRestaurants)
+          setGroupResults(nextGroups)
+          track({
+            eventName: 'ui.search.executed',
+            properties: {
+              fromPageKey: resolvePageContext(window.location.pathname).pageKey,
+              resultRestaurantCount: nextRestaurants.length,
+              resultGroupCount: nextGroups.length,
+              queryLength: keyword.length,
+              hasFilter: hasActiveFilters,
+            },
+          })
           refreshRecentSearches()
         })
         .catch(() => {
@@ -392,16 +406,19 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     <Container className="space-y-3">
                       <h3 className="text-sm font-semibold">연관 음식점</h3>
                       {hasRestaurantResults ? (
-                        restaurantResults.map((restaurant) => (
-                          <VerticalRestaurantCard
+                        restaurantResults.map((restaurant, index) => (
+                          <RestaurantCard
                             key={restaurant.restaurantId}
-                            id={restaurant.restaurantId}
                             name={restaurant.name}
                             address={restaurant.address}
-                            category=""
-                            distance=""
+                            foodCategories={restaurant.foodCategories}
+                            category={restaurant.category}
                             image={restaurant.imageUrl}
-                            onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
+                            onClick={() =>
+                              onRestaurantClick?.(String(restaurant.restaurantId), {
+                                position: index,
+                              })
+                            }
                           />
                         ))
                       ) : (

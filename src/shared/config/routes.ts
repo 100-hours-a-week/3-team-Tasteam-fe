@@ -28,6 +28,8 @@ export const ROUTES = {
   notices: '/notices',
   events: '/events',
   settings: '/settings',
+  terms: '/terms',
+  privacyPolicy: '/privacy-policy',
   restaurantDetail: (id: string) => `/restaurants/${id}`,
   writeReview: (restaurantId: string) => `/restaurants/${restaurantId}/review`,
   chatRoom: (roomId: string) => `/chat/${roomId}`,
@@ -41,4 +43,5 @@ export const API_ENDPOINTS = {
   oauthStart: (provider: string) => `/api/v1/auth/oauth/${provider}`,
   logout: '/api/v1/auth/logout',
   health: '/api/v1/health',
+  analyticsEvents: '/api/v1/analytics/events',
 } as const
