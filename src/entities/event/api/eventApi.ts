@@ -22,6 +22,7 @@ type PromotionSummaryResponse = {
   promotionStatus: PromotionStatus
   displayStartAt: string
   displayEndAt: string
+  detailImageUrls?: string[]
 }
 
 type PromotionDetailResponse = {
@@ -53,6 +54,7 @@ const toEventSummary = (promotion: PromotionSummaryResponse): EventDto => ({
   status: toEventStatus(promotion.promotionStatus),
   createdAt: promotion.displayStartAt ?? promotion.promotionStartAt,
   updatedAt: promotion.displayEndAt ?? promotion.promotionEndAt,
+  detailImageUrls: promotion.detailImageUrls,
 })
 
 const toEventDetail = (promotion: PromotionDetailResponse): EventDto => ({
