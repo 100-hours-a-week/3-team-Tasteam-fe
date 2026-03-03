@@ -148,20 +148,20 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
                 onClick={() => handleEventClick(event.id, { position: index })}
               >
                 {event.detailImageUrls?.[0] && (
-                  <div className="relative w-full aspect-[16/9] overflow-hidden">
+                  <div className="relative w-full aspect-[20/9] overflow-hidden">
                     <img
                       src={event.detailImageUrls[0]}
                       alt={event.title}
                       className="w-full h-full object-cover object-top"
                     />
-                    <div className="absolute top-3 right-3">{getStatusBadge(event.status)}</div>
+                    <div className="absolute top-2 right-2">{getStatusBadge(event.status)}</div>
                   </div>
                 )}
 
-                <div className="p-4 flex items-center gap-3">
+                <div className="p-3 flex items-center gap-2">
                   {!event.detailImageUrls?.[0] && (
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary">
-                      <Calendar className="h-5 w-5 text-foreground" />
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary">
+                      <Calendar className="h-4 w-4 text-foreground" />
                     </div>
                   )}
 
@@ -176,7 +176,7 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
                     </span>
                   </div>
 
-                  <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 </div>
               </Card>
             ))}
