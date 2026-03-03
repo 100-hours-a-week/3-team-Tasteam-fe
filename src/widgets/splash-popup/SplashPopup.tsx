@@ -1,5 +1,4 @@
 import { X } from 'lucide-react'
-import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import type { SplashEventDto } from '@/entities/main'
 
@@ -15,16 +14,14 @@ type SplashPopupProps = {
 }
 
 export function SplashPopup({ event, isOpen, onClose, onLinkClick }: SplashPopupProps) {
-  const [dontShowToday, setDontShowToday] = useState(false)
-
   if (!isOpen) return null
 
   const handleClose = () => {
-    onClose({ dontShowToday })
+    onClose({ dontShowToday: false })
   }
 
   const handleLinkClick = () => {
-    onClose({ dontShowToday })
+    onClose({ dontShowToday: false })
     onLinkClick?.()
   }
 
@@ -42,40 +39,23 @@ export function SplashPopup({ event, isOpen, onClose, onLinkClick }: SplashPopup
           <X className="w-5 h-5 text-white" />
         </button>
 
-        {event.thumbnailImageUrl && (
+        {event.detailImageUrls?.[0] && (
           <div className="relative w-full aspect-[4/3] overflow-hidden">
             <img
-              src={event.thumbnailImageUrl}
+              src={event.detailImageUrls[0]}
               alt={event.title}
               className="w-full h-full object-cover"
             />
           </div>
         )}
 
-        <div className="p-6 space-y-4">
-          <div className="space-y-2">
-            <h3 className="text-center text-lg font-semibold">{event.title}</h3>
-            <p className="text-center text-muted-foreground">{event.content}</p>
-          </div>
-
-          <div className="space-y-2">
-            <Button onClick={handleLinkClick} className="w-full" size="lg">
-              이벤트 보러가기
-            </Button>
-            <Button onClick={handleClose} variant="outline" className="w-full" size="lg">
-              닫기
-            </Button>
-          </div>
-
-          <label className="flex items-center justify-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-              checked={dontShowToday}
-              onChange={(e) => setDontShowToday(e.target.checked)}
-            />
-            <span className="text-sm text-muted-foreground">오늘 하루 보지 않기</span>
-          </label>
+        <div className="p-4 space-y-2">
+          <Button onClick={handleLinkClick} className="w-full" size="lg">
+            이벤트 보러가기
+          </Button>
+          <Button onClick={handleClose} variant="outline" className="w-full" size="lg">
+            닫기
+          </Button>
         </div>
       </div>
     </div>

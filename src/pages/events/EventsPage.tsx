@@ -147,19 +147,19 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
                 className="cursor-pointer hover:bg-secondary/50 transition-colors overflow-hidden"
                 onClick={() => handleEventClick(event.id, { position: index })}
               >
-                {event.thumbnailImageUrl && (
+                {event.detailImageUrls?.[0] && (
                   <div className="relative w-full aspect-[16/9] overflow-hidden">
                     <img
-                      src={event.thumbnailImageUrl}
+                      src={event.detailImageUrls[0]}
                       alt={event.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-top"
                     />
                     <div className="absolute top-3 right-3">{getStatusBadge(event.status)}</div>
                   </div>
                 )}
 
                 <div className="p-4 flex items-center gap-3">
-                  {!event.thumbnailImageUrl && (
+                  {!event.detailImageUrls?.[0] && (
                     <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary">
                       <Calendar className="h-5 w-5 text-foreground" />
                     </div>
@@ -168,7 +168,7 @@ export function EventsPage({ onBack, onEventClick }: EventsPageProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 mb-1">
                       <h4 className="flex-1 truncate text-sm font-medium">{event.title}</h4>
-                      {!event.thumbnailImageUrl && getStatusBadge(event.status)}
+                      {!event.detailImageUrls?.[0] && getStatusBadge(event.status)}
                     </div>
                     <span className="text-xs text-muted-foreground">
                       {formatIsoTimestamp(event.startAt, { preset: 'dotDate' })} ~{' '}
