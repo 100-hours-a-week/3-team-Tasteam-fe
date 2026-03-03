@@ -40,7 +40,7 @@ export function SplashPopup({ event, isOpen, onClose, onLinkClick }: SplashPopup
         </button>
 
         {event.detailImageUrls?.[0] && (
-          <div className="relative w-full aspect-[4/3] overflow-hidden">
+          <div className="relative w-full aspect-[2/3] overflow-hidden">
             <img
               src={event.detailImageUrls[0]}
               alt={event.title}
