@@ -125,13 +125,17 @@ export function EventDetailPage({ onBack }: EventDetailPageProps) {
           />
         ) : (
           <div className="space-y-6">
-            {event.thumbnailImageUrl && (
-              <div className="relative w-full aspect-[16/9] rounded-lg overflow-hidden">
-                <img
-                  src={event.thumbnailImageUrl}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                />
+            {event.detailImageUrls && event.detailImageUrls.length > 0 && (
+              <div className="space-y-3">
+                {event.detailImageUrls.map((imageUrl, index) => (
+                  <div key={index} className="w-full rounded-lg overflow-hidden">
+                    <img
+                      src={imageUrl}
+                      alt={`${event.title} 상세 이미지 ${index + 1}`}
+                      className="w-full h-auto"
+                    />
+                  </div>
+                ))}
               </div>
             )}
 
@@ -153,20 +157,6 @@ export function EventDetailPage({ onBack }: EventDetailPageProps) {
               <div className="prose prose-sm max-w-none">
                 <p className="whitespace-pre-wrap text-foreground">{event.content}</p>
               </div>
-
-              {event.detailImageUrls && event.detailImageUrls.length > 0 && (
-                <div className="space-y-3">
-                  {event.detailImageUrls.map((imageUrl, index) => (
-                    <div key={index} className="w-full rounded-lg overflow-hidden">
-                      <img
-                        src={imageUrl}
-                        alt={`${event.title} 상세 이미지 ${index + 1}`}
-                        className="w-full h-auto"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}

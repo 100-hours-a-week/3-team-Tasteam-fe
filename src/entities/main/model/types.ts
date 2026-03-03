@@ -44,6 +44,7 @@ export type SplashEventDto = {
   thumbnailImageUrl: string | null
   startAt: IsoDateTimeString
   endAt: IsoDateTimeString
+  detailImageUrls?: string[]
 }
 
 export type MainPageResponseDto = SuccessResponse<{
