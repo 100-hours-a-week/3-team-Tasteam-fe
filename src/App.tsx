@@ -28,6 +28,10 @@ function App() {
     const seen = window.localStorage.getItem('hasSeenOnboarding') === 'true'
     return seen && !getLocationPermission()
   })
+  const [isSplashSettled, setIsSplashSettled] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return window.location.pathname !== '/'
+  })
 
   useEffect(() => {
     if (!isReady) return
@@ -62,7 +66,7 @@ function App() {
         }}
       />
       <LocationPermissionModal
-        open={showLocationModal}
+        open={showLocationModal && isSplashSettled}
         onAllow={async () => {
           const granted = await requestLocationPermission()
           if (granted) {
@@ -78,6 +82,7 @@ function App() {
         Kkalsam
       </div>
       <AppRouter
+        onSplashSettled={() => setIsSplashSettled(true)}
         onOnboardingComplete={(_nextPath) => {
           window.localStorage.setItem('hasSeenOnboarding', 'true')
           setHasSeenOnboarding(true)

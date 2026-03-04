@@ -39,9 +39,15 @@ type HomePageProps = {
   onRestaurantClick?: (id: string, metadata?: { position: number; section: string }) => void
   onGroupClick?: (id: string) => void
   onEventClick?: (eventId: number) => void
+  onSplashSettled?: () => void
 }
 
-export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: HomePageProps) {
+export function HomePage({
+  onSearchClick,
+  onRestaurantClick,
+  onEventClick,
+  onSplashSettled,
+}: HomePageProps) {
   const navigate = useNavigate()
   const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
@@ -58,7 +64,9 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       queueMicrotask(() => {
         setMainData(cached)
         const splashPromotion = cached.data?.splashPromotion
-        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
+        const willShow = shouldShowSplashPopup(splashPromotion?.id)
+        setShowSplashPopup(willShow)
+        if (!willShow) onSplashSettled?.()
         setIsMainLoading(false)
         setHasLoadedMain(true)
       })
@@ -70,14 +78,18 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       .then((data) => {
         setMainData(data)
         const splashPromotion = data.data?.splashPromotion
-        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
+        const willShow = shouldShowSplashPopup(splashPromotion?.id)
+        setShowSplashPopup(willShow)
+        if (!willShow) onSplashSettled?.()
       })
-      .catch(() => {})
+      .catch(() => {
+        onSplashSettled?.()
+      })
       .finally(() => {
         setIsMainLoading(false)
         setHasLoadedMain(true)
       })
-  }, [latitude, longitude])
+  }, [latitude, longitude, onSplashSettled])
 
   useEffect(() => {
     if (hasRefreshedRef.current) return
@@ -115,6 +127,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       localStorage.setItem(SPLASH_POPUP_DISMISSED_DATE_KEY, new Date().toDateString())
     }
     setShowSplashPopup(false)
+    onSplashSettled?.()
   }
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
