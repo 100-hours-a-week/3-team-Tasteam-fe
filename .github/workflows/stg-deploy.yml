@@ -12,6 +12,15 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Capture deployment metadata
+        id: metadata
+        run: |
+          echo "deploy_ref=main" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "deploy_short_sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -31,9 +40,9 @@ jobs:
       - name: Write version metadata
         run: |
           cat > dist/version.txt <<EOF
-          branch=${{ github.ref_name }}
+          branch=${{ steps.metadata.outputs.deploy_ref }}
           run_number=${{ github.run_number }}
-          sha=${{ github.sha }}
+          sha=${{ steps.metadata.outputs.deploy_sha }}
           deployed_at_utc=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           EOF
 
@@ -43,7 +52,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** 스테이징" >> $GITHUB_STEP_SUMMARY
           echo "**Run Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Source Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy Branch:** ${{ steps.metadata.outputs.deploy_ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy SHA:** ${{ steps.metadata.outputs.deploy_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Notify Build Failure
         if: failure()
@@ -53,10 +64,10 @@ jobs:
           title: "프론트엔드 스테이징 서버 빌드 실패 💔"
           description: |
             **결과:** 빌드 실패
-            **브랜치:** ${{ github.ref_name }}
+            **배포 브랜치:** ${{ steps.metadata.outputs.deploy_ref }}
             **Run Number:** ${{ github.run_number }}
             **작성자:** ${{ github.actor }}
-            **커밋:** ${{ github.sha }}
+            **커밋:** ${{ steps.metadata.outputs.deploy_sha }}
           color: 0xff0000
 
       - name: Upload Build Files to Staging
@@ -84,7 +95,7 @@ jobs:
             DEPLOY_BASE="/opt/caddy/www/html"
             RELEASES_DIR="${DEPLOY_BASE}/releases"
             CURRENT_LINK="${DEPLOY_BASE}/current"
-            SHORT_SHA="$(printf '%s' '${{ github.sha }}' | cut -c1-12)"
+            SHORT_SHA="${{ steps.metadata.outputs.deploy_short_sha }}"
             RELEASE_ID="stg-${{ github.run_number }}-${SHORT_SHA}"
             RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
             RELEASE_LINK_TARGET="releases/${RELEASE_ID}"
@@ -133,9 +144,9 @@ jobs:
           title: "프론트엔드 스테이징 서버 배포 ${{ job.status == 'success' && '성공 💗' || '실패 💔💀' }}"
           description: |
             **결과:** ${{ job.status }}
-            **브랜치:** ${{ github.ref_name }}
+            **배포 브랜치:** ${{ steps.metadata.outputs.deploy_ref }}
             **Run Number:** ${{ github.run_number }}
             **작성자:** ${{ github.actor }}
-            **커밋:** ${{ github.sha }}
+            **커밋:** ${{ steps.metadata.outputs.deploy_sha }}
             **서버 환경:** 스테이징 서버
           color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
