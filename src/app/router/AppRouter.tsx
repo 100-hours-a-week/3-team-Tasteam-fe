@@ -118,9 +118,10 @@ function ScrollToTop() {
 
 type AppRouterProps = {
   onOnboardingComplete: (nextPath?: string | null) => void
+  onSplashSettled?: () => void
 }
 
-export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
+export function AppRouter({ onOnboardingComplete, onSplashSettled }: AppRouterProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, logout } = useAuth()
@@ -453,6 +454,7 @@ export function AppRouter({ onOnboardingComplete }: AppRouterProps) {
             element={
               <Suspense fallback={<HomePageSkeleton />}>
                 <HomePage
+                  onSplashSettled={onSplashSettled}
                   onSearchClick={() => navigate('/search')}
                   onRestaurantClick={(id, metadata) => {
                     trackRestaurantClick(id, metadata?.position ?? -1)
