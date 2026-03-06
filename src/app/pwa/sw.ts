@@ -19,6 +19,9 @@ declare let self: ServiceWorkerGlobalScope & {
 const IMAGE_CACHE_NAME = 'images'
 const NAVIGATION_DENYLIST = [/^\/api\//, /^\/admin/]
 const THIRTY_DAYS_IN_SECONDS = 30 * 24 * 60 * 60
+const PROFILE_IMAGE_PATH_PATTERN = /\/profile(?:s)?\//i
+const PROFILE_IMAGE_KEYWORD_PATTERN =
+  /(profile-image|profile_image|profileimage|memberprofileimage)/i
 
 self.skipWaiting()
 clientsClaim()
@@ -33,8 +36,20 @@ registerRoute(
 )
 
 registerRoute(
-  ({ request, url }) =>
-    request.destination === 'image' || /\.(png|jpg|jpeg|webp|svg)$/i.test(url.pathname),
+  ({ request, url }) => {
+    const isImageRequest =
+      request.destination === 'image' || /\.(png|jpg|jpeg|webp|svg)$/i.test(url.pathname)
+    if (!isImageRequest) return false
+
+    const normalizedPath = url.pathname.toLowerCase()
+    const normalizedSearch = url.search.toLowerCase()
+    const isProfileImageRequest =
+      PROFILE_IMAGE_PATH_PATTERN.test(normalizedPath) ||
+      PROFILE_IMAGE_KEYWORD_PATTERN.test(normalizedPath) ||
+      PROFILE_IMAGE_KEYWORD_PATTERN.test(normalizedSearch)
+
+    return !isProfileImageRequest
+  },
   new CacheFirst({
     cacheName: IMAGE_CACHE_NAME,
     plugins: [
