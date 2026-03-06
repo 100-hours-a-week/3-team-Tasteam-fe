@@ -24,30 +24,17 @@ export default defineConfig(({ command }) => {
       VitePWA({
         disable: disablePwa,
         minify: !isLocal,
+        strategies: 'injectManifest',
+        srcDir: 'src/app/pwa',
+        filename: 'sw.ts',
         registerType: 'autoUpdate',
         injectRegister: 'script-defer',
         showMaximumFileSizeToCacheInBytesWarning: true,
-        workbox: {
-          navigateFallbackDenylist: [/^\/api\//, /^\/admin/],
-          skipWaiting: true,
-          clientsClaim: true,
+        injectManifest: {
           // Keep app-shell offline behavior, but skip very large chunks in precache
           // to reduce install-time burst traffic.
           maximumFileSizeToCacheInBytes: 250 * 1024,
           ...(isLocal && { mode: 'development' as const }),
-          runtimeCaching: [
-            {
-              urlPattern: /\.(png|jpg|jpeg|webp|svg)$/,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'images',
-                expiration: {
-                  maxEntries: 100,
-                  maxAgeSeconds: 30 * 24 * 60 * 60,
-                },
-              },
-            },
-          ],
         },
         manifest: {
           name: 'Tasteam',

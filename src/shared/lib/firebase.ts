@@ -71,7 +71,21 @@ export const getFirebaseMessaging = async (): Promise<Messaging | null> => {
   }
 }
 
-export const registerFirebaseMessagingServiceWorker = async () => {
+const SERVICE_WORKER_READY_TIMEOUT_MS = 3000
+
+const waitForServiceWorkerReady = async (
+  timeoutMs = SERVICE_WORKER_READY_TIMEOUT_MS,
+): Promise<ServiceWorkerRegistration | null> => {
+  const readyPromise = navigator.serviceWorker.ready
+  const timeoutPromise = new Promise<null>((resolve) => {
+    window.setTimeout(() => resolve(null), timeoutMs)
+  })
+
+  const readyRegistration = await Promise.race([readyPromise, timeoutPromise])
+  return readyRegistration ?? null
+}
+
+export const getAppServiceWorkerRegistration = async () => {
   try {
     if (!('serviceWorker' in navigator)) {
       logger.debug('[firebase] Service Worker not supported')
@@ -83,24 +97,20 @@ export const registerFirebaseMessagingServiceWorker = async () => {
       return null
     }
 
-    const params = new URLSearchParams({
-      apiKey: FIREBASE_API_KEY,
-      authDomain: FIREBASE_AUTH_DOMAIN,
-      projectId: FIREBASE_PROJECT_ID,
-      storageBucket: FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
-      appId: FIREBASE_APP_ID,
-      measurementId: FIREBASE_MEASUREMENT_ID ?? '',
-    })
+    const existingRegistration = await navigator.serviceWorker.getRegistration()
+    if (existingRegistration) {
+      return existingRegistration
+    }
 
-    const registration = await navigator.serviceWorker.register(
-      `/firebase-messaging-sw.js?${params.toString()}`,
-    )
+    const readyRegistration = await waitForServiceWorkerReady()
+    if (readyRegistration) {
+      return readyRegistration
+    }
 
-    logger.debug('[firebase] Service Worker registered successfully')
-    return registration
+    logger.warn('[firebase] 앱 서비스 워커를 찾지 못했습니다')
+    return null
   } catch (error) {
-    logger.error('[firebase] Service Worker registration failed', error)
+    logger.error('[firebase] 앱 서비스 워커 조회에 실패했습니다', error)
     return null
   }
 }
