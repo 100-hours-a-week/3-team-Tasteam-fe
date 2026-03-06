@@ -42,6 +42,7 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
     async (fileList: FileList | File[]) => {
       const incoming = Array.from(fileList)
       const errors: string[] = []
+      const shouldReplace = maxFiles === 1
 
       const valid = incoming.filter((f) => {
         if (f.name.length > MAX_FILENAME_LENGTH) {
@@ -70,16 +71,7 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
         return
       }
 
-      setFiles((prev) => {
-        const remaining = maxFiles - prev.length
-        if (remaining <= 0) {
-          setUploadErrors([`최대 ${maxFiles}개까지 업로드 가능합니다`])
-          return prev
-        }
-        return prev
-      })
-
-      const remaining = maxFiles - files.length
+      const remaining = shouldReplace ? 1 : maxFiles - files.length
       if (remaining <= 0) {
         setUploadErrors([`최대 ${maxFiles}개까지 업로드 가능합니다`])
         return
@@ -109,7 +101,13 @@ export function useImageUpload({ purpose, maxFiles = 5 }: UseImageUploadOptions)
           }),
         )
 
-        setFiles((prev) => [...prev, ...optimizedImages])
+        setFiles((prev) => {
+          if (shouldReplace) {
+            prev.forEach((f) => URL.revokeObjectURL(f.previewUrl))
+            return optimizedImages
+          }
+          return [...prev, ...optimizedImages]
+        })
       } catch (error) {
         logger.error('Failed to optimize images:', error)
         setUploadErrors(['이미지 최적화에 실패했습니다'])
