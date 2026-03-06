@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { FIREBASE_VAPID_KEY } from '@/shared/config/env'
 import { logger } from '@/shared/lib/logger'
 import { getOrCreateDeviceId } from '@/shared/lib/deviceId'
-import { getFirebaseMessaging, registerFirebaseMessagingServiceWorker } from '@/shared/lib/firebase'
+import { getAppServiceWorkerRegistration, getFirebaseMessaging } from '@/shared/lib/firebase'
 import { registerPushNotificationTarget } from '../api/notificationApi'
 import { normalizeNotificationDeepLink } from './deepLink'
 
@@ -91,13 +91,13 @@ export const syncFcmToken = async () => {
 
       let registration
       try {
-        registration = await registerFirebaseMessagingServiceWorker()
+        registration = await getAppServiceWorkerRegistration()
         if (!registration) {
-          logger.warn('[fcm] Service worker registration failed')
+          logger.warn('[fcm] 앱 서비스 워커를 찾지 못했습니다')
           return
         }
       } catch (error) {
-        logger.error('[fcm] Service worker registration error', error)
+        logger.error('[fcm] 앱 서비스 워커 조회 중 오류가 발생했습니다', error)
         return
       }
 
