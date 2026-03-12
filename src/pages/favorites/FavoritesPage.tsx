@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Heart, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
@@ -23,6 +23,7 @@ import {
 import { favoriteKeys } from '@/entities/favorite/model/favoriteKeys'
 import type { FavoriteTarget, FavoriteTab, FavoriteRestaurantItem } from '@/entities/favorite'
 import { STALE_USER } from '@/shared/lib/queryConstants'
+import { ScrollVirtualizedStack } from '@/shared/ui/ScrollVirtualizedStack'
 
 type FavoritesPageProps = {
   onRestaurantClick?: (id: string) => void
@@ -35,6 +36,7 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
   const [selectedTab, setSelectedTab] = useState<FavoriteTab>('personal')
   const [selectedSubgroupId, setSelectedSubgroupId] = useState<number | null>(null)
   const [showSubgroupSelector, setShowSubgroupSelector] = useState(false)
+  const favoritesScrollRef = useRef<HTMLDivElement | null>(null)
 
   // 찜 타겟 목록
   const {
@@ -162,48 +164,60 @@ export function FavoritesPage({ onRestaurantClick }: FavoritesPageProps) {
       )}
 
       {/* Content */}
-      <Container className="flex-1 py-4 overflow-auto">
-        {!isAuthenticated ? (
-          <div className="flex min-h-[50vh] items-center justify-center">
+      <div ref={favoritesScrollRef} className="flex-1 overflow-auto">
+        <Container className="py-4">
+          {!isAuthenticated ? (
+            <div className="flex min-h-[50vh] items-center justify-center">
+              <EmptyState
+                icon={LogIn}
+                title="로그인이 필요해요"
+                description="찜 목록을 보려면 로그인해주세요"
+                actionLabel="로그인하기"
+                onAction={() => {
+                  const returnTo = ROUTES.favorites
+                  sessionStorage.setItem('auth:return_to', returnTo)
+                  navigate(ROUTES.login, { state: { returnTo } })
+                }}
+              />
+            </div>
+          ) : isLoading || isLoadingFavorites ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : error ? (
+            <EmptyState icon={Heart} title="오류가 발생했습니다" description={error} />
+          ) : currentRestaurants.length === 0 ? (
             <EmptyState
-              icon={LogIn}
-              title="로그인이 필요해요"
-              description="찜 목록을 보려면 로그인해주세요"
-              actionLabel="로그인하기"
-              onAction={() => {
-                const returnTo = ROUTES.favorites
-                sessionStorage.setItem('auth:return_to', returnTo)
-                navigate(ROUTES.login, { state: { returnTo } })
+              icon={Heart}
+              title="찜한 맛집이 없습니다"
+              description="마음에 드는 맛집을 찜해보세요!"
+            />
+          ) : (
+            <ScrollVirtualizedStack
+              count={currentRestaurants.length}
+              scrollRef={favoritesScrollRef}
+              estimateSize={132}
+              overscan={5}
+              gap={12}
+              getItemKey={(index) => currentRestaurants[index]?.restaurantId ?? index}
+              renderItem={(index) => {
+                const restaurant = currentRestaurants[index]
+
+                return (
+                  <FavoriteRestaurantCard
+                    key={restaurant.restaurantId}
+                    restaurant={restaurant}
+                    onRemove={(e) => handleRemoveFavorite(restaurant.restaurantId, e)}
+                    onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
+                  />
+                )
               }}
             />
-          </div>
-        ) : isLoading || isLoadingFavorites ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-24 w-full" />
-            ))}
-          </div>
-        ) : error ? (
-          <EmptyState icon={Heart} title="오류가 발생했습니다" description={error} />
-        ) : currentRestaurants.length === 0 ? (
-          <EmptyState
-            icon={Heart}
-            title="찜한 맛집이 없습니다"
-            description="마음에 드는 맛집을 찜해보세요!"
-          />
-        ) : (
-          <div className="space-y-3">
-            {currentRestaurants.map((restaurant) => (
-              <FavoriteRestaurantCard
-                key={restaurant.restaurantId}
-                restaurant={restaurant}
-                onRemove={(e) => handleRemoveFavorite(restaurant.restaurantId, e)}
-                onClick={() => onRestaurantClick?.(String(restaurant.restaurantId))}
-              />
-            ))}
-          </div>
-        )}
-      </Container>
+          )}
+        </Container>
+      </div>
 
       {/* Group Selector Sheet */}
       <SubgroupSelectorSheet
