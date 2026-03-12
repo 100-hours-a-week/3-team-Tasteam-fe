@@ -18,6 +18,7 @@ import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
 import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
 import { toMainPageData } from '@/entities/main'
 import { getMainPageCache } from '@/app/bootstrap/mainPageCache'
+import { WindowVirtualizedStack } from '@/shared/ui/WindowVirtualizedStack'
 
 const SPLASH_POPUP_DISMISSED_DATE_KEY = 'splash-popup-dismissed-date'
 let dismissedSplashEventIdInSession: number | null = null
@@ -256,25 +257,34 @@ export function HomePage({
     }
     return (
       <Container>
-        <div className="space-y-4">
-          {items.map((item: MainSectionItemDto, index) => (
-            <RestaurantCard
-              key={item.restaurantId}
-              name={item.name}
-              foodCategories={item.foodCategories}
-              category={item.category}
-              distance={formatDistanceLabel(item.distanceMeter)}
-              image={item.thumbnailImageUrl}
-              reviewSummary={item.reviewSummary}
-              onClick={() =>
-                onRestaurantClick?.(String(item.restaurantId), {
-                  position: index,
-                  section: section?.type ?? 'UNKNOWN',
-                })
-              }
-            />
-          ))}
-        </div>
+        <WindowVirtualizedStack
+          count={items.length}
+          estimateSize={300}
+          overscan={3}
+          gap={16}
+          getItemKey={(index) => items[index]?.restaurantId ?? index}
+          renderItem={(index) => {
+            const item = items[index]
+
+            return (
+              <RestaurantCard
+                key={item.restaurantId}
+                name={item.name}
+                foodCategories={item.foodCategories}
+                category={item.category}
+                distance={formatDistanceLabel(item.distanceMeter)}
+                image={item.thumbnailImageUrl}
+                reviewSummary={item.reviewSummary}
+                onClick={() =>
+                  onRestaurantClick?.(String(item.restaurantId), {
+                    position: index,
+                    section: section?.type ?? 'UNKNOWN',
+                  })
+                }
+              />
+            )
+          }}
+        />
       </Container>
     )
   }

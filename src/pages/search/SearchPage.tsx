@@ -26,6 +26,7 @@ import { useRecentSearches } from '@/entities/search'
 import { SearchGroupCarousel } from '@/features/search/SearchGroupCarousel'
 import type { SearchGroupItem, SearchRestaurantItem } from '@/entities/search'
 import { resolvePageContext, useUserActivity } from '@/entities/user-activity'
+import { WindowVirtualizedStack } from '@/shared/ui/WindowVirtualizedStack'
 
 const SEARCH_DEBOUNCE_MS = 700
 const SCROLL_DEBOUNCE_MS = 300
@@ -406,21 +407,32 @@ export function SearchPage({ onRestaurantClick, onGroupClick }: SearchPageProps)
                     <Container className="space-y-3">
                       <h3 className="text-sm font-semibold">연관 음식점</h3>
                       {hasRestaurantResults ? (
-                        restaurantResults.map((restaurant, index) => (
-                          <RestaurantCard
-                            key={restaurant.restaurantId}
-                            name={restaurant.name}
-                            address={restaurant.address}
-                            foodCategories={restaurant.foodCategories}
-                            category={restaurant.category}
-                            image={restaurant.imageUrl}
-                            onClick={() =>
-                              onRestaurantClick?.(String(restaurant.restaurantId), {
-                                position: index,
-                              })
-                            }
-                          />
-                        ))
+                        <WindowVirtualizedStack
+                          count={restaurantResults.length}
+                          estimateSize={280}
+                          overscan={4}
+                          gap={12}
+                          getItemKey={(index) => restaurantResults[index]?.restaurantId ?? index}
+                          renderItem={(index) => {
+                            const restaurant = restaurantResults[index]
+
+                            return (
+                              <RestaurantCard
+                                key={restaurant.restaurantId}
+                                name={restaurant.name}
+                                address={restaurant.address}
+                                foodCategories={restaurant.foodCategories}
+                                category={restaurant.category}
+                                image={restaurant.imageUrl}
+                                onClick={() =>
+                                  onRestaurantClick?.(String(restaurant.restaurantId), {
+                                    position: index,
+                                  })
+                                }
+                              />
+                            )
+                          }}
+                        />
                       ) : (
                         <p className="text-sm text-muted-foreground py-6 text-center">
                           음식점 검색 결과가 없습니다
