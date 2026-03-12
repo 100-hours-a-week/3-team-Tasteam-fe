@@ -1,7 +1,7 @@
 import { Heart, MapPin } from 'lucide-react'
 import { Card, CardContent } from '@/shared/ui/card'
-import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import type { FavoriteRestaurantItem } from '@/entities/favorite'
+import { OptimizedImage } from '@/shared/ui/OptimizedImage'
 
 type FavoriteRestaurantCardProps = {
   restaurant: FavoriteRestaurantItem
@@ -55,10 +55,13 @@ export function FavoriteRestaurantCard({
           {/* Image */}
           <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
             {restaurant.thumbnailUrl ? (
-              <ImageWithFallback
+              <OptimizedImage
                 src={restaurant.thumbnailUrl}
                 alt={restaurant.name}
+                width={96}
+                height={96}
                 className="w-full h-full object-cover"
+                sizes="96px"
               />
             ) : (
               <div className="w-full h-full bg-accent flex items-center justify-center">

@@ -2,9 +2,9 @@ import { MapPin, Heart, Sparkles } from 'lucide-react'
 import { Card } from '@/shared/ui/card'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
 import type { RestaurantListItemDto, RestaurantDetailDto } from '../model/dto'
+import { OptimizedImage } from '@/shared/ui/OptimizedImage'
 
 type RestaurantDtoProps = {
   restaurant: RestaurantListItemDto | RestaurantDetailDto
@@ -111,17 +111,23 @@ export function RestaurantCard(props: RestaurantCardProps) {
       {images.length > 1 ? (
         <>
           <div className="w-1/2 h-full border-r border-white/10 relative">
-            <ImageWithFallback
+            <OptimizedImage
               src={images[0]}
               alt="restaurant image 1"
+              width={320}
+              height={240}
               className="object-cover w-full h-full"
+              sizes="(max-width: 768px) 50vw, 240px"
             />
           </div>
           <div className="w-1/2 h-full relative">
-            <ImageWithFallback
+            <OptimizedImage
               src={images[1]}
               alt="restaurant image 2"
+              width={320}
+              height={240}
               className="object-cover w-full h-full"
+              sizes="(max-width: 768px) 50vw, 240px"
             />
             {images.length > 2 && (
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white font-medium">
@@ -131,10 +137,13 @@ export function RestaurantCard(props: RestaurantCardProps) {
           </div>
         </>
       ) : (
-        <ImageWithFallback
+        <OptimizedImage
           src={images[0] || ''}
           alt="restaurant image"
+          width={640}
+          height={360}
           className="object-cover w-full h-full"
+          sizes="(max-width: 768px) 100vw, 520px"
         />
       )}
     </div>
