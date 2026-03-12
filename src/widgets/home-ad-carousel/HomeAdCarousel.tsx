@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type TouchEvent } from 'react'
 import { cn } from '@/shared/lib/utils'
-import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import type { BannerDto } from '@/entities/banner'
+import { OptimizedImage } from '@/shared/ui/OptimizedImage'
 
 type HomeAdCarouselProps = {
   banners: BannerDto[]
@@ -131,14 +131,15 @@ export function HomeAdCarousel({
               onClick={() => handleBannerClick(banner, index)}
               style={{ backgroundColor: banner.bgColor ?? undefined }}
             >
-              <ImageWithFallback
+              <OptimizedImage
                 src={banner.imageUrl}
                 alt={banner.title ?? `Banner ${index + 1}`}
+                width={1200}
+                height={320}
                 className="w-full h-full object-cover"
                 disableInteraction
-                loading={index === 0 ? 'eager' : 'lazy'}
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-                decoding="async"
+                priority={index === 0}
+                sizes="100vw"
               />
             </div>
           ))}
