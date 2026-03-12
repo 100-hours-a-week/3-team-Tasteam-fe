@@ -49,8 +49,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+output
 *.local
 .mcp.json
+.playwright-cli/
 
 
 # mockup files
