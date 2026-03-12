@@ -1,5 +1,5 @@
-import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app'
-import { getMessaging, isSupported, type Messaging } from 'firebase/messaging'
+import type { FirebaseApp } from 'firebase/app'
+import type { Messaging } from 'firebase/messaging'
 import {
   FIREBASE_API_KEY,
   FIREBASE_APP_ID,
@@ -31,12 +31,34 @@ const hasFirebaseConfig = () =>
     FIREBASE_APP_ID,
   )
 
-export const initFirebaseApp = (): FirebaseApp | null => {
+let firebaseAppModulePromise: Promise<typeof import('firebase/app')> | null = null
+let firebaseMessagingModulePromise: Promise<typeof import('firebase/messaging')> | null = null
+
+const loadFirebaseAppModule = () => {
+  if (!firebaseAppModulePromise) {
+    firebaseAppModulePromise = import('firebase/app')
+  }
+
+  return firebaseAppModulePromise
+}
+
+const loadFirebaseMessagingModule = () => {
+  if (!firebaseMessagingModulePromise) {
+    firebaseMessagingModulePromise = import('firebase/messaging')
+  }
+
+  return firebaseMessagingModulePromise
+}
+
+export const initFirebaseApp = async (): Promise<FirebaseApp | null> => {
   try {
     if (!hasFirebaseConfig()) {
       logger.debug('[firebase] Config unavailable')
       return null
     }
+
+    const { getApp, getApps, initializeApp } = await loadFirebaseAppModule()
+
     if (getApps().length > 0) return getApp()
     return initializeApp(firebaseConfig)
   } catch (error) {
@@ -52,13 +74,14 @@ export const getFirebaseMessaging = async (): Promise<Messaging | null> => {
       return null
     }
 
+    const { getMessaging, isSupported } = await loadFirebaseMessagingModule()
     const supported = await isSupported()
     if (!supported) {
       logger.debug('[firebase] Messaging not supported in this environment')
       return null
     }
 
-    const app = initFirebaseApp()
+    const app = await initFirebaseApp()
     if (!app) {
       logger.warn('[firebase] Firebase app initialization failed')
       return null
