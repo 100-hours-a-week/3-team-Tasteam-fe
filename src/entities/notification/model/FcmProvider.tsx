@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useAuth } from '@/entities/user'
 import { logger } from '@/shared/lib/logger'
-import { startFcmTokenSync } from './fcm'
 
 export const FcmProvider = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth()
@@ -9,15 +8,21 @@ export const FcmProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!isAuthenticated) return
 
+    let isCancelled = false
     let cleanup: (() => void) | undefined
 
-    try {
-      cleanup = startFcmTokenSync()
-    } catch (error) {
-      logger.error('[FcmProvider] Failed to start FCM token sync', error)
-    }
+    void import('./fcm')
+      .then(({ startFcmTokenSync }) => {
+        if (isCancelled) return
+
+        cleanup = startFcmTokenSync()
+      })
+      .catch((error) => {
+        logger.error('[FcmProvider] Failed to start FCM token sync', error)
+      })
 
     return () => {
+      isCancelled = true
       try {
         cleanup?.()
       } catch (error) {
