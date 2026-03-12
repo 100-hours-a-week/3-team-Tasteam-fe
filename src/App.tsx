@@ -1,16 +1,25 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { SplashPage } from '@/pages/splash/SplashPage'
 import { useBootstrap } from '@/app/bootstrap/useBootstrap'
 import { useAuth } from '@/entities/user'
-import { LoginRequiredModal } from '@/widgets/auth/LoginRequiredModal'
-import { LocationPermissionModal } from '@/widgets/location/LocationPermissionModal'
 import { getLocationPermission, requestLocationPermission } from '@/shared/lib/geolocation'
 import { resetLoginRequired } from '@/shared/lib/authToken'
 import { useAppLocation } from '@/entities/location'
 import { AppRouter } from '@/app/router/AppRouter'
 import { usePwaUpdatePrompt } from '@/app/pwa/usePwaUpdatePrompt'
+
+const LoginRequiredModal = lazy(() =>
+  import('@/widgets/auth/LoginRequiredModal').then((mod) => ({
+    default: mod.LoginRequiredModal,
+  })),
+)
+const LocationPermissionModal = lazy(() =>
+  import('@/widgets/location/LocationPermissionModal').then((mod) => ({
+    default: mod.LocationPermissionModal,
+  })),
+)
 
 function App() {
   usePwaUpdatePrompt()
@@ -48,36 +57,42 @@ function App() {
   return (
     <>
       <Toaster position="bottom-center" offset={{ bottom: 74 }} />
-      <LoginRequiredModal
-        open={showLogin}
-        onClose={() => {
-          resetLoginRequired()
-          closeLogin()
-        }}
-        onLogin={() => {
-          const returnTo = `${location.pathname}${location.search}${location.hash}`
-          if (location.pathname !== '/login' && location.pathname !== '/oauth/callback') {
-            sessionStorage.setItem('auth:return_to', returnTo || '/')
-            sessionStorage.setItem('auth:post_login_redirect', returnTo || '/')
-          }
-          resetLoginRequired()
-          closeLogin()
-          navigate('/login', { state: { returnTo } })
-        }}
-      />
-      <LocationPermissionModal
-        open={showLocationModal && isSplashSettled}
-        onAllow={async () => {
-          const granted = await requestLocationPermission()
-          if (granted) {
-            await requestCurrentLocation()
-          }
-          setShowLocationModal(false)
-        }}
-        onDeny={() => {
-          setShowLocationModal(false)
-        }}
-      />
+      <Suspense fallback={null}>
+        {showLogin ? (
+          <LoginRequiredModal
+            open={showLogin}
+            onClose={() => {
+              resetLoginRequired()
+              closeLogin()
+            }}
+            onLogin={() => {
+              const returnTo = `${location.pathname}${location.search}${location.hash}`
+              if (location.pathname !== '/login' && location.pathname !== '/oauth/callback') {
+                sessionStorage.setItem('auth:return_to', returnTo || '/')
+                sessionStorage.setItem('auth:post_login_redirect', returnTo || '/')
+              }
+              resetLoginRequired()
+              closeLogin()
+              navigate('/login', { state: { returnTo } })
+            }}
+          />
+        ) : null}
+        {showLocationModal && isSplashSettled ? (
+          <LocationPermissionModal
+            open={showLocationModal && isSplashSettled}
+            onAllow={async () => {
+              const granted = await requestLocationPermission()
+              if (granted) {
+                await requestCurrentLocation()
+              }
+              setShowLocationModal(false)
+            }}
+            onDeny={() => {
+              setShowLocationModal(false)
+            }}
+          />
+        ) : null}
+      </Suspense>
       <div className="desktop-side-signature" aria-hidden>
         Kkalsam
       </div>
