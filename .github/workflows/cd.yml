@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,6 +14,17 @@ jobs:
     environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
 
     steps:
+      - name: Validate deploy branch
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            develop|main) ;;
+            *)
+              echo "Unsupported deploy branch: ${GITHUB_REF_NAME}"
+              echo "Frontend CD supports only develop and main."
+              exit 1
+              ;;
+          esac
+
       # 1. 소스코드 체크아웃
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -102,8 +114,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          source: "./deploy-temp/*"
-          target: "/home/${{ secrets.USERNAME }}/frontend/staging/${{ github.ref_name }}/${{ github.run_number }}"
+          timeout: 2m
+          source: './deploy-temp/*'
+          target: '/home/${{ secrets.USERNAME }}/frontend/staging/${{ github.ref_name }}/${{ github.run_number }}'
           strip_components: 1
 
       # 3. 새 release 생성 후 current 심볼릭 링크 전환 (atomic)
@@ -114,6 +127,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
+          timeout: 2m
           script: |
             set -euo pipefail
 
@@ -158,12 +172,14 @@ jobs:
       # 4. 실패/중단 포함 staging 잔여물 정리
       - name: Cleanup Staging Directory
         if: always()
+        continue-on-error: true
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
+          timeout: 2m
           script: |
             rm -rf "/home/${{ secrets.USERNAME }}/frontend/staging/${{ github.ref_name }}/${{ github.run_number }}"
 
