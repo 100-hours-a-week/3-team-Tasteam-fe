@@ -61,7 +61,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 스테이징 서버 빌드 실패 💔"
+          title: '프론트엔드 스테이징 서버 빌드 실패 💔'
           description: |
             **결과:** 빌드 실패
             **배포 브랜치:** ${{ steps.metadata.outputs.deploy_ref }}
@@ -77,8 +77,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          source: "dist/*"
-          target: "/home/${{ secrets.USERNAME }}/frontend/staging/stg/${{ github.run_number }}"
+          timeout: 2m
+          source: 'dist/*'
+          target: '/home/${{ secrets.USERNAME }}/frontend/staging/stg/${{ github.run_number }}'
           strip_components: 1
 
       - name: Promote Staging to Release
@@ -88,6 +89,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
+          timeout: 2m
           script: |
             set -euo pipefail
 
@@ -127,12 +129,14 @@ jobs:
 
       - name: Cleanup Staging Directory
         if: always()
+        continue-on-error: true
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
+          timeout: 2m
           script: |
             rm -rf "/home/${{ secrets.USERNAME }}/frontend/staging/stg/${{ github.run_number }}"
 
