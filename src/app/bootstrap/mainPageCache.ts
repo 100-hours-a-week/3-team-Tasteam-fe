@@ -1,7 +1,7 @@
-import type { MainPageResponseDto } from '@/entities/main'
+import type { HomePageResponseDto } from '@/entities/main'
 
 type CachedMainPage = {
-  data: MainPageResponseDto
+  data: HomePageResponseDto
   latitude: number
   longitude: number
 }
@@ -9,7 +9,7 @@ type CachedMainPage = {
 let cache: CachedMainPage | null = null
 
 export const setMainPageCache = (
-  data: MainPageResponseDto,
+  data: HomePageResponseDto,
   latitude: number,
   longitude: number,
 ) => {
@@ -22,7 +22,7 @@ const COORD_EPSILON = 0.0001
 export const getMainPageCache = (
   latitude: number,
   longitude: number,
-): MainPageResponseDto | null => {
+): HomePageResponseDto | null => {
   if (!cache) return null
   const hit =
     Math.abs(cache.latitude - latitude) < COORD_EPSILON &&

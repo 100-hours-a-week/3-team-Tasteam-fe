@@ -17,6 +17,8 @@ type RefreshResponse = SuccessResponse<{ accessToken?: string }>
 
 const PUBLIC_ENDPOINTS = [
   '/api/v1/main',
+  '/api/v1/main/home',
+  '/api/v1/main/ai-recommend',
   '/api/v1/promotions',
   '/api/v1/announcements',
   '/api/v1/geocode/reverse',

@@ -11,12 +11,12 @@ import { RestaurantCard } from '@/entities/restaurant'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ROUTES } from '@/shared/config/routes'
-import { getMainPage } from '@/entities/main'
+import { getHomePage } from '@/entities/main'
 import type { BannerDto } from '@/entities/banner'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
-import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
-import { toMainPageData } from '@/entities/main'
+import type { HomePageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
+import { toHomePageData } from '@/entities/main'
 import { getMainPageCache } from '@/app/bootstrap/mainPageCache'
 import { WindowVirtualizedStack } from '@/shared/ui/WindowVirtualizedStack'
 
@@ -50,7 +50,7 @@ export function HomePage({
   onSplashSettled,
 }: HomePageProps) {
   const navigate = useNavigate()
-  const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
+  const [homeData, setHomeData] = useState<HomePageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
   const [hasLoadedMain, setHasLoadedMain] = useState(false)
   const [showSplashPopup, setShowSplashPopup] = useState(false)
@@ -63,7 +63,7 @@ export function HomePage({
     const cached = getMainPageCache(latitude, longitude)
     if (cached) {
       queueMicrotask(() => {
-        setMainData(cached)
+        setHomeData(cached)
         const splashPromotion = cached.data?.splashPromotion
         const willShow = shouldShowSplashPopup(splashPromotion?.id)
         setShowSplashPopup(willShow)
@@ -75,9 +75,9 @@ export function HomePage({
     }
 
     queueMicrotask(() => setIsMainLoading(true))
-    getMainPage({ latitude, longitude })
+    getHomePage({ latitude, longitude })
       .then((data) => {
-        setMainData(data)
+        setHomeData(data)
         const splashPromotion = data.data?.splashPromotion
         const willShow = shouldShowSplashPopup(splashPromotion?.id)
         setShowSplashPopup(willShow)
@@ -106,9 +106,9 @@ export function HomePage({
     })()
   }, [requestCurrentLocation, status])
 
-  const mainPageData = toMainPageData(mainData)
+  const mainPageData = toHomePageData(homeData)
   const banners: BannerDto[] =
-    mainData?.data?.banners?.items?.map((item) => ({
+    homeData?.data?.banners?.items?.map((item) => ({
       id: item.id,
       imageUrl: item.imageUrl,
       title: null,
@@ -118,7 +118,7 @@ export function HomePage({
     })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
-  const splashEvent = mainData?.data?.splashPromotion
+  const splashEvent = homeData?.data?.splashPromotion
 
   const closeSplashPopup = (dontShowToday: boolean) => {
     if (splashEvent?.id) {

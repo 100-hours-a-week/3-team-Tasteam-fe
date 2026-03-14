@@ -1,7 +1,7 @@
 import { request } from '@/shared/api/request'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import { clearAccessToken, setAccessToken, setRefreshEnabled } from '@/shared/lib/authToken'
-import { getMainPage } from '@/entities/main'
+import { getHomePage } from '@/entities/main'
 import { getCurrentPosition, getLocationPermission } from '@/shared/lib/geolocation'
 import { setMainPageCache, clearMainPageCache } from './mainPageCache'
 
@@ -48,9 +48,9 @@ const runBootstrapTasks = async () => {
   const lat = position?.latitude ?? DEFAULT_LAT
   const lng = position?.longitude ?? DEFAULT_LNG
 
-  const mainResult = await getMainPage({ latitude: lat, longitude: lng }).catch(() => null)
-  if (mainResult) {
-    setMainPageCache(mainResult, lat, lng)
+  const homeResult = await getHomePage({ latitude: lat, longitude: lng }).catch(() => null)
+  if (homeResult) {
+    setMainPageCache(homeResult, lat, lng)
   } else {
     clearMainPageCache()
   }

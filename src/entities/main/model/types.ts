@@ -27,7 +27,7 @@ export type MainSectionItemDto = {
   foodCategories: string[]
   category?: string
   thumbnailImageUrl: string
-  isFavorite: boolean
+  isFavorite?: boolean
   reviewSummary: string
 }
 
@@ -51,6 +51,16 @@ export type MainPageResponseDto = SuccessResponse<{
   banners: MainBannerGroupDto
   sections: MainSectionDto[]
   splashPromotion?: SplashEventDto
+}>
+
+export type HomePageResponseDto = SuccessResponse<{
+  banners: MainBannerGroupDto
+  sections: MainSectionDto[]
+  splashPromotion?: SplashEventDto
+}>
+
+export type AiRecommendResponseDto = SuccessResponse<{
+  section: MainSectionDto
 }>
 
 export type MainPageData = {

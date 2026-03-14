@@ -3,7 +3,7 @@ import { ChevronLeft, Sparkles } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Container } from '@/shared/ui/container'
 import { RestaurantCard } from '@/entities/restaurant'
-import { getMainPage } from '@/entities/main'
+import { getAiRecommendPage } from '@/entities/main'
 import { useAppLocation } from '@/entities/location'
 import type { MainSectionItemDto } from '@/entities/main'
 import { toAiRecommendData } from '@/entities/main'
@@ -27,7 +27,7 @@ export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProp
       if (active) setIsLoading(true)
     })
 
-    getMainPage({ latitude, longitude })
+    getAiRecommendPage({ latitude, longitude })
       .then((response) => {
         if (!active) return
         const aiRecommend = toAiRecommendData(response).section
