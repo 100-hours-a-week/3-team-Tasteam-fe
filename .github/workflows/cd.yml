@@ -4,23 +4,22 @@ on:
   push:
     branches:
       - develop
-      - main
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    environment: development
 
     steps:
       - name: Validate deploy branch
         run: |
           case "${GITHUB_REF_NAME}" in
-            develop|main) ;;
+            develop) ;;
             *)
               echo "Unsupported deploy branch: ${GITHUB_REF_NAME}"
-              echo "Frontend CD supports only develop and main."
+              echo "Frontend CD supports only develop."
               exit 1
               ;;
           esac
@@ -70,7 +69,7 @@ jobs:
         run: |
           echo "### Build Success :rocket:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** ${{ github.ref_name == 'main' && '운영' || '개발' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** 개발" >> $GITHUB_STEP_SUMMARY
           echo "**Artifact Name:** \`fe-${{ github.ref_name }}-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Run Number:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
@@ -83,7 +82,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 빌드 실패 💔"
+          title: "프론트엔드 개발 서버 빌드 실패 💔"
           description: |
             **결과:** 빌드 실패
             **브랜치:** ${{ github.ref_name }}
@@ -95,7 +94,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    environment: development
     timeout-minutes: 20
 
     steps:
@@ -189,12 +188,12 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버 배포 ${{ job.status == 'success' && '성공 💗' || '실패 💔💀' }}"
+          title: "프론트엔드 개발 서버 배포 ${{ job.status == 'success' && '성공 💗' || '실패 💔💀' }}"
           description: |
             **결과:** ${{ job.status }}
             **브랜치:** ${{ github.ref_name }}
             **Run Number:** ${{ github.run_number }}
             **작성자:** ${{ github.actor }}
             **커밋:** ${{ github.sha }}
-            **서버 환경:** ${{ github.ref_name == 'main' && '운영' || '개발' }} 서버
+            **서버 환경:** 개발 서버
           color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
