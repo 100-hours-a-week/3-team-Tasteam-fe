@@ -1,40 +1,42 @@
-name: Frontend CDN CD
+name: Frontend CDN CD (Production)
 
 on:
   push:
     branches:
-      - develop
       - main
   workflow_dispatch:
+    inputs:
+      source_branch:
+        description: "배포할 브랜치 이름 (예: main, release/xxx)"
+        required: true
+        default: "main"
+        type: string
 
 permissions:
   contents: read
   id-token: write
 
 concurrency:
-  group: frontend-cdn-${{ github.ref_name }}
+  group: frontend-cdn-production
   cancel-in-progress: false
 
 jobs:
   deploy-cdn:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+    environment: production
 
     steps:
-      - name: Validate deploy branch
-        run: |
-          case "${GITHUB_REF_NAME}" in
-            develop|main) ;;
-            *)
-              echo "Unsupported deploy branch: ${GITHUB_REF_NAME}"
-              echo "Frontend CDN CD supports only develop and main."
-              exit 1
-              ;;
-          esac
-
       - name: Checkout source code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.source_branch || github.ref_name }}
+
+      - name: Capture deployment metadata
+        id: metadata
+        run: |
+          echo "deploy_ref=${{ github.event_name == 'workflow_dispatch' && inputs.source_branch || github.ref_name }}" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -54,9 +56,10 @@ jobs:
       - name: Write version metadata
         run: |
           cat > dist/version.txt <<EOF
-          branch=${{ github.ref_name }}
+          branch=${{ steps.metadata.outputs.deploy_ref }}
+          environment=production
           run_number=${{ github.run_number }}
-          sha=${{ github.sha }}
+          sha=${{ steps.metadata.outputs.deploy_sha }}
           deployed_at_utc=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           EOF
 
@@ -126,10 +129,10 @@ jobs:
           {
             echo "### Frontend CDN Deploy Success :rocket:"
             echo ""
-            echo "- Environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}"
-            echo "- Branch: \`${{ github.ref_name }}\`"
+            echo "- Environment: \`production\`"
+            echo "- Branch: \`${{ steps.metadata.outputs.deploy_ref }}\`"
             echo "- Run Number: \`${{ github.run_number }}\`"
-            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Commit: \`${{ steps.metadata.outputs.deploy_sha }}\`"
             echo "- Bucket Secret: \`FRONTEND_STATIC_BUCKET_NAME\`"
             echo "- Distribution Secret: \`FRONTEND_CLOUDFRONT_DISTRIBUTION_ID\`"
             echo "- Invalidation ID: \`${{ steps.invalidation.outputs.invalidation_id }}\`"
@@ -140,11 +143,12 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          title: "프론트엔드 CDN 배포 ${{ job.status == 'success' && '성공 ✅' || '실패 ❌' }}"
+          title: "프론트엔드 CDN 배포(운영) ${{ job.status == 'success' && '성공 ✅' || '실패 ❌' }}"
           description: |
             **결과:** ${{ job.status }}
-            **브랜치:** ${{ github.ref_name }}
+            **환경:** production
+            **브랜치:** ${{ steps.metadata.outputs.deploy_ref }}
             **Run Number:** ${{ github.run_number }}
             **작성자:** ${{ github.actor }}
-            **커밋:** ${{ github.sha }}
+            **커밋:** ${{ steps.metadata.outputs.deploy_sha }}
           color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
