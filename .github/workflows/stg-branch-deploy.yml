@@ -1,0 +1,163 @@
+name: Frontend STG Branch Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: "배포할 브랜치 이름 (예: main, develop, feature/xxx)"
+        required: true
+        default: "main"
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_branch }}
+
+      - name: Capture deployment metadata
+        id: metadata
+        run: |
+          BRANCH_SLUG="$(printf '%s' "${{ inputs.source_branch }}" | tr '/' '-')"
+          echo "deploy_ref=${{ inputs.source_branch }}" >> "$GITHUB_OUTPUT"
+          echo "branch_slug=${BRANCH_SLUG}" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "deploy_short_sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Build
+        run: npm run build
+
+      - name: Write version metadata
+        run: |
+          cat > dist/version.txt <<EOF
+          branch=${{ steps.metadata.outputs.deploy_ref }}
+          run_number=${{ github.run_number }}
+          sha=${{ steps.metadata.outputs.deploy_sha }}
+          deployed_at_utc=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          EOF
+
+      - name: Build Summary
+        run: |
+          echo "### STG Branch Build Success :rocket:" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Environment:** 스테이징" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Source Branch:** \`${{ steps.metadata.outputs.deploy_ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Source SHA:** \`${{ steps.metadata.outputs.deploy_sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Run Number:** \`${{ github.run_number }}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Build Failure
+        if: failure()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "프론트엔드 스테이징 브랜치 배포 빌드 실패 💔"
+          description: |
+            **결과:** 빌드 실패
+            **브랜치:** ${{ steps.metadata.outputs.deploy_ref }}
+            **Run Number:** ${{ github.run_number }}
+            **작성자:** ${{ github.actor }}
+            **커밋:** ${{ steps.metadata.outputs.deploy_sha }}
+          color: 0xff0000
+
+      - name: Upload Build Files to Staging
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          timeout: 2m
+          source: "dist/*"
+          target: "/home/${{ secrets.USERNAME }}/frontend/staging/stg/${{ steps.metadata.outputs.branch_slug }}/${{ github.run_number }}"
+          strip_components: 1
+
+      - name: Promote Staging to Release
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          timeout: 2m
+          script: |
+            set -euo pipefail
+
+            STAGING_DIR="/home/${{ secrets.USERNAME }}/frontend/staging/stg/${{ steps.metadata.outputs.branch_slug }}/${{ github.run_number }}"
+            DEPLOY_BASE="/opt/caddy/www/html"
+            RELEASES_DIR="${DEPLOY_BASE}/releases"
+            CURRENT_LINK="${DEPLOY_BASE}/current"
+            BRANCH_SLUG="${{ steps.metadata.outputs.branch_slug }}"
+            SHORT_SHA="${{ steps.metadata.outputs.deploy_short_sha }}"
+            RELEASE_ID="stg-${BRANCH_SLUG}-${{ github.run_number }}-${SHORT_SHA}"
+            RELEASE_DIR="${RELEASES_DIR}/${RELEASE_ID}"
+            RELEASE_LINK_TARGET="releases/${RELEASE_ID}"
+            TMP_LINK="${DEPLOY_BASE}/.current_tmp"
+
+            if [ ! -d "$STAGING_DIR" ]; then
+              echo "❌ Staging directory not found: $STAGING_DIR"
+              exit 1
+            fi
+
+            sudo mkdir -p "$RELEASES_DIR"
+            sudo mkdir -p "$RELEASE_DIR"
+            sudo cp -a "$STAGING_DIR"/. "$RELEASE_DIR"/
+
+            sudo rm -f "$TMP_LINK"
+            sudo ln -s "$RELEASE_LINK_TARGET" "$TMP_LINK"
+            sudo mv -Tf "$TMP_LINK" "$CURRENT_LINK"
+
+            rm -rf "$STAGING_DIR"
+
+            (sudo ls -1dt "$RELEASES_DIR"/* 2>/dev/null || true) | tail -n +6 | xargs -r sudo rm -rf
+
+            echo "✅ Deployed release: $RELEASE_DIR"
+            echo "✅ Current link -> $(readlink "$CURRENT_LINK")"
+            if [ -f "$CURRENT_LINK/version.txt" ]; then
+              echo "--- version.txt ---"
+              cat "$CURRENT_LINK/version.txt"
+            fi
+
+      - name: Cleanup Staging Directory
+        if: always()
+        continue-on-error: true
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          timeout: 2m
+          script: |
+            rm -rf "/home/${{ secrets.USERNAME }}/frontend/staging/stg/${{ steps.metadata.outputs.branch_slug }}/${{ github.run_number }}"
+
+      - name: Notify Deployment Result
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "프론트엔드 스테이징 브랜치 배포 ${{ job.status == 'success' && '성공 ✅' || '실패 ❌' }}"
+          description: |
+            **결과:** ${{ job.status }}
+            **브랜치:** ${{ steps.metadata.outputs.deploy_ref }}
+            **Run Number:** ${{ github.run_number }}
+            **작성자:** ${{ github.actor }}
+            **커밋:** ${{ steps.metadata.outputs.deploy_sha }}
+          color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}

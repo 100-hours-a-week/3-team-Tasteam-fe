@@ -1,0 +1,150 @@
+name: Frontend CDN CD
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: frontend-cdn-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-cdn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+
+    steps:
+      - name: Validate deploy branch
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            develop|main) ;;
+            *)
+              echo "Unsupported deploy branch: ${GITHUB_REF_NAME}"
+              echo "Frontend CDN CD supports only develop and main."
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Build
+        run: npm run build
+
+      - name: Write version metadata
+        run: |
+          cat > dist/version.txt <<EOF
+          branch=${{ github.ref_name }}
+          run_number=${{ github.run_number }}
+          sha=${{ github.sha }}
+          deployed_at_utc=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          EOF
+
+      - name: Validate required secrets
+        env:
+          AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          FRONTEND_STATIC_BUCKET_NAME: ${{ secrets.FRONTEND_STATIC_BUCKET_NAME }}
+          FRONTEND_CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          set -euo pipefail
+          [ -n "${AWS_DEPLOY_ROLE_ARN}" ] || { echo "::error::AWS_DEPLOY_ROLE_ARN secret is required"; exit 1; }
+          [ -n "${FRONTEND_STATIC_BUCKET_NAME}" ] || { echo "::error::FRONTEND_STATIC_BUCKET_NAME secret is required"; exit 1; }
+          [ -n "${FRONTEND_CLOUDFRONT_DISTRIBUTION_ID}" ] || { echo "::error::FRONTEND_CLOUDFRONT_DISTRIBUTION_ID secret is required"; exit 1; }
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-northeast-2' }}
+
+      - name: Upload assets (immutable)
+        env:
+          FRONTEND_STATIC_BUCKET_NAME: ${{ secrets.FRONTEND_STATIC_BUCKET_NAME }}
+        run: |
+          set -euo pipefail
+          aws s3 sync dist/assets "s3://${FRONTEND_STATIC_BUCKET_NAME}/assets" \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable"
+
+      - name: Upload non-index files (no-cache)
+        env:
+          FRONTEND_STATIC_BUCKET_NAME: ${{ secrets.FRONTEND_STATIC_BUCKET_NAME }}
+        run: |
+          set -euo pipefail
+          aws s3 sync dist "s3://${FRONTEND_STATIC_BUCKET_NAME}" \
+            --delete \
+            --exclude "assets/*" \
+            --exclude "index.html" \
+            --cache-control "no-cache,no-store,must-revalidate"
+
+      - name: Upload index.html (no-cache)
+        env:
+          FRONTEND_STATIC_BUCKET_NAME: ${{ secrets.FRONTEND_STATIC_BUCKET_NAME }}
+        run: |
+          set -euo pipefail
+          aws s3 cp dist/index.html "s3://${FRONTEND_STATIC_BUCKET_NAME}/index.html" \
+            --cache-control "no-cache,no-store,must-revalidate" \
+            --content-type "text/html; charset=utf-8"
+
+      - name: CloudFront invalidation
+        id: invalidation
+        env:
+          FRONTEND_CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.FRONTEND_CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          set -euo pipefail
+          INVALIDATION_ID="$(aws cloudfront create-invalidation \
+            --distribution-id "${FRONTEND_CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/" "/index.html" \
+            --query 'Invalidation.Id' \
+            --output text)"
+          echo "invalidation_id=${INVALIDATION_ID}" >> "$GITHUB_OUTPUT"
+          echo "Created invalidation: ${INVALIDATION_ID}"
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          {
+            echo "### Frontend CDN Deploy Success :rocket:"
+            echo ""
+            echo "- Environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}"
+            echo "- Branch: \`${{ github.ref_name }}\`"
+            echo "- Run Number: \`${{ github.run_number }}\`"
+            echo "- Commit: \`${{ github.sha }}\`"
+            echo "- Bucket Secret: \`FRONTEND_STATIC_BUCKET_NAME\`"
+            echo "- Distribution Secret: \`FRONTEND_CLOUDFRONT_DISTRIBUTION_ID\`"
+            echo "- Invalidation ID: \`${{ steps.invalidation.outputs.invalidation_id }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Deployment Result
+        if: always()
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          title: "프론트엔드 CDN 배포 ${{ job.status == 'success' && '성공 ✅' || '실패 ❌' }}"
+          description: |
+            **결과:** ${{ job.status }}
+            **브랜치:** ${{ github.ref_name }}
+            **Run Number:** ${{ github.run_number }}
+            **작성자:** ${{ github.actor }}
+            **커밋:** ${{ github.sha }}
+          color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }}
