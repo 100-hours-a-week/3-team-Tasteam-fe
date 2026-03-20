@@ -80,7 +80,7 @@ export function OptimizedImage({
   }
 
   return (
-    <picture className={cn('block', pictureClassName)}>
+    <picture className={cn('block w-full h-full', pictureClassName)}>
       {!didError && resolvedWebpSrc ? <source srcSet={resolvedWebpSrc} type="image/webp" /> : null}
       <img
         src={didError ? resolvedFallbackSrc : src}
