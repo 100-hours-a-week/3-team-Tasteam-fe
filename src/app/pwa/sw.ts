@@ -10,15 +10,19 @@ import {
   precacheAndRoute,
 } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
-import { CacheFirst } from 'workbox-strategies'
+import { CacheFirst, NetworkFirst } from 'workbox-strategies'
 
 declare let self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<string | { url: string; revision?: string | null }>
 }
 
-const IMAGE_CACHE_NAME = 'images'
+const APP_CACHE_PREFIX = 'tasteam'
+const APP_CACHE_VERSION = String(__APP_VERSION__ ?? 'dev')
+const PAGE_CACHE_NAME = `${APP_CACHE_PREFIX}-${APP_CACHE_VERSION}-pages`
+const IMAGE_CACHE_NAME = `${APP_CACHE_PREFIX}-${APP_CACHE_VERSION}-images`
 const NAVIGATION_DENYLIST = [/^\/api\//, /^\/admin/]
 const THIRTY_DAYS_IN_SECONDS = 30 * 24 * 60 * 60
+const NETWORK_TIMEOUT_SECONDS = 8
 const PROFILE_IMAGE_PATH_PATTERN = /\/profile(?:s)?\//i
 const PROFILE_IMAGE_KEYWORD_PATTERN =
   /(profile-image|profile_image|profileimage|memberprofileimage)/i
@@ -28,11 +32,40 @@ clientsClaim()
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-const navigationHandler = createHandlerBoundToURL('/index.html')
+const navigationFallback = createHandlerBoundToURL('/index.html')
+const pageNavigationStrategy = new NetworkFirst({
+  cacheName: PAGE_CACHE_NAME,
+  networkTimeoutSeconds: NETWORK_TIMEOUT_SECONDS,
+  plugins: [
+    new ExpirationPlugin({
+      maxEntries: 50,
+      maxAgeSeconds: THIRTY_DAYS_IN_SECONDS,
+    }),
+  ],
+})
+
 registerRoute(
-  new NavigationRoute(navigationHandler, {
-    denylist: NAVIGATION_DENYLIST,
-  }),
+  new NavigationRoute(
+    async ({ request, event }) => {
+      try {
+        const response = await pageNavigationStrategy.handle({ request, event })
+        if (response) {
+          return response
+        }
+      } catch (error) {
+        console.debug('[sw] 네비게이션 네트워크 응답 실패. 캐시 fallback으로 전환합니다.', error)
+      }
+
+      const cache = await caches.open(PAGE_CACHE_NAME)
+      const cachedResponse = await cache.match(request)
+      if (cachedResponse) return cachedResponse
+
+      return navigationFallback({ request, event })
+    },
+    {
+      denylist: NAVIGATION_DENYLIST,
+    },
+  ),
 )
 
 registerRoute(
@@ -60,6 +93,31 @@ registerRoute(
     ],
   }),
 )
+
+const cleanupOldRuntimeCaches = async () => {
+  const currentCaches = new Set([PAGE_CACHE_NAME, IMAGE_CACHE_NAME])
+  const cacheNames = await caches.keys()
+  await Promise.all(
+    cacheNames
+      .filter((name) => name.startsWith(`${APP_CACHE_PREFIX}-`) && !currentCaches.has(name))
+      .map((name) => caches.delete(name)),
+  )
+}
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      await cleanupOldRuntimeCaches()
+      await self.clients.claim()
+    })(),
+  )
+})
+
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    void self.skipWaiting()
+  }
+})
 
 const normalizeNotificationDeepLink = (deepLink: unknown): string => {
   if (typeof deepLink !== 'string' || !deepLink) return '/'

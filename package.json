@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/prepare-build-version.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "check:fsd": "node scripts/check-fsd.mjs",
