@@ -60,7 +60,7 @@ registerRoute(
       const cachedResponse = await cache.match(request)
       if (cachedResponse) return cachedResponse
 
-      return navigationFallback({ request, event })
+      return navigationFallback({ request, event, url })
     },
     {
       denylist: NAVIGATION_DENYLIST,
