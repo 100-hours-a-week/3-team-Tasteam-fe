@@ -46,9 +46,9 @@ const pageNavigationStrategy = new NetworkFirst({
 
 registerRoute(
   new NavigationRoute(
-    async ({ request, event }) => {
+    async ({ request, event, url }) => {
       try {
-        const response = await pageNavigationStrategy.handle({ request, event })
+        const response = await pageNavigationStrategy.handle({ request, event, url })
         if (response) {
           return response
         }
