@@ -1,8 +1,8 @@
 import { ArrowRight } from 'lucide-react'
 import { Card } from '@/shared/ui/card'
 import { Button } from '@/shared/ui/button'
-import { ImageWithFallback } from '@/shared/ui/image-with-fallback'
 import { cn } from '@/shared/lib/utils'
+import { OptimizedImage } from '@/shared/ui/OptimizedImage'
 
 type HeroRecommendationCardProps = {
   title: string
@@ -40,13 +40,14 @@ export function HeroRecommendationCard({
           </Button>
         </div>
         <div className="w-36 relative overflow-hidden shrink-0">
-          <ImageWithFallback
+          <OptimizedImage
             src={image}
             alt={title}
+            width={500}
+            height={330}
             className="object-cover w-full h-full"
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
+            priority
+            sizes="144px"
           />
         </div>
       </div>

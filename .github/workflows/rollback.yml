@@ -78,8 +78,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          source: "./rollback-temp/*"
-          target: "/home/${{ secrets.USERNAME }}/frontend/staging/rollback/${{ inputs.environment }}/${{ inputs.run_number }}"
+          timeout: 2m
+          source: './rollback-temp/*'
+          target: '/home/${{ secrets.USERNAME }}/frontend/staging/rollback/${{ inputs.environment }}/${{ inputs.run_number }}'
           strip_components: 1
 
       # 5. staging -> 새 release 생성 후 current 링크 전환
@@ -90,6 +91,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
+          timeout: 2m
           script: |
             set -euo pipefail
 
@@ -133,12 +135,14 @@ jobs:
       # 6. 실패/중단 포함 staging 잔여물 정리
       - name: Cleanup Rollback Staging Directory
         if: always()
+        continue-on-error: true
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
+          timeout: 2m
           script: |
             rm -rf "/home/${{ secrets.USERNAME }}/frontend/staging/rollback/${{ inputs.environment }}/${{ inputs.run_number }}"
 

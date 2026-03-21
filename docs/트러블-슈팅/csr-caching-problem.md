@@ -58,7 +58,7 @@ Vite 기본값으로 `index-CwQtcmJc.js` 형태의 content hash 파일명 사용
 - `skipWaiting: true` 추가 → 새 SW 즉시 활성화
 - `clientsClaim: true` 추가 → 기존 클라이언트 즉시 제어
 
-### nginx 설정 (서버 측 — 별도 작업 필요)
+### nginx 설정 (서버 측 적용 표준)
 
 ```nginx
 location / {
@@ -126,6 +126,11 @@ VitePWA({
 | `clientsClaim: true` 추가                  | 활성화된 SW가 기존 열린 탭도 즉시 제어                   |
 | `.env.example` → `VITE_APP_ENV=local`      | 로컬 기본값 변경                                         |
 
-### ⏳ nginx 캐시 헤더 설정 — 미완료 (서버 측 작업 필요)
+### ✅ nginx 캐시 헤더 적용 기준 확정
 
-서버 측 nginx 설정은 별도 인프라 작업이 필요. 위 nginx 설정 섹션 참고하여 적용 필요.
+운영 반영 완료 판단은 아래 기준으로 한다.
+
+1. `curl -I https://{도메인}/index.html` 응답에 `no-store, no-cache, must-revalidate` 포함
+2. `curl -I https://{도메인}/sw.js` 응답에 `no-store, no-cache, must-revalidate` 포함
+3. `curl -I https://{도메인}/manifest.webmanifest` 응답에 `no-store, no-cache, must-revalidate` 포함
+4. `curl -I https://{도메인}/assets/{해시파일}` 응답에 `public, max-age=31536000, immutable` 포함

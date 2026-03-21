@@ -1,5 +1,5 @@
-import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app'
-import { getMessaging, isSupported, type Messaging } from 'firebase/messaging'
+import type { FirebaseApp } from 'firebase/app'
+import type { Messaging } from 'firebase/messaging'
 import {
   FIREBASE_API_KEY,
   FIREBASE_APP_ID,
@@ -31,12 +31,34 @@ const hasFirebaseConfig = () =>
     FIREBASE_APP_ID,
   )
 
-export const initFirebaseApp = (): FirebaseApp | null => {
+let firebaseAppModulePromise: Promise<typeof import('firebase/app')> | null = null
+let firebaseMessagingModulePromise: Promise<typeof import('firebase/messaging')> | null = null
+
+const loadFirebaseAppModule = () => {
+  if (!firebaseAppModulePromise) {
+    firebaseAppModulePromise = import('firebase/app')
+  }
+
+  return firebaseAppModulePromise
+}
+
+const loadFirebaseMessagingModule = () => {
+  if (!firebaseMessagingModulePromise) {
+    firebaseMessagingModulePromise = import('firebase/messaging')
+  }
+
+  return firebaseMessagingModulePromise
+}
+
+export const initFirebaseApp = async (): Promise<FirebaseApp | null> => {
   try {
     if (!hasFirebaseConfig()) {
       logger.debug('[firebase] Config unavailable')
       return null
     }
+
+    const { getApp, getApps, initializeApp } = await loadFirebaseAppModule()
+
     if (getApps().length > 0) return getApp()
     return initializeApp(firebaseConfig)
   } catch (error) {
@@ -52,13 +74,14 @@ export const getFirebaseMessaging = async (): Promise<Messaging | null> => {
       return null
     }
 
+    const { getMessaging, isSupported } = await loadFirebaseMessagingModule()
     const supported = await isSupported()
     if (!supported) {
       logger.debug('[firebase] Messaging not supported in this environment')
       return null
     }
 
-    const app = initFirebaseApp()
+    const app = await initFirebaseApp()
     if (!app) {
       logger.warn('[firebase] Firebase app initialization failed')
       return null
@@ -71,7 +94,21 @@ export const getFirebaseMessaging = async (): Promise<Messaging | null> => {
   }
 }
 
-export const registerFirebaseMessagingServiceWorker = async () => {
+const SERVICE_WORKER_READY_TIMEOUT_MS = 3000
+
+const waitForServiceWorkerReady = async (
+  timeoutMs = SERVICE_WORKER_READY_TIMEOUT_MS,
+): Promise<ServiceWorkerRegistration | null> => {
+  const readyPromise = navigator.serviceWorker.ready
+  const timeoutPromise = new Promise<null>((resolve) => {
+    window.setTimeout(() => resolve(null), timeoutMs)
+  })
+
+  const readyRegistration = await Promise.race([readyPromise, timeoutPromise])
+  return readyRegistration ?? null
+}
+
+export const getAppServiceWorkerRegistration = async () => {
   try {
     if (!('serviceWorker' in navigator)) {
       logger.debug('[firebase] Service Worker not supported')
@@ -83,24 +120,20 @@ export const registerFirebaseMessagingServiceWorker = async () => {
       return null
     }
 
-    const params = new URLSearchParams({
-      apiKey: FIREBASE_API_KEY,
-      authDomain: FIREBASE_AUTH_DOMAIN,
-      projectId: FIREBASE_PROJECT_ID,
-      storageBucket: FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
-      appId: FIREBASE_APP_ID,
-      measurementId: FIREBASE_MEASUREMENT_ID ?? '',
-    })
+    const existingRegistration = await navigator.serviceWorker.getRegistration()
+    if (existingRegistration) {
+      return existingRegistration
+    }
 
-    const registration = await navigator.serviceWorker.register(
-      `/firebase-messaging-sw.js?${params.toString()}`,
-    )
+    const readyRegistration = await waitForServiceWorkerReady()
+    if (readyRegistration) {
+      return readyRegistration
+    }
 
-    logger.debug('[firebase] Service Worker registered successfully')
-    return registration
+    logger.warn('[firebase] 앱 서비스 워커를 찾지 못했습니다')
+    return null
   } catch (error) {
-    logger.error('[firebase] Service Worker registration failed', error)
+    logger.error('[firebase] 앱 서비스 워커 조회에 실패했습니다', error)
     return null
   }
 }

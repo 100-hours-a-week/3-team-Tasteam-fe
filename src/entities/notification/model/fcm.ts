@@ -1,9 +1,9 @@
-import { getToken, onMessage } from 'firebase/messaging'
+import type { Messaging } from 'firebase/messaging'
 import { toast } from 'sonner'
 import { FIREBASE_VAPID_KEY } from '@/shared/config/env'
 import { logger } from '@/shared/lib/logger'
 import { getOrCreateDeviceId } from '@/shared/lib/deviceId'
-import { getFirebaseMessaging, registerFirebaseMessagingServiceWorker } from '@/shared/lib/firebase'
+import { getAppServiceWorkerRegistration, getFirebaseMessaging } from '@/shared/lib/firebase'
 import { registerPushNotificationTarget } from '../api/notificationApi'
 import { normalizeNotificationDeepLink } from './deepLink'
 
@@ -12,6 +12,8 @@ const FCM_LAST_SYNC_KEY = 'fcm:token:last-sync:v1'
 const FCM_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000
 let syncInFlight: Promise<void> | null = null
 let serviceWorkerMessageBound = false
+let messagingModulePromise: Promise<typeof import('firebase/messaging')> | null = null
+let foregroundMessageUnsubscribe: (() => void) | null = null
 
 const getStoredToken = () => {
   try {
@@ -48,6 +50,14 @@ const getLastSync = () => {
 
 const canUseNotifications = () =>
   typeof window !== 'undefined' && typeof Notification !== 'undefined'
+
+const loadFirebaseMessagingModule = () => {
+  if (!messagingModulePromise) {
+    messagingModulePromise = import('firebase/messaging')
+  }
+
+  return messagingModulePromise
+}
 
 const isInsideChatRoom = () => {
   if (typeof window === 'undefined') return false
@@ -91,13 +101,13 @@ export const syncFcmToken = async () => {
 
       let registration
       try {
-        registration = await registerFirebaseMessagingServiceWorker()
+        registration = await getAppServiceWorkerRegistration()
         if (!registration) {
-          logger.warn('[fcm] Service worker registration failed')
+          logger.warn('[fcm] 앱 서비스 워커를 찾지 못했습니다')
           return
         }
       } catch (error) {
-        logger.error('[fcm] Service worker registration error', error)
+        logger.error('[fcm] 앱 서비스 워커 조회 중 오류가 발생했습니다', error)
         return
       }
 
@@ -115,6 +125,7 @@ export const syncFcmToken = async () => {
 
       let token
       try {
+        const { getToken } = await loadFirebaseMessagingModule()
         token = await getToken(messaging, {
           vapidKey: FIREBASE_VAPID_KEY,
           serviceWorkerRegistration: registration,
@@ -146,6 +157,7 @@ export const syncFcmToken = async () => {
         await registerPushNotificationTarget({ deviceId, fcmToken: token })
         setStoredToken(token)
         setLastSync(Date.now())
+        void setupForegroundMessageListener(messaging)
         logger.debug('[fcm] Token registered')
       } catch (error) {
         logger.error('[fcm] Failed to register token with server', error)
@@ -163,15 +175,22 @@ export const syncFcmToken = async () => {
   }
 }
 
-const setupForegroundMessageListener = async () => {
+const setupForegroundMessageListener = async (messagingOverride?: Messaging) => {
   try {
-    const messaging = await getFirebaseMessaging()
+    if (!canUseNotifications() || Notification.permission !== 'granted') {
+      logger.debug('[fcm] Skip foreground listener before permission grant')
+      return
+    }
+    if (foregroundMessageUnsubscribe) return
+
+    const messaging = messagingOverride ?? (await getFirebaseMessaging())
     if (!messaging) {
       logger.debug('[fcm] Messaging unavailable for foreground listener')
       return
     }
 
-    onMessage(messaging, (payload) => {
+    const { onMessage } = await loadFirebaseMessagingModule()
+    foregroundMessageUnsubscribe = onMessage(messaging, (payload) => {
       try {
         logger.debug('[fcm] Foreground message received', payload)
         if (typeof window !== 'undefined') {
@@ -229,6 +248,10 @@ export const startFcmTokenSync = () => {
   }
 
   const scheduleSync = () => {
+    if (canUseNotifications() && Notification.permission === 'granted') {
+      void setupForegroundMessageListener()
+    }
+
     if (shouldSync()) {
       void syncFcmToken()
     }
@@ -248,9 +271,10 @@ export const startFcmTokenSync = () => {
 
   scheduleSync()
   setupServiceWorkerMessageListener()
-  void setupForegroundMessageListener()
 
   return () => {
+    foregroundMessageUnsubscribe?.()
+    foregroundMessageUnsubscribe = null
     window.removeEventListener('visibilitychange', onVisibilityChange)
     window.removeEventListener('focus', scheduleSync)
     window.removeEventListener('online', scheduleSync)

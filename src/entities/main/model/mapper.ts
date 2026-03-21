@@ -1,5 +1,7 @@
 import type {
   AiRecommendData,
+  AiRecommendResponseDto,
+  HomePageResponseDto,
   MainPageData,
   MainPageResponseDto,
   MainSectionDto,
@@ -16,9 +18,16 @@ export const toMainPageData = (response: MainPageResponseDto | null): MainPageDa
   }
 }
 
-export const toAiRecommendData = (response: MainPageResponseDto | null): AiRecommendData => {
+export const toHomePageData = (response: HomePageResponseDto | null): MainPageData => {
   const sections = response?.data?.sections ?? []
   return {
-    section: sections.find((section) => section.type === 'AI_RECOMMEND') ?? null,
+    sections: filterSectionTypes(sections, ['NEW', 'HOT']),
+  }
+}
+
+export const toAiRecommendData = (response: AiRecommendResponseDto | null): AiRecommendData => {
+  const section = response?.data?.section ?? null
+  return {
+    section,
   }
 }

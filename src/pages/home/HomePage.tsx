@@ -11,13 +11,14 @@ import { RestaurantCard } from '@/entities/restaurant'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ROUTES } from '@/shared/config/routes'
-import { getMainPage } from '@/entities/main'
+import { getHomePage } from '@/entities/main'
 import type { BannerDto } from '@/entities/banner'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
-import type { MainPageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
-import { toMainPageData } from '@/entities/main'
+import type { HomePageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
+import { toHomePageData } from '@/entities/main'
 import { getMainPageCache } from '@/app/bootstrap/mainPageCache'
+import { WindowVirtualizedStack } from '@/shared/ui/WindowVirtualizedStack'
 
 const SPLASH_POPUP_DISMISSED_DATE_KEY = 'splash-popup-dismissed-date'
 let dismissedSplashEventIdInSession: number | null = null
@@ -39,11 +40,17 @@ type HomePageProps = {
   onRestaurantClick?: (id: string, metadata?: { position: number; section: string }) => void
   onGroupClick?: (id: string) => void
   onEventClick?: (eventId: number) => void
+  onSplashSettled?: () => void
 }
 
-export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: HomePageProps) {
+export function HomePage({
+  onSearchClick,
+  onRestaurantClick,
+  onEventClick,
+  onSplashSettled,
+}: HomePageProps) {
   const navigate = useNavigate()
-  const [mainData, setMainData] = useState<MainPageResponseDto | null>(null)
+  const [homeData, setHomeData] = useState<HomePageResponseDto | null>(null)
   const [isMainLoading, setIsMainLoading] = useState(true)
   const [hasLoadedMain, setHasLoadedMain] = useState(false)
   const [showSplashPopup, setShowSplashPopup] = useState(false)
@@ -56,9 +63,11 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     const cached = getMainPageCache(latitude, longitude)
     if (cached) {
       queueMicrotask(() => {
-        setMainData(cached)
+        setHomeData(cached)
         const splashPromotion = cached.data?.splashPromotion
-        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
+        const willShow = shouldShowSplashPopup(splashPromotion?.id)
+        setShowSplashPopup(willShow)
+        if (!willShow) onSplashSettled?.()
         setIsMainLoading(false)
         setHasLoadedMain(true)
       })
@@ -66,18 +75,22 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     }
 
     queueMicrotask(() => setIsMainLoading(true))
-    getMainPage({ latitude, longitude })
+    getHomePage({ latitude, longitude })
       .then((data) => {
-        setMainData(data)
+        setHomeData(data)
         const splashPromotion = data.data?.splashPromotion
-        setShowSplashPopup(shouldShowSplashPopup(splashPromotion?.id))
+        const willShow = shouldShowSplashPopup(splashPromotion?.id)
+        setShowSplashPopup(willShow)
+        if (!willShow) onSplashSettled?.()
       })
-      .catch(() => {})
+      .catch(() => {
+        onSplashSettled?.()
+      })
       .finally(() => {
         setIsMainLoading(false)
         setHasLoadedMain(true)
       })
-  }, [latitude, longitude])
+  }, [latitude, longitude, onSplashSettled])
 
   useEffect(() => {
     if (hasRefreshedRef.current) return
@@ -93,9 +106,9 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     })()
   }, [requestCurrentLocation, status])
 
-  const mainPageData = toMainPageData(mainData)
+  const mainPageData = toHomePageData(homeData)
   const banners: BannerDto[] =
-    mainData?.data?.banners?.items?.map((item) => ({
+    homeData?.data?.banners?.items?.map((item) => ({
       id: item.id,
       imageUrl: item.imageUrl,
       title: null,
@@ -105,7 +118,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     })) ?? []
   const sections = mainPageData.sections
   const resolvedSections = sections
-  const splashEvent = mainData?.data?.splashPromotion
+  const splashEvent = homeData?.data?.splashPromotion
 
   const closeSplashPopup = (dontShowToday: boolean) => {
     if (splashEvent?.id) {
@@ -115,6 +128,7 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
       localStorage.setItem(SPLASH_POPUP_DISMISSED_DATE_KEY, new Date().toDateString())
     }
     setShowSplashPopup(false)
+    onSplashSettled?.()
   }
 
   const newSection = resolvedSections.find((section) => section.type === 'NEW')
@@ -243,25 +257,34 @@ export function HomePage({ onSearchClick, onRestaurantClick, onEventClick }: Hom
     }
     return (
       <Container>
-        <div className="space-y-4">
-          {items.map((item: MainSectionItemDto, index) => (
-            <RestaurantCard
-              key={item.restaurantId}
-              name={item.name}
-              foodCategories={item.foodCategories}
-              category={item.category}
-              distance={formatDistanceLabel(item.distanceMeter)}
-              image={item.thumbnailImageUrl}
-              reviewSummary={item.reviewSummary}
-              onClick={() =>
-                onRestaurantClick?.(String(item.restaurantId), {
-                  position: index,
-                  section: section?.type ?? 'UNKNOWN',
-                })
-              }
-            />
-          ))}
-        </div>
+        <WindowVirtualizedStack
+          count={items.length}
+          estimateSize={300}
+          overscan={3}
+          gap={16}
+          getItemKey={(index) => items[index]?.restaurantId ?? index}
+          renderItem={(index) => {
+            const item = items[index]
+
+            return (
+              <RestaurantCard
+                key={item.restaurantId}
+                name={item.name}
+                foodCategories={item.foodCategories}
+                category={item.category}
+                distance={formatDistanceLabel(item.distanceMeter)}
+                image={item.thumbnailImageUrl}
+                reviewSummary={item.reviewSummary}
+                onClick={() =>
+                  onRestaurantClick?.(String(item.restaurantId), {
+                    position: index,
+                    section: section?.type ?? 'UNKNOWN',
+                  })
+                }
+              />
+            )
+          }}
+        />
       </Container>
     )
   }
