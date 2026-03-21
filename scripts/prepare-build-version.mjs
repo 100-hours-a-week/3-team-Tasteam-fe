@@ -23,7 +23,7 @@ const nextVersion = source ? `${baseVersion}-ci.${source}` : `${baseVersion}-ci`
 packageData.version = nextVersion
 fs.writeFileSync(
   packageJsonPath,
-  `${JSON.stringify(packageData, null, 2)}${'\\n'}`,
+  `${JSON.stringify(packageData, null, 2)}\n`,
 )
 
 console.log(`[build-version] version updated -> ${nextVersion}`)
