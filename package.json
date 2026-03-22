@@ -1,10 +1,11 @@
 {
   "name": "tasteam",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.3.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/prepare-build-version.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "check:fsd": "node scripts/check-fsd.mjs",

@@ -58,6 +58,12 @@ location /assets/ {
 3. 사용자가 `업데이트` 클릭 시 `updateServiceWorker(true)` 실행
 4. `controllerchange` 이벤트 수신 후 `window.location.reload()` 실행
 
+### 배포된 앱(이미 설치된 클라이언트) 대응
+
+- 앱 진입/포커스/온라인 복귀 시 서비스 워커 등록 정보를 `registration.update()`로 즉시 갱신 요청
+- 새 버전이 감지되면 사용자 승인 기반 토스트로 즉시 반영
+- 필요 시 브라우저 DevTools에서 `Application > Service Workers`에서 이전 SW 제거 후 페이지를 강제로 새로고침할 수 있도록 안내
+
 ## 검증 체크리스트
 
 - `npm run build` 후 `dist/`에 `sw.js`, `manifest.webmanifest` 생성 확인
