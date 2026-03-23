@@ -448,7 +448,7 @@ export function GroupDetailPage() {
             <RestaurantCard
               key={restaurant.id}
               restaurant={restaurant}
-              reviewSummary={restaurant.reviewSummary}
+              reviewSummary={restaurant.reviewSummary?.trim() || undefined}
               onClick={() => navigate(ROUTES.restaurantDetail(String(restaurant.id)))}
             />
           ))
