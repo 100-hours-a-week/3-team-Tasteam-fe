@@ -37,6 +37,43 @@ export type MainSectionDto = {
   items: MainSectionItemDto[]
 }
 
+export type HomeSectionItemDto = {
+  restaurantId: number
+  name: string
+  distanceMeter: number
+  foodCategories: string[]
+  thumbnailImageUrl: string | null
+  reviewSummary: string
+}
+
+export type HomeRecommendSectionDto = {
+  type: 'RECOMMEND'
+  title: string
+  items: HomeSectionItemDto[]
+}
+
+export type HomeGroupedSectionGroupDto = {
+  category: string
+  title: string
+  items: HomeSectionItemDto[]
+}
+
+export type HomeGroupedSectionDto = {
+  type: 'HOT' | 'DISTANCE'
+  title: string
+  groups: HomeGroupedSectionGroupDto[]
+}
+
+export type HomeSectionDto =
+  | HomeRecommendSectionDto
+  | HomeGroupedSectionDto
+  | {
+      type: string
+      title: string
+      items?: HomeSectionItemDto[]
+      groups?: HomeGroupedSectionGroupDto[]
+    }
+
 export type SplashEventDto = {
   id: number
   title: string
@@ -55,7 +92,7 @@ export type MainPageResponseDto = SuccessResponse<{
 
 export type HomePageResponseDto = SuccessResponse<{
   banners: MainBannerGroupDto
-  sections: MainSectionDto[]
+  sections: HomeSectionDto[]
   splashPromotion?: SplashEventDto
 }>
 
@@ -65,6 +102,29 @@ export type AiRecommendResponseDto = SuccessResponse<{
 
 export type MainPageData = {
   sections: MainSectionDto[]
+}
+
+export type HomeCarouselSection = {
+  type: 'RECOMMEND' | 'HOT'
+  title: string
+  items: MainSectionItemDto[]
+}
+
+export type HomeCategorySectionGroup = {
+  category: string
+  title: string
+  items: MainSectionItemDto[]
+}
+
+export type HomeCategorySection = {
+  type: 'HOT' | 'DISTANCE'
+  title: string
+  groups: HomeCategorySectionGroup[]
+}
+
+export type HomePageData = {
+  heroSection: HomeCarouselSection | null
+  distanceSection: HomeCategorySection | null
 }
 
 export type AiRecommendData = {

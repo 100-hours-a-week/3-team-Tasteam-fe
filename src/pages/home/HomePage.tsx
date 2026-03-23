@@ -1,13 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Flame, Sparkles } from 'lucide-react'
+import { Search, Flame, MapPin, Sparkles } from 'lucide-react'
 import { BottomTabBar, type TabId } from '@/widgets/bottom-tab-bar'
 import { SplashPopup } from '@/widgets/splash-popup'
 import { HomeAdCarousel } from '@/widgets/home-ad-carousel'
 import { Container } from '@/shared/ui/container'
 import { LocationHeader } from '@/widgets/location-header'
-import { HeroRecommendationCard } from '@/widgets/hero-recommendation'
-import { RestaurantCard } from '@/entities/restaurant'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ROUTES } from '@/shared/config/routes'
@@ -15,10 +13,11 @@ import { getHomePage } from '@/entities/main'
 import type { BannerDto } from '@/entities/banner'
 import { useAppLocation } from '@/entities/location'
 import { getGeolocationPermissionState } from '@/shared/lib/geolocation'
-import type { HomePageResponseDto, MainSectionDto, MainSectionItemDto } from '@/entities/main'
+import type { HomePageResponseDto } from '@/entities/main'
 import { toHomePageData } from '@/entities/main'
 import { getMainPageCache } from '@/app/bootstrap/mainPageCache'
-import { WindowVirtualizedStack } from '@/shared/ui/WindowVirtualizedStack'
+import { AutoSlidingRestaurantCarousel } from './ui/AutoSlidingRestaurantCarousel'
+import { HomeCategoryRestaurantSection } from './ui/HomeCategoryRestaurantSection'
 
 const SPLASH_POPUP_DISMISSED_DATE_KEY = 'splash-popup-dismissed-date'
 let dismissedSplashEventIdInSession: number | null = null
@@ -116,8 +115,6 @@ export function HomePage({
       bgColor: null,
       displayOrder: item.order,
     })) ?? []
-  const sections = mainPageData.sections
-  const resolvedSections = sections
   const splashEvent = homeData?.data?.splashPromotion
 
   const closeSplashPopup = (dontShowToday: boolean) => {
@@ -131,8 +128,8 @@ export function HomePage({
     onSplashSettled?.()
   }
 
-  const newSection = resolvedSections.find((section) => section.type === 'NEW')
-  const hotSection = resolvedSections.find((section) => section.type === 'HOT')
+  const heroSection = mainPageData.heroSection
+  const distanceSection = mainPageData.distanceSection
   const isInitialMainLoading = isMainLoading && !hasLoadedMain
   const shouldRenderBannerSection = isInitialMainLoading || banners.length > 0
 
@@ -143,151 +140,6 @@ export function HomePage({
       </div>
     </div>
   )
-
-  const formatDistanceLabel = (meters: number) =>
-    meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`
-
-  const renderHorizontal = (section?: MainSectionDto) => {
-    const items = section?.items ?? []
-    if (isMainLoading && items.length === 0) {
-      if (hasLoadedMain) {
-        return (
-          <div className="px-4 py-6 min-h-[12rem] flex items-center justify-center">
-            <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
-          </div>
-        )
-      }
-      return (
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex w-max gap-3 px-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="w-[260px] shrink-0" aria-hidden="true">
-                <div className="overflow-hidden rounded-lg border bg-card">
-                  <Skeleton className="aspect-[4/3] w-full rounded-none" />
-                  <div className="space-y-2 px-4 pb-4 pt-3">
-                    <Skeleton className="h-5 w-2/3" />
-                    <div className="flex items-center justify-between gap-3">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-12" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    }
-    if (items.length === 0) {
-      return (
-        <div className="px-4 py-6 min-h-[12rem] flex items-center justify-center">
-          <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
-        </div>
-      )
-    }
-    return (
-      <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex w-max gap-3 px-4">
-          {items.map((item: MainSectionItemDto, index) => (
-            <div key={item.restaurantId} className="w-[260px] shrink-0">
-              <RestaurantCard
-                name={item.name}
-                foodCategories={item.foodCategories}
-                category={item.category}
-                distance={formatDistanceLabel(item.distanceMeter)}
-                image={item.thumbnailImageUrl}
-                onClick={() =>
-                  onRestaurantClick?.(String(item.restaurantId), {
-                    position: index,
-                    section: section?.type ?? 'UNKNOWN',
-                  })
-                }
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  const renderVertical = (section?: MainSectionDto) => {
-    const items = section?.items ?? []
-    if (isMainLoading && items.length === 0) {
-      if (hasLoadedMain) {
-        return (
-          <Container>
-            <div className="min-h-[13rem] flex items-center justify-center">
-              <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
-            </div>
-          </Container>
-        )
-      }
-      return (
-        <Container>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="space-y-2" aria-hidden="true">
-                <div className="rounded-md border border-primary/10 bg-primary/5 px-2.5 py-1.5">
-                  <Skeleton className="h-4 w-5/6" />
-                </div>
-                <div className="overflow-hidden rounded-lg border bg-card">
-                  <Skeleton className="aspect-[21/10] w-full rounded-none" />
-                  <div className="space-y-2 px-4 pb-4 pt-3">
-                    <Skeleton className="h-5 w-1/2" />
-                    <div className="flex items-center justify-between gap-3">
-                      <Skeleton className="h-4 w-28" />
-                      <Skeleton className="h-4 w-12" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Container>
-      )
-    }
-    if (items.length === 0) {
-      return (
-        <Container>
-          <div className="min-h-[13rem] flex items-center justify-center">
-            <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
-          </div>
-        </Container>
-      )
-    }
-    return (
-      <Container>
-        <WindowVirtualizedStack
-          count={items.length}
-          estimateSize={300}
-          overscan={3}
-          gap={16}
-          getItemKey={(index) => items[index]?.restaurantId ?? index}
-          renderItem={(index) => {
-            const item = items[index]
-
-            return (
-              <RestaurantCard
-                key={item.restaurantId}
-                name={item.name}
-                foodCategories={item.foodCategories}
-                category={item.category}
-                distance={formatDistanceLabel(item.distanceMeter)}
-                image={item.thumbnailImageUrl}
-                reviewSummary={item.reviewSummary}
-                onClick={() =>
-                  onRestaurantClick?.(String(item.restaurantId), {
-                    position: index,
-                    section: section?.type ?? 'UNKNOWN',
-                  })
-                }
-              />
-            )
-          }}
-        />
-      </Container>
-    )
-  }
 
   return (
     <div className="pb-20 overflow-x-hidden">
@@ -348,69 +200,53 @@ export function HomePage({
       )}
 
       <section className="mb-8">
-        <Container>
-          <HeroRecommendationCard
-            title="오늘 점심 뭐먹지?"
-            description="AI가 추천하는 맞춤 맛집을 확인해보세요"
-            image="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&h=330&fit=crop&fm=webp&q=80"
-            onCTAClick={() => navigate(ROUTES.todayLunch)}
+        <Container className="mb-4">
+          <div className="flex items-center gap-2">
+            {heroSection?.type === 'HOT' ? (
+              <Flame className="h-5 w-5 text-primary" />
+            ) : (
+              <Sparkles className="h-5 w-5 text-primary" />
+            )}
+            <h2 className="text-lg font-semibold">{heroSection?.title ?? '당신을 위한 추천'}</h2>
+          </div>
+        </Container>
+        {isMainLoading && !heroSection ? (
+          <div className="px-4">
+            <div className="overflow-hidden rounded-lg border bg-card">
+              <Skeleton className="aspect-[21/10] w-full rounded-none" />
+              <div className="space-y-2 px-4 pb-4 pt-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-1/2" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            </div>
+          </div>
+        ) : heroSection ? (
+          <AutoSlidingRestaurantCarousel
+            items={heroSection.items}
+            section={heroSection.type === 'HOT' ? 'HOT_FALLBACK' : 'RECOMMEND'}
+            onRestaurantClick={onRestaurantClick}
           />
-        </Container>
-      </section>
-
-      {/* QuickActions - 추후 기능 추가 시 활성화
-      <section className="mb-8">
-        <Container>
-          <div className="grid grid-cols-4 gap-2">
-            {quickActions.map((action) => (
-              <QuickActionButton
-                key={action.action}
-                icon={action.icon}
-                label={action.label}
-                onClick={() => handleQuickAction(action.action)}
-              />
-            ))}
+        ) : (
+          <div className="px-4 py-6 min-h-[12rem] flex items-center justify-center">
+            <p className="text-sm text-muted-foreground text-center">데이터가 없습니다</p>
           </div>
-        </Container>
-      </section>
-      */}
-
-      {/* CategoryChips - 추후 기능 추가 시 활성화
-      <section className="mb-8">
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2 px-4">
-            {categories.map((category) => (
-              <CategoryChip
-                key={category.id}
-                label={category.label}
-                icon={<span className="text-sm">{category.icon}</span>}
-                isActive={selectedCategory === category.id}
-                onClick={() => handleCategoryClick(category.id)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-      */}
-
-      <section className="mb-8">
-        <Container className="mb-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">신규 개장</h2>
-          </div>
-        </Container>
-        {renderHorizontal(newSection)}
+        )}
       </section>
 
       <section className="mb-8">
         <Container className="mb-4">
           <div className="flex items-center gap-2">
-            <Flame className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">이번주 Hot</h2>
+            <MapPin className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">{distanceSection?.title ?? '가까운 음식점'}</h2>
           </div>
         </Container>
-        {renderVertical(hotSection)}
+        <HomeCategoryRestaurantSection
+          groups={distanceSection?.groups ?? []}
+          isLoading={isMainLoading && !distanceSection}
+          sectionType="DISTANCE"
+          onRestaurantClick={onRestaurantClick}
+        />
       </section>
 
       <BottomTabBar
