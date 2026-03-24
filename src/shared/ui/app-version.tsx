@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { formatAppVersion } from '@/shared/config/appInfo'
+import { APP_DISPLAY_VERSION, formatAppVersion } from '@/shared/config/appInfo'
 import { cn } from '@/shared/lib/utils'
 
 type AppVersionTextProps = ComponentProps<'span'> & {
@@ -7,7 +7,7 @@ type AppVersionTextProps = ComponentProps<'span'> & {
 }
 
 export function AppVersionText({ className, withPrefix = true, ...props }: AppVersionTextProps) {
-  const text = withPrefix ? formatAppVersion() : __APP_VERSION__
+  const text = withPrefix ? formatAppVersion() : APP_DISPLAY_VERSION
 
   return (
     <span className={cn(className)} {...props}>
