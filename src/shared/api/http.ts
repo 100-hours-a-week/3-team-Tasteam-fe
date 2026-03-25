@@ -74,20 +74,21 @@ const refreshAccessToken = async (currentToken: string | null) => {
 }
 
 /**
- * 모든 요청 시 Authorization 헤더에 현재 accessToken을 주입.
- * PUBLIC 엔드포인트는 토큰을 추가하지 않습니다.
+ * 모든 요청 시 accessToken이 있으면 Authorization 헤더를 주입.
+ * PUBLIC 엔드포인트도 비로그인 접근은 허용하되, 로그인 상태면 선택적으로 토큰을 함께 보낸다.
  */
 http.interceptors.request.use(
   (config) => {
     const isPublic = isPublicEndpoint(config.url)
     const token = getAccessToken()
 
-    if (!isPublic && token) {
+    if (token) {
       config.headers = config.headers ?? {}
       config.headers.Authorization = `Bearer ${token}`
       logger.debug(`[HTTP] ${config.url}로 요청 전송`, {
         method: config.method,
         tokenExists: !!token,
+        isPublic,
         hasAuthHeader: !!config.headers.Authorization,
       })
     } else {
