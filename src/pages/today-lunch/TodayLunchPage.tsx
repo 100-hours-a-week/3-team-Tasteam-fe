@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, Sparkles } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { Container } from '@/shared/ui/container'
+import { DEFAULT_APP_LOCATION } from '@/shared/config/env'
 import { RestaurantCard } from '@/entities/restaurant'
 import { getAiRecommendPage } from '@/entities/main'
 import { useAppLocation } from '@/entities/location'
@@ -17,8 +18,8 @@ export function TodayLunchPage({ onBack, onRestaurantClick }: TodayLunchPageProp
   const [recommendations, setRecommendations] = useState<MainSectionItemDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const { location } = useAppLocation()
-  const latitude = location?.latitude ?? 37.5665
-  const longitude = location?.longitude ?? 126.978
+  const latitude = location?.latitude ?? DEFAULT_APP_LOCATION.latitude
+  const longitude = location?.longitude ?? DEFAULT_APP_LOCATION.longitude
 
   useEffect(() => {
     let active = true

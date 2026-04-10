@@ -1,3 +1,5 @@
+import { FIXED_APP_LOCATION, IS_FIXED_LOCATION_ENABLED } from '@/shared/config/env'
+
 const STORAGE_KEY = 'location_permission_granted'
 
 export type GeoPosition = {
@@ -8,6 +10,7 @@ export type GeoPosition = {
 export type GeolocationPermissionState = 'granted' | 'denied' | 'prompt' | 'unknown'
 
 export const getLocationPermission = (): boolean => {
+  if (IS_FIXED_LOCATION_ENABLED) return true
   return localStorage.getItem(STORAGE_KEY) === 'true'
 }
 
@@ -16,6 +19,7 @@ export const setLocationPermission = (granted: boolean) => {
 }
 
 export const getGeolocationPermissionState = async (): Promise<GeolocationPermissionState> => {
+  if (IS_FIXED_LOCATION_ENABLED) return 'granted'
   if (typeof navigator === 'undefined') return 'unknown'
 
   try {
@@ -35,6 +39,11 @@ export const getGeolocationPermissionState = async (): Promise<GeolocationPermis
 
 export const requestLocationPermission = (): Promise<boolean> => {
   return new Promise((resolve) => {
+    if (IS_FIXED_LOCATION_ENABLED) {
+      resolve(true)
+      return
+    }
+
     if (!navigator.geolocation) {
       setLocationPermission(false)
       resolve(false)
@@ -59,6 +68,14 @@ const truncateCoord = (coord: number): number => Math.floor(coord * 10000) / 100
 
 export const getCurrentPosition = (): Promise<GeoPosition | null> => {
   return new Promise((resolve) => {
+    if (IS_FIXED_LOCATION_ENABLED && FIXED_APP_LOCATION) {
+      resolve({
+        latitude: truncateCoord(FIXED_APP_LOCATION.latitude),
+        longitude: truncateCoord(FIXED_APP_LOCATION.longitude),
+      })
+      return
+    }
+
     if (!navigator.geolocation) {
       resolve(null)
       return

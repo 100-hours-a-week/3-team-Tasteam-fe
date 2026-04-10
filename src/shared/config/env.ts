@@ -1,5 +1,12 @@
 type AppEnv = 'development' | 'staging' | 'production'
 
+export type ConfiguredAppLocation = {
+  latitude: number
+  longitude: number
+  district: string
+  address: string
+}
+
 const getEnv = (key: string, fallback = '') => {
   const value = import.meta.env[key]
   return value ?? fallback
@@ -14,6 +21,44 @@ const getNumberEnv = (key: string, fallback: number) => {
   const value = Number(getEnv(key, String(fallback)))
   return Number.isFinite(value) ? value : fallback
 }
+
+const DEFAULT_APP_LOCATION_VALUE =
+  '37.3947|127.1112|\uD310\uAD50\uC5ED|\uACBD\uAE30\uB3C4 \uC131\uB0A8\uC2DC \uBD84\uB2F9\uAD6C \uD310\uAD50\uC5ED'
+const FIXED_LOCATION_OFF_VALUE = 'off'
+
+const parseConfiguredLocation = (rawValue: string): ConfiguredAppLocation | null => {
+  const [latitudeRaw, longitudeRaw, districtRaw, addressRaw] = rawValue
+    .split('|')
+    .map((value) => value.trim())
+
+  const latitude = Number(latitudeRaw)
+  const longitude = Number(longitudeRaw)
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !districtRaw || !addressRaw) {
+    return null
+  }
+
+  return {
+    latitude,
+    longitude,
+    district: districtRaw,
+    address: addressRaw,
+  }
+}
+
+const rawFixedLocation = getEnv('VITE_FIXED_LOCATION').trim()
+const normalizedFixedLocation = rawFixedLocation.toLowerCase()
+const fallbackAppLocation =
+  parseConfiguredLocation(DEFAULT_APP_LOCATION_VALUE) ??
+  ({
+    latitude: 37.3947,
+    longitude: 127.1112,
+    district: '\uD310\uAD50\uC5ED',
+    address: '\uACBD\uAE30\uB3C4 \uC131\uB0A8\uC2DC \uBD84\uB2F9\uAD6C \uD310\uAD50\uC5ED',
+  } satisfies ConfiguredAppLocation)
+const configuredFixedLocation =
+  rawFixedLocation && normalizedFixedLocation !== FIXED_LOCATION_OFF_VALUE
+    ? parseConfiguredLocation(rawFixedLocation)
+    : null
 
 export const APP_ENV = getEnv('VITE_APP_ENV', 'development') as AppEnv
 
@@ -46,3 +91,8 @@ export const ACTIVITY_DEBUG = getBooleanEnv('VITE_ACTIVITY_DEBUG', false)
 
 export const SENTRY_DSN = getEnv('VITE_SENTRY_DSN')
 export const SENTRY_ENABLED = getBooleanEnv('VITE_SENTRY_ENABLED', APP_ENV !== 'development')
+
+export const DEFAULT_APP_LOCATION = configuredFixedLocation ?? fallbackAppLocation
+export const FIXED_APP_LOCATION =
+  normalizedFixedLocation === FIXED_LOCATION_OFF_VALUE ? null : DEFAULT_APP_LOCATION
+export const IS_FIXED_LOCATION_ENABLED = FIXED_APP_LOCATION !== null

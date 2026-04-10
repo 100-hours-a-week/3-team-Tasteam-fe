@@ -2,18 +2,30 @@ import { useCallback, useMemo, useState } from 'react'
 import { LocationContext } from './locationContext'
 import type { AppLocation, LocationStatus } from './types'
 import { getCurrentPosition, setLocationPermission } from '@/shared/lib/geolocation'
+import {
+  DEFAULT_APP_LOCATION,
+  FIXED_APP_LOCATION,
+  IS_FIXED_LOCATION_ENABLED,
+} from '@/shared/config/env'
 import { reverseGeocodeNominatim } from '../api/reverseGeocode'
 
 const STORAGE_KEY = 'app_location_v1'
-const DEFAULT_LOCATION: Omit<AppLocation, 'updatedAt' | 'source'> = {
-  // fallback: 경기도 성남시 판교역
-  latitude: 37.3947,
-  longitude: 127.1112,
-  district: '판교역',
-  address: '경기도 성남시 분당구 판교역',
-}
+const DEFAULT_LOCATION: Omit<AppLocation, 'updatedAt' | 'source'> = DEFAULT_APP_LOCATION
+
+const createLocation = (
+  base: Omit<AppLocation, 'updatedAt' | 'source'>,
+  source: AppLocation['source'],
+): AppLocation => ({
+  ...base,
+  updatedAt: new Date().toISOString(),
+  source,
+})
 
 function loadFromStorage(): AppLocation | null {
+  if (FIXED_APP_LOCATION) {
+    return createLocation(FIXED_APP_LOCATION, 'manual')
+  }
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     return raw ? (JSON.parse(raw) as AppLocation) : null
@@ -31,20 +43,12 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useState<AppLocation | null>(() => {
     const stored = loadFromStorage()
     if (stored) return stored
-    return {
-      ...DEFAULT_LOCATION,
-      updatedAt: new Date().toISOString(),
-      source: 'manual',
-    }
+    return createLocation(DEFAULT_LOCATION, 'manual')
   })
   const [error, setError] = useState<string | null>(null)
 
   const setManualLocation = useCallback((next: Omit<AppLocation, 'source' | 'updatedAt'>) => {
-    const value: AppLocation = {
-      ...next,
-      updatedAt: new Date().toISOString(),
-      source: 'manual',
-    }
+    const value = createLocation(FIXED_APP_LOCATION ?? next, 'manual')
     setLocation(value)
     saveToStorage(value)
     setError(null)
@@ -53,18 +57,22 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
   const clearLocation = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY)
-    setLocation({
-      ...DEFAULT_LOCATION,
-      updatedAt: new Date().toISOString(),
-      source: 'manual',
-    })
+    setLocation(createLocation(DEFAULT_LOCATION, 'manual'))
     setError(null)
-    setStatus('idle')
+    setStatus(IS_FIXED_LOCATION_ENABLED ? 'ready' : 'idle')
   }, [])
 
   const requestCurrentLocation = useCallback(async (): Promise<AppLocation | null> => {
     setStatus('loading')
     setError(null)
+
+    if (FIXED_APP_LOCATION) {
+      const value = createLocation(FIXED_APP_LOCATION, 'manual')
+      setLocation(value)
+      saveToStorage(value)
+      setStatus('ready')
+      return value
+    }
 
     const coords = await getCurrentPosition()
     if (!coords) {
@@ -81,14 +89,15 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         latitude: coords.latitude,
         longitude: coords.longitude,
       })
-      const value: AppLocation = {
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        district: resolved.district,
-        address: resolved.address,
-        updatedAt: new Date().toISOString(),
-        source: 'geolocation',
-      }
+      const value = createLocation(
+        {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          district: resolved.district,
+          address: resolved.address,
+        },
+        'geolocation',
+      )
       setLocation(value)
       saveToStorage(value)
       setStatus('ready')
@@ -97,11 +106,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       setStatus('error')
       setError('주소 정보를 확인할 수 없습니다.')
       setLocation((prev) => {
-        const next = prev ?? {
-          ...DEFAULT_LOCATION,
-          updatedAt: new Date().toISOString(),
-          source: 'manual',
-        }
+        const next = prev ?? createLocation(DEFAULT_LOCATION, 'manual')
         saveToStorage(next)
         return next
       })
