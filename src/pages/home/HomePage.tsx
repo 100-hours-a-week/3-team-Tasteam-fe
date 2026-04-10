@@ -8,6 +8,7 @@ import { Container } from '@/shared/ui/container'
 import { LocationHeader } from '@/widgets/location-header'
 import { Input } from '@/shared/ui/input'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { DEFAULT_APP_LOCATION } from '@/shared/config/env'
 import { ROUTES } from '@/shared/config/routes'
 import { getHomePage } from '@/entities/main'
 import type { BannerDto } from '@/entities/banner'
@@ -55,8 +56,8 @@ export function HomePage({
   const [showSplashPopup, setShowSplashPopup] = useState(false)
   const { location, status, requestCurrentLocation } = useAppLocation()
   const hasRefreshedRef = useRef(false)
-  const latitude = location?.latitude ?? 37.5665
-  const longitude = location?.longitude ?? 126.978
+  const latitude = location?.latitude ?? DEFAULT_APP_LOCATION.latitude
+  const longitude = location?.longitude ?? DEFAULT_APP_LOCATION.longitude
 
   useEffect(() => {
     const cached = getMainPageCache(latitude, longitude)
