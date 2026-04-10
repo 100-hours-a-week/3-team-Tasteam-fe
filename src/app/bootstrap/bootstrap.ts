@@ -1,4 +1,5 @@
 import { request } from '@/shared/api/request'
+import { DEFAULT_APP_LOCATION } from '@/shared/config/env'
 import { API_ENDPOINTS } from '@/shared/config/routes'
 import { clearAccessToken, setAccessToken, setRefreshEnabled } from '@/shared/lib/authToken'
 import { getHomePage } from '@/entities/main'
@@ -12,8 +13,8 @@ type RefreshResponse = {
   }
 }
 
-const DEFAULT_LAT = 37.5665
-const DEFAULT_LNG = 126.978
+const DEFAULT_LAT = DEFAULT_APP_LOCATION.latitude
+const DEFAULT_LNG = DEFAULT_APP_LOCATION.longitude
 
 const runBootstrapTasks = async () => {
   setRefreshEnabled(true)
